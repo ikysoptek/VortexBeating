@@ -17,10 +17,10 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # Membuat debug.keystore di lokasi default yang dicari Gradle (~/.android/)
-    - name: Generate Debug Keystore in default location
+    - name: Generate and Copy Debug Keystore
       run: |
         mkdir -p ~/.android
+        mkdir -p ~/.config/.android
         keytool -genkeypair \
           -keystore ~/.android/debug.keystore \
           -storepass android \
@@ -30,17 +30,20 @@ jobs:
           -keysize 2048 \
           -validity 10000 \
           -dname "CN=Android Debug,O=Android,C=US"
+        cp ~/.android/debug.keystore ~/.config/.android/debug.keystore
 
     - name: Grant execute permission for gradlew
       working-directory: Beatles-3.1.1
       run: chmod +x gradlew
       
-    - name: Build with Gradle
+    # INI BAGIAN YANG DIUBAH: Pakai perintah Release dari README
+    - name: Build with Gradle (Release)
       working-directory: Beatles-3.1.1
-      run: ./gradlew assembleDebug
+      run: ./gradlew assembleFossMobileUniversalRelease
       
+    # PATH APK juga diubah karena hasil build-nya berupa Release
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug.apk
-        path: Beatles-3.1.1/app/build/outputs/apk/debug/app-debug.apk
+        name: Beatles-Release.apk
+        path: Beatles-3.1.1/app/build/outputs/apk/fossMobileUniversal/release/*.apk

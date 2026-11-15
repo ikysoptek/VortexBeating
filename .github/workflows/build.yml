@@ -17,12 +17,12 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # Step baru untuk membuat debug.keystore
-    - name: Generate Debug Keystore
-      working-directory: Beatles-3.1.1
+    # Membuat debug.keystore di lokasi default yang dicari Gradle (~/.android/)
+    - name: Generate Debug Keystore in default location
       run: |
+        mkdir -p ~/.android
         keytool -genkeypair \
-          -keystore debug.keystore \
+          -keystore ~/.android/debug.keystore \
           -storepass android \
           -alias androiddebugkey \
           -keypass android \

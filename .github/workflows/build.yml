@@ -17,6 +17,20 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    # Step baru untuk membuat debug.keystore
+    - name: Generate Debug Keystore
+      working-directory: Beatles-3.1.1
+      run: |
+        keytool -genkeypair \
+          -keystore debug.keystore \
+          -storepass android \
+          -alias androiddebugkey \
+          -keypass android \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -dname "CN=Android Debug,O=Android,C=US"
+
     - name: Grant execute permission for gradlew
       working-directory: Beatles-3.1.1
       run: chmod +x gradlew

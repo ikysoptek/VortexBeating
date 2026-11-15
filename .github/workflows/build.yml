@@ -16,20 +16,17 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        
-    - name: Cek isi folder (Debug)
-      run: ls -la Beattles-3.1.1
 
     - name: Grant execute permission for gradlew
-      working-directory: Beattles-3.1.1
+      working-directory: Beatles-3.1.1
       run: chmod +x gradlew
       
     - name: Build with Gradle
-      working-directory: Beattles-3.1.1
+      working-directory: Beatles-3.1.1
       run: ./gradlew assembleDebug
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug.apk
-        path: Beattles-3.1.1/app/build/outputs/apk/debug/app-debug.apk
+        path: Beatles-3.1.1/app/build/outputs/apk/debug/app-debug.apk

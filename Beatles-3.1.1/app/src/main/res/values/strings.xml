@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App name -->
-    <string name="app_name">Beatles</string>
-    <string name="app_name_tv">Beatles Tv</string>
+    <string name="app_name">Vortex Spoty</string>
+    <string name="app_name_tv">Vortex Endless Music</string>
     <string name="update_channel_desc">Notifikasi pembaruan aplikasi</string>
     <string name="update_channel_name">Pembaruan</string>
     <string name="new_releases_channel_desc">Notifikasi rilis baru dari artis yang diikuti</string>

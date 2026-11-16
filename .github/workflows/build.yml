@@ -11,12 +11,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up JDK 17
+    # 1. Ubah ke JDK 21 sesuai error terakhir
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
 
+    # 2. Buat Keystore di 2 lokasi (buat jaga-jaga)
     - name: Generate and Copy Debug Keystore
       run: |
         mkdir -p ~/.android
@@ -32,16 +34,17 @@ jobs:
           -dname "CN=Android Debug,O=Android,C=US"
         cp ~/.android/debug.keystore ~/.config/.android/debug.keystore
 
+    # 3. Kasih izin eksekusi
     - name: Grant execute permission for gradlew
       working-directory: Beatles-3.1.1
       run: chmod +x gradlew
       
-    # INI BAGIAN YANG DIUBAH: Pakai perintah Release dari README
+    # 4. Build pakai perintah Release dari README
     - name: Build with Gradle (Release)
       working-directory: Beatles-3.1.1
       run: ./gradlew assembleFossMobileUniversalRelease
       
-    # PATH APK juga diubah karena hasil build-nya berupa Release
+    # 5. Ambil APK-nya
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:

@@ -43,8 +43,8 @@ class LyricVideoRenderer(
     val width: Int = 1280,
     val height: Int = 720,
     private val caseBitmap: Bitmap? = null,
-    private val brandText: String = "@BeatlesMusic",
-    private val artistHandle: String = "@Beatles",
+    private val brandText: String = "@VortexMusic",
+    private val artistHandle: String = "@Vortex",
     var cardStyle: VideoLyricsCardStyle = VideoLyricsCardStyle.KASET,
     var effectStyle: VideoLyricsEffectStyle = VideoLyricsEffectStyle.KINETIC_SHAKE,
     var clipStartTimeMs: Long = -1L,
@@ -1048,7 +1048,7 @@ class LyricVideoRenderer(
 
         // 3b. @BeatlesMusic Brand Tag above cover
         val tagText = when {
-            brandText.isBlank() || brandText.equals("NanzBeatles", ignoreCase = true) -> "@BeatlesMusic"
+            brandText.isBlank() || brandText.equals("NanzBeatles", ignoreCase = true) -> "@VortexMusic"
             brandText.startsWith("@") -> brandText
             else -> "@$brandText"
         }

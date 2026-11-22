@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App name -->
-    <string name="app_name">Beatles</string>
-    <string name="app_name_tv">Beatles Tv</string>
+    <string name="app_name">Vortex Music</string>
+    <string name="app_name_tv">Vortex Music Tv</string>
     <string name="update_channel_desc">Notifikasi pembaruan aplikasi</string>
     <string name="update_channel_name">Pembaruan</string>
     <string name="new_releases_channel_desc">Notifikasi rilis baru dari artis yang diikuti</string>
@@ -374,7 +374,7 @@
     <string name="queue_all_songs">Semua lagu</string>
     <string name="queue_searched_songs">Lagu yang dicari</string>
     <!-- Notification name -->
-    <string name="music_player">Beatles</string>
+    <string name="music_player">Vortex Music</string>
     <string name="video_player">Pemutar Video</string>
     <string name="widget_music_player">Pemutar Musik</string>
     <string name="widget_song_title">Judul lagu</string>
@@ -673,9 +673,9 @@
     <string name="enable_voice_commands">Aktifkan perintah suara</string>
     <string name="enable_voice_commands_desc">Aktifkan kontrol suara interaktif dengan hamparan animasi. Ucapkan perintah seperti \" Mainkan \", \" Berikutnya \", atau \" Cari lagu \".</string>
     <string name="enable_voice_wake_word">Kata bangun tanpa tangan</string>
-    <string name="enable_voice_wake_word_desc">Dengarkan terus \" Hei Beatles \" untuk mengaktifkan perintah suara tanpa menyentuh layar. Bekerja saat aplikasi terbuka.</string>
+    <string name="enable_voice_wake_word_desc">Dengarkan terus \" Hei Vortex \" untuk mengaktifkan perintah suara tanpa menyentuh layar. Bekerja saat aplikasi terbuka.</string>
     <string name="voice_wake_word">Kata bangun khusus</string>
-    <string name="voice_wake_word_desc">Atur kata bangun kustom Anda (default: Beatles)</string>
+    <string name="voice_wake_word_desc">Atur kata bangun kustom Anda (default: Vortex)</string>
     <!-- Voice feedback -->
     <string name="voice_feedback">Umpan balik suara</string>
     <string name="enable_voice_feedback">Aktifkan respons suara</string>
@@ -741,16 +741,16 @@
     <string name="column_label">Kolom %d</string>
     <!-- Discord -->
     <string name="discord_integration">Integrasi Discord</string>
-    <string name="discord_information">Beatles menggunakan pustaka KizzyRPC untuk mengatur status akun Discord Anda. Ini melibatkan penggunaan koneksi Discord Gateway, yang dapat dianggap sebagai pelanggaran terhadap tos Discord. Namun, tidak ada kasus yang diketahui dari akun pengguna yang ditangguhkan karena alasan ini. Gunakan dengan risiko Anda sendiri.\nBeatles hanya akan mengekstrak token Anda, dan semua yang lain disimpan secara lokal.</string>
+    <string name="discord_information">Vortex Music menggunakan pustaka KizzyRPC untuk mengatur status akun Discord Anda. Ini melibatkan penggunaan koneksi Discord Gateway, yang dapat dianggap sebagai pelanggaran terhadap tos Discord. Namun, tidak ada kasus yang diketahui dari akun pengguna yang ditangguhkan karena alasan ini. Gunakan dengan risiko Anda sendiri.\nVortex Music hanya akan mengekstrak token Anda, dan semua yang lain disimpan secara lokal.</string>
     <string name="dismiss">Abaikan</string>
     <string name="options">Pilihan</string>
     <string name="preview">Pratinjau</string>
     <string name="enable_discord_rpc">Aktifkan Kehadiran yang Kaya</string>
     <string name="discord_use_details">Gunakan bidang detail</string>
     <string name="discord_use_details_description">Tampilkan lagu saat ini dalam detail Discord</string>
-    <string name="listening_to_auramusic">Mendengarkan Beatles</string>
+    <string name="listening_to_auramusic">Mendengarkan Vortex Music</string>
     <string name="listen_on_youtube_music">Dengarkan di YouTube Music</string>
-    <string name="visit_auramusic">Kunjungi Beatles</string>
+    <string name="visit_auramusic">Kunjungi Vortex Music</string>
     <!-- Last.fm -->
     <string name="lastfm_integration">Integrasi Last.fm</string>
     <string name="username">Nama Pengguna</string>
@@ -859,7 +859,7 @@
     <string name="tap_to_recognize">Ketuk untuk mengenali</string>
     <string name="listening">Mendengarkan</string>
     <string name="processing">Memproses...</string>
-    <string name="play_on_app">Bermain di Beatles</string>
+    <string name="play_on_app">Bermain di Vortex Music</string>
     <string name="re_listen">Dengarkan lagi</string>
     <string name="no_match_found">Tak ditemukan kecocokan</string>
     <string name="try_again">Coba lagi</string>
@@ -896,9 +896,9 @@
     <string name="wrapped_intro_title">Bulan musik Anda</string>
     <string name="wrapped_intro_subtitle">Temukan lagu, artis, dan lainnya</string>
     <string name="wrapped_intro_button">Lihat %s saya</string>
-    <string name="wrapped_logo_content_description">Beatles Dibungkus</string>
+    <string name="wrapped_logo_content_description">Vortex Music Dibungkus</string>
     <string name="wrapped_thank_you">Terima kasih sudah mendengarkan.</string>
-    <string name="wrapped_special_thanks">Terima kasih khusus kepada Anda karena telah mendukung Beatles!</string>
+    <string name="wrapped_special_thanks">Terima kasih khusus kepada Anda karena telah mendukung Vortex Music!</string>
     <string name="wrapped_close">Tutup</string>
     <string name="wrapped_total_songs_title">Total lagu yang didengarkan</string>
     <string name="wrapped_total_songs_subtitle">%d lagu</string>
@@ -1007,7 +1007,7 @@
     <string name="cd_palette_item">Item palet warna</string>
     <string name="cd_back">Kembali</string>
     <!-- Crash reporter -->
-    <string name="crash_title">Beatles telah jatuh</string>
+    <string name="crash_title">Vortex Music telah jatuh</string>
     <string name="crash_description">Terjadi kesalahan tak diduga!</string>
     <string name="crash_no_log">Tidak ada log yang tersedia</string>
     <string name="crash_report_subject">Laporan tabrakan</string>

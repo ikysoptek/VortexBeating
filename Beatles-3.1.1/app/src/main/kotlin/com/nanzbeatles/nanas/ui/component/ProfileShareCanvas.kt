@@ -1373,7 +1373,7 @@ object ProfileShareCanvasRenderer {
         textPaint.typeface = regularTypeface
         textPaint.textSize = 22f
         textPaint.color = AndroidColor.parseColor("#9096A4")
-        canvas.drawText("@BeatlesMusic • Statistik Perjalanan Musik Resmi", achTextX, achRect.top + 128f, textPaint)
+        canvas.drawText("@VortexMusic • Statistik Perjalanan Musik Resmi", achTextX, achRect.top + 128f, textPaint)
 
         drawRisingBarsIcon(canvas, achRect.right - 108f, achRect.centerY() - 40f, 76f)
 

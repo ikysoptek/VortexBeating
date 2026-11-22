@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.navigation.NavController
 import com.nanzbeatles.nanas.LocalPlayerAwareWindowInsets
 import com.nanzbeatles.nanas.R
@@ -67,9 +68,12 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
+// Kunci khusus status login Supabase (tidak bentrok dengan data YouTube lama)
+val VortexLoggedInKey = booleanPreferencesKey("vortexSupabaseLoggedIn")
+
 private const val SUPABASE_URL = "https://aglwqdrunfsepsrvfjma.supabase.co"
-private const val SUPABASE_PUBLISHABLE_KEY = "sb_publishable_vbNnp3EtLNgLdyjzZMW0Kg_6Ph7kTOb"
-private const val DEV_WHATSAPP_NUMBER = "6285835356933" // Ganti dengan nomor WA kamu (format 628...)
+private const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFnbHdxZHJ1bmZzZXBzcnZmam1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzMTAzNjQsImV4cCI6MjExMDg4NjM2NH0.auoxFHN4mm7gS44Lgk1sr1LeaHSefb_z7s987DaJ2Yg"
+private const val DEV_WHATSAPP_NUMBER = "6285835356933" // Ganti dengan nomor WA kamu
 
 @SuppressLint("HardwareIds")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,6 +89,7 @@ fun LoginScreen(
         Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
     }
 
+    var isVortexLoggedIn by rememberPreference(VortexLoggedInKey, false)
     var accountName by rememberPreference(AccountNameKey, "")
     var accountEmail by rememberPreference(AccountEmailKey, "")
 
@@ -136,11 +141,13 @@ fun LoginScreen(
                 if (result.success) {
                     accountEmail = result.email
                     accountName = result.name
-                    // Refresh Streak & Level agar status Developer langsung aktif jika ikyvortex12@gmail.com
+                    isVortexLoggedIn = true
                     StreakManager.loadAndEvaluate(context)
                     MusicJourneyManager.loadState(context)
                     Toast.makeText(context, "Berhasil masuk sebagai ${result.name}", Toast.LENGTH_SHORT).show()
-                    navController.navigateUp()
+                    if (navController.previousBackStackEntry != null) {
+                        navController.navigateUp()
+                    }
                 } else {
                     statusMessage = result.message
                     isError = true
@@ -308,6 +315,11 @@ private data class SupabaseLoginResult(
     val name: String = ""
 )
 
+private fun HttpURLConnection.applySupabaseHeaders() {
+    setRequestProperty("apikey", SUPABASE_ANON_KEY)
+    setRequestProperty("Authorization", "Bearer $SUPABASE_ANON_KEY")
+}
+
 private suspend fun supabaseRegister(
     name: String,
     email: String,
@@ -319,7 +331,7 @@ private suspend fun supabaseRegister(
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             doOutput = true
-            setRequestProperty("apikey", SUPABASE_PUBLISHABLE_KEY)
+            applySupabaseHeaders()
             setRequestProperty("Content-Type", "application/json")
             setRequestProperty("Prefer", "return=minimal")
         }
@@ -347,7 +359,7 @@ private suspend fun supabaseRegister(
             if (err.contains("duplicate", ignoreCase = true) || code == 409) {
                 false to "Email ini sudah terdaftar. Silakan langsung masuk."
             } else {
-                false to "Gagal mendaftar (Kode $code). Periksa koneksi atau konfigurasi Supabase."
+                false to "Gagal mendaftar (Kode $code): $err"
             }
         }
     }.getOrElse {
@@ -366,12 +378,13 @@ private suspend fun supabaseLogin(
         val url = URL("$SUPABASE_URL/rest/v1/vortex_users?email=eq.$encodedEmail&password=eq.$encodedPassword&select=*")
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
-            setRequestProperty("apikey", SUPABASE_PUBLISHABLE_KEY)
+            applySupabaseHeaders()
         }
 
         val code = conn.responseCode
         if (code !in 200..299) {
-            return@withContext SupabaseLoginResult(false, "Gagal terhubung ke server (Kode $code).")
+            val err = conn.errorStream?.bufferedReader()?.readText().orEmpty()
+            return@withContext SupabaseLoginResult(false, "Gagal terhubung (Kode $code): $err")
         }
 
         val responseText = conn.inputStream.bufferedReader().readText()
@@ -393,10 +406,8 @@ private suspend fun supabaseLogin(
             )
         }
 
-        // Cek kunci 1 perangkat (kecuali Developer)
         if (!isDev) {
             if (savedDeviceId.isBlank()) {
-                // Ikat perangkat pertama kali jika kolom device_id masih kosong
                 bindDeviceIdToUser(encodedEmail, currentDeviceId)
             } else if (savedDeviceId != currentDeviceId) {
                 return@withContext SupabaseLoginResult(
@@ -418,7 +429,7 @@ private fun bindDeviceIdToUser(encodedEmail: String, deviceId: String) {
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "PATCH"
             doOutput = true
-            setRequestProperty("apikey", SUPABASE_PUBLISHABLE_KEY)
+            applySupabaseHeaders()
             setRequestProperty("Content-Type", "application/json")
             setRequestProperty("Prefer", "return=minimal")
         }

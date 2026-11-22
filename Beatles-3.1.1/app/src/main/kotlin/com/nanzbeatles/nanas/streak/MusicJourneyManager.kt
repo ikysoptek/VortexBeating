@@ -135,9 +135,6 @@ data class MusicJourneyState(
     val totalMinutes: Int
         get() = ((totalListeningSeconds % 3600L) / 60L).toInt()
 
-    /**
-     * Compact format for the 3-column card (e.g., "0 Jam", "15 Menit", "8.7 Jam", or "9 Jam").
-     */
     val dailyRecordCompactText: String
         get() {
             if (dailyRecordSeconds <= 0L) return "0 Jam"
@@ -155,9 +152,6 @@ data class MusicJourneyState(
             }
         }
 
-    /**
-     * Full descriptive format (e.g., "0 Menit", "8 Jam 42 Menit", or "9 Jam").
-     */
     val dailyRecordFullText: String
         get() {
             if (dailyRecordSeconds <= 0L) return "0 Menit"
@@ -215,6 +209,8 @@ object MusicJourneyManager {
     private const val DEV_MAX_LEVEL = 10
     private const val DEV_MAX_XP = 99_999
     private const val DEV_MAX_STREAK = 999
+    private const val DEV_MAX_DAILY_RECORD_SECONDS = 999L * 3600L
+    private const val DEV_MAX_MONTHLY_RECORD_SECONDS = 999L * 3600L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val initialized = AtomicBoolean(false)
@@ -229,19 +225,6 @@ object MusicJourneyManager {
         _levelUpEvent.tryEmit(fromLevel to toLevel)
     }
 
-    /**
-     * Exact 10-Level system specified by the user:
-     * Level 1: Pendengar Pemula (0 XP)
-     * Level 2: Penikmat Musik (500 XP)
-     * Level 3: Pendengar Aktif (1.000 XP)
-     * Level 4: Pecinta Musik (1.750 XP)
-     * Level 5: Pendengar Setia (2.500 XP)
-     * Level 6: Musik Enthusiast (3.500 XP)
-     * Level 7: Pendengar Hebat (5.000 XP)
-     * Level 8: Master Musik (7.500 XP)
-     * Level 9: Legenda Musik (10.000 XP)
-     * Level 10: Ikon Musik (15.000+ XP)
-     */
     val allLevels: List<ListenerLevelSpec> = listOf(
         ListenerLevelSpec(1, "Pendengar Pemula", 0, 500, "Perjalanan musikmu baru dimulai!"),
         ListenerLevelSpec(2, "Penikmat Musik", 500, 1_000, "Mulai menemukan ritme harianmu!"),
@@ -301,6 +284,8 @@ object MusicJourneyManager {
         val synced = base.copy(
             currentStreak = if (isDev) maxOf(streakState.currentStreak, DEV_MAX_STREAK) else streakState.currentStreak,
             longestStreak = if (isDev) maxOf(streakState.longestStreak, base.longestStreak, DEV_MAX_STREAK) else maxOf(streakState.longestStreak, base.longestStreak),
+            dailyRecordSeconds = if (isDev) maxOf(base.dailyRecordSeconds, DEV_MAX_DAILY_RECORD_SECONDS) else base.dailyRecordSeconds,
+            monthlyRecordSeconds = if (isDev) maxOf(base.monthlyRecordSeconds, DEV_MAX_MONTHLY_RECORD_SECONDS) else base.monthlyRecordSeconds,
             xp = if (isDev) maxOf(base.xp, DEV_MAX_XP) else base.xp,
             level = if (isDev) DEV_MAX_LEVEL else base.level,
         )
@@ -309,11 +294,6 @@ object MusicJourneyManager {
         synced
     }
 
-    /**
-     * Called when a song is played or playback time is recorded in MusicService.
-     * Updates totalListeningSeconds, totalSongsPlayed, dailyRecordSeconds, monthlyRecordSeconds,
-     * weekday pattern, XP, Level, and per-song playCount.
-     */
     fun onSongPlayed(
         context: Context,
         songId: String,
@@ -335,7 +315,6 @@ object MusicJourneyManager {
             val newTotalSeconds = current.totalListeningSeconds + addSeconds
             val newTotalSongs = current.totalSongsPlayed + 1
 
-            // Update today's listening duration and check if it beats dailyRecordSeconds
             val todayEpoch = LocalDate.now().toEpochDay()
             val updatedDailyList = current.dailyHistory.toMutableList()
             val todayIdx = updatedDailyList.indexOfFirst { it.epochDay == todayEpoch }
@@ -350,9 +329,9 @@ object MusicJourneyManager {
                 updatedDailyList.add(0, entry)
                 addSeconds
             }
-            val newDailyRecord = maxOf(current.dailyRecordSeconds, newTodaySeconds)
+            val baseDailyRecord = maxOf(current.dailyRecordSeconds, newTodaySeconds)
+            val newDailyRecord = if (isDev) maxOf(baseDailyRecord, DEV_MAX_DAILY_RECORD_SECONDS) else baseDailyRecord
 
-            // Update current month's listening duration and check if it beats monthlyRecordSeconds
             val ym = YearMonth.now()
             val ymKey = String.format(Locale.US, "%04d-%02d", ym.year, ym.monthValue)
             val monthNamesId = arrayOf(
@@ -373,16 +352,15 @@ object MusicJourneyManager {
                 updatedMonthlyList.add(0, newEntry)
                 addSeconds
             }
-            val newMonthlyRecord = maxOf(current.monthlyRecordSeconds, newMonthSeconds)
+            val baseMonthlyRecord = maxOf(current.monthlyRecordSeconds, newMonthSeconds)
+            val newMonthlyRecord = if (isDev) maxOf(baseMonthlyRecord, DEV_MAX_MONTHLY_RECORD_SECONDS) else baseMonthlyRecord
 
-            // Update weekday pattern (Monday = 0 .. Sunday = 6)
             val dowIndex = (LocalDate.now().dayOfWeek.value - DayOfWeek.MONDAY.value).coerceIn(0, 6)
             val updatedWeekdays = current.weekdaySeconds.toMutableList()
             if (dowIndex in updatedWeekdays.indices) {
                 updatedWeekdays[dowIndex] = updatedWeekdays[dowIndex] + addSeconds
             }
 
-            // Update song play count in topSongs
             val updatedSongs = current.topSongs.toMutableList()
             val existingSongIdx = updatedSongs.indexOfFirst {
                 it.songId == songId || (it.title.equals(title, ignoreCase = true) && it.artist.equals(artist, ignoreCase = true))
@@ -408,7 +386,6 @@ object MusicJourneyManager {
             }
             updatedSongs.sortByDescending { it.playCount }
 
-            // Award XP: +10 XP per song played + 1 XP per minute listened
             val xpGain = 10 + (addSeconds / 60L).toInt().coerceAtLeast(1)
             val newXp = if (isDev) maxOf(current.xp + xpGain, DEV_MAX_XP) else (current.xp + xpGain)
             val newSpec = if (isDev) allLevels[DEV_MAX_LEVEL - 1] else resolveLevelSpec(newXp, null)
@@ -436,10 +413,6 @@ object MusicJourneyManager {
         }
     }
 
-    /**
-     * Manually set custom level for testing or user customization.
-     * Updates both level and threshold XP, and optionally triggers celebratory animation.
-     */
     fun setCustomLevel(context: Context, targetLevel: Int, triggerCelebration: Boolean = true) {
         val appContext = context.applicationContext
         scope.launch {
@@ -467,9 +440,6 @@ object MusicJourneyManager {
         }
     }
 
-    /**
-     * Increment level by 1 and immediately trigger the level-up celebratory animation.
-     */
     fun levelUpOne(context: Context) {
         val current = _state.value.levelSpec.level
         if (current < 10) {
@@ -479,9 +449,6 @@ object MusicJourneyManager {
         }
     }
 
-    /**
-     * Decrement level by 1 (no animation) so user can test leveling up again.
-     */
     fun levelDownOne(context: Context) {
         val current = _state.value.levelSpec.level
         if (current > 1) {
@@ -557,9 +524,6 @@ object MusicJourneyManager {
         return true
     }
 
-    /**
-     * Exports all statistics (MusicJourneyState + Streak + local Profile metadata) to a user-chosen file URI.
-     */
     suspend fun exportAllStatsToUri(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
         runCatching {
             val appContext = context.applicationContext
@@ -603,11 +567,6 @@ object MusicJourneyManager {
         }
     }
 
-    /**
-     * Restores all statistics (MusicJourneyState + Streak + local Profile metadata) from either:
-     * 1) A JSON statistics backup file (.json)
-     * 2) A full app backup ZIP archive (.backup / .zip)
-     */
     suspend fun importAllStatsFromUri(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
         runCatching {
             val appContext = context.applicationContext
@@ -619,7 +578,6 @@ object MusicJourneyManager {
                 val obj = JSONObject(rawText)
                 var restoredAny = false
 
-                // Case A: Full statistics bundle ("journey" + "streak" + "profile")
                 val journeyObj = obj.optJSONObject("journey")
                 if (journeyObj != null) {
                     restoredAny = restoreFromBackupJsonSync(appContext, journeyObj.toString()) || restoredAny
@@ -648,7 +606,6 @@ object MusicJourneyManager {
                     restoredAny = true
                 }
 
-                // Case B: Direct MusicJourneyState JSON
                 if (!restoredAny && obj.has("totalListeningSeconds")) {
                     restoredAny = restoreFromBackupJsonSync(appContext, rawText)
                     if (obj.has("currentStreak")) {
@@ -660,7 +617,6 @@ object MusicJourneyManager {
                     }
                 }
 
-                // Case C: Direct StreakState JSON
                 if (!restoredAny && obj.has("currentStreak")) {
                     restoredAny = StreakManager.restoreFromBackupJsonSync(
                         appContext,
@@ -672,7 +628,6 @@ object MusicJourneyManager {
                 return@withContext restoredAny
             }
 
-            // Otherwise check if it is a .backup / .zip archive
             var restoredFromZip = false
             rawBytes.inputStream().zipInputStream().use { zipIn ->
                 var entry = tryOrNull { zipIn.nextEntry }

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App name -->
-    <string name="app_name">Beatles</string>
-    <string name="app_name_tv">Beatles Tv</string>
+    <string name="app_name">VORTEX MUSIC</string>
+    <string name="app_name_tv">Vortex Music Tv</string>
     <string name="update_channel_desc">Notifikasi pembaruan aplikasi</string>
     <string name="update_channel_name">Pembaruan</string>
     <string name="new_releases_channel_desc">Notifikasi rilis baru dari artis yang diikuti</string>
@@ -374,7 +374,7 @@
     <string name="queue_all_songs">Semua lagu</string>
     <string name="queue_searched_songs">Lagu yang dicari</string>
     <!-- Notification name -->
-    <string name="music_player">Beatles</string>
+    <string name="music_player">Vortex Music</string>
     <string name="video_player">Pemutar Video</string>
     <string name="widget_music_player">Pemutar Musik</string>
     <string name="widget_song_title">Judul lagu</string>
@@ -398,6 +398,10 @@
     <string name="widget_music_player_desc">Kontrol musik Anda dengan tombol putar/jeda, lewati, dan suka</string>
     <string name="widget_compact_square_desc">Widget persegi kompak untuk kontrol pemutaran cepat</string>
     <string name="widget_compact_wide_desc">Widget ringkas yang menampilkan info dan kontrol lagu</string>
+    <string name="widget_liquid_glass">Liquid Glass Player</string>
+    <string name="widget_liquid_glass_desc">Widget pemutar musik 3D bening bergaya Liquid Glass dengan efek refraksi</string>
+    <string name="widget_liquid_glass_wide">Liquid Glass Pill</string>
+    <string name="widget_liquid_glass_wide_desc">Widget kapsul ringkas 3D bening bergaya Liquid Glass</string>
     <!-- Settings -->
     <string name="settings">Pengaturan</string>
     <string name="appearance">Tampilan</string>
@@ -603,7 +607,7 @@
     <string name="lyrics_provider_priority">Prioritas penyedia</string>
     <string name="lyrics_provider_priority_desc">Seret untuk menyusun ulang penyedia</string>
     <string name="confirm">Konfirmasi</string>
-    <string name="show_wrapped_card">Tampilkan kartu Ringkasan Musik</string>
+    <string name="show_wrapped_card">Tampilkan kartu yang Dibungkus</string>
     <!-- Player and audio -->
     <string name="player_and_audio">Pemutar dan audio</string>
     <string name="audio_offload_description">Hemat konsumsi baterai dengan memproses audio langsung pada chipset</string>
@@ -669,9 +673,9 @@
     <string name="enable_voice_commands">Aktifkan perintah suara</string>
     <string name="enable_voice_commands_desc">Aktifkan kontrol suara interaktif dengan hamparan animasi. Ucapkan perintah seperti \" Mainkan \", \" Berikutnya \", atau \" Cari lagu \".</string>
     <string name="enable_voice_wake_word">Kata bangun tanpa tangan</string>
-    <string name="enable_voice_wake_word_desc">Dengarkan terus \" Hei Beatles \" untuk mengaktifkan perintah suara tanpa menyentuh layar. Bekerja saat aplikasi terbuka.</string>
+    <string name="enable_voice_wake_word_desc">Dengarkan terus \" Hei Vortex \" untuk mengaktifkan perintah suara tanpa menyentuh layar. Bekerja saat aplikasi terbuka.</string>
     <string name="voice_wake_word">Kata bangun khusus</string>
-    <string name="voice_wake_word_desc">Atur kata bangun kustom Anda (default: Beatles)</string>
+    <string name="voice_wake_word_desc">Atur kata bangun kustom Anda (default: Vortex)</string>
     <!-- Voice feedback -->
     <string name="voice_feedback">Umpan balik suara</string>
     <string name="enable_voice_feedback">Aktifkan respons suara</string>
@@ -737,16 +741,16 @@
     <string name="column_label">Kolom %d</string>
     <!-- Discord -->
     <string name="discord_integration">Integrasi Discord</string>
-    <string name="discord_information">Beatles menggunakan pustaka KizzyRPC untuk mengatur status akun Discord Anda. Ini melibatkan penggunaan koneksi Discord Gateway, yang dapat dianggap sebagai pelanggaran terhadap tos Discord. Namun, tidak ada kasus yang diketahui dari akun pengguna yang ditangguhkan karena alasan ini. Gunakan dengan risiko Anda sendiri.\nBeatles hanya akan mengekstrak token Anda, dan semua yang lain disimpan secara lokal.</string>
+    <string name="discord_information">Vortex Music menggunakan pustaka KizzyRPC untuk mengatur status akun Discord Anda. Ini melibatkan penggunaan koneksi Discord Gateway, yang dapat dianggap sebagai pelanggaran terhadap tos Discord. Namun, tidak ada kasus yang diketahui dari akun pengguna yang ditangguhkan karena alasan ini. Gunakan dengan risiko Anda sendiri.\nVortex Music hanya akan mengekstrak token Anda, dan semua yang lain disimpan secara lokal.</string>
     <string name="dismiss">Abaikan</string>
     <string name="options">Pilihan</string>
     <string name="preview">Pratinjau</string>
     <string name="enable_discord_rpc">Aktifkan Kehadiran yang Kaya</string>
     <string name="discord_use_details">Gunakan bidang detail</string>
     <string name="discord_use_details_description">Tampilkan lagu saat ini dalam detail Discord</string>
-    <string name="listening_to_auramusic">Mendengarkan Beatles</string>
+    <string name="listening_to_auramusic">Mendengarkan Vortex Music</string>
     <string name="listen_on_youtube_music">Dengarkan di YouTube Music</string>
-    <string name="visit_auramusic">Kunjungi Beatles</string>
+    <string name="visit_auramusic">Kunjungi Vortex Music</string>
     <!-- Last.fm -->
     <string name="lastfm_integration">Integrasi Last.fm</string>
     <string name="username">Nama Pengguna</string>
@@ -855,7 +859,7 @@
     <string name="tap_to_recognize">Ketuk untuk mengenali</string>
     <string name="listening">Mendengarkan</string>
     <string name="processing">Memproses...</string>
-    <string name="play_on_app">Bermain di Beatles</string>
+    <string name="play_on_app">Bermain di Vortex Music</string>
     <string name="re_listen">Dengarkan lagi</string>
     <string name="no_match_found">Tak ditemukan kecocokan</string>
     <string name="try_again">Coba lagi</string>
@@ -885,41 +889,41 @@
     <string name="delete_profile_desc">Hapus profil ini?</string>
     <string name="delete_profile_confirmation">Hapus profil</string>
     <!-- Wrapped -->
-    <string name="wrapped_ready_title">Ringkasan %s</string>
-    <string name="wrapped_ready_subtitle">Jelajahi statistik lagu, artis, dan momen musik terbaikmu bulan ini</string>
-    <string name="open">Buka</string>
+    <string name="wrapped_ready_title">Wrapped %s Anda sudah siap!</string>
+    <string name="wrapped_ready_subtitle">Lihat bulan Anda dalam musik</string>
+    <string name="open">Terbuka</string>
     <string name="wrapped_year">%s</string>
-    <string name="wrapped_intro_title">Ringkasan Musik Anda</string>
-    <string name="wrapped_intro_subtitle">Temukan lagu, artis, album, dan kebiasaan mendengarkanmu</string>
-    <string name="wrapped_intro_button">Mulai Ringkasan %s</string>
-    <string name="wrapped_logo_content_description">Ringkasan Beatles</string>
-    <string name="wrapped_thank_you">Terima kasih sudah mendengarkan!</string>
-    <string name="wrapped_special_thanks">Musikmu adalah cerita terbaik bulan ini di Beatles.</string>
-    <string name="wrapped_close">Selesai &amp; Tutup</string>
-    <string name="wrapped_total_songs_title">Total Lagu Didengarkan</string>
-    <string name="wrapped_total_songs_subtitle">Kamu telah menikmati %d lagu berbeda bulan ini</string>
-    <string name="wrapped_total_artists_title">Total Artis</string>
-    <string name="wrapped_total_artists_subtitle">%d musisi &amp; artis menemani harimu</string>
-    <string name="wrapped_total_albums_title">Total Album</string>
-    <string name="wrapped_total_albums_subtitle">%d album telah kamu jelajahi</string>
-    <string name="wrapped_top_song_title">Lagu Teratas #1</string>
-    <string name="wrapped_top_song_listening_time">Total durasi diputar: %s</string>
-    <string name="wrapped_top_song_album_art_content_description">Sampul album untuk lagu teratas</string>
-    <string name="wrapped_top_artist_title">Artis Terfavorit #1</string>
-    <string name="wrapped_top_artist_listening_time">Total waktu mendengarkan: %s</string>
-    <string name="wrapped_top_artist_image_content_description">Foto artis teratas</string>
-    <string name="wrapped_top_5_songs_title">5 Lagu Teratas</string>
-    <string name="wrapped_top_5_artists_title">5 Artis Teratas</string>
-    <string name="wrapped_top_artist_albums_title">Koleksi Album Teratas</string>
+    <string name="wrapped_intro_title">Bulan musik Anda</string>
+    <string name="wrapped_intro_subtitle">Temukan lagu, artis, dan lainnya</string>
+    <string name="wrapped_intro_button">Lihat %s saya</string>
+    <string name="wrapped_logo_content_description">Vortex Music Dibungkus</string>
+    <string name="wrapped_thank_you">Terima kasih sudah mendengarkan.</string>
+    <string name="wrapped_special_thanks">Terima kasih khusus kepada Anda karena telah mendukung Vortex Music!</string>
+    <string name="wrapped_close">Tutup</string>
+    <string name="wrapped_total_songs_title">Total lagu yang didengarkan</string>
+    <string name="wrapped_total_songs_subtitle">%d lagu</string>
+    <string name="wrapped_total_artists_title">Total artis</string>
+    <string name="wrapped_total_artists_subtitle">%d seniman</string>
+    <string name="wrapped_total_albums_title">Total album</string>
+    <string name="wrapped_total_albums_subtitle">%d album</string>
+    <string name="wrapped_top_song_title">Lagu teratas</string>
+    <string name="wrapped_top_song_listening_time">Waktu mendengarkan: %s</string>
+    <string name="wrapped_top_song_album_art_content_description">Seni album untuk lagu top</string>
+    <string name="wrapped_top_artist_title">Artis papan atas</string>
+    <string name="wrapped_top_artist_listening_time">Waktu mendengarkan: %s</string>
+    <string name="wrapped_top_artist_image_content_description">Gambar artis</string>
+    <string name="wrapped_top_5_songs_title">5 lagu teratas</string>
+    <string name="wrapped_top_5_artists_title">5 artis teratas</string>
+    <string name="wrapped_top_artist_albums_title">Album Artis Teratas</string>
     <string name="wrapped_album_listening_time">Waktu mendengarkan %s</string>
     <string name="wrapped_album_listening_time_minutes">%d menit</string>
-    <string name="wrapped_playlist_ready">Daftar Putar Ringkasan Siap</string>
-    <string name="album_art_for">Sampul album untuk %s</string>
+    <string name="wrapped_playlist_ready">Daftar putar Anda sudah siap</string>
+    <string name="album_art_for">Seni album untuk %s</string>
     <string name="album_cover_desc">Sampul album</string>
-    <string name="wrapped_playlist_title">Daftar Putar Ringkasan %s</string>
-    <string name="wrapped_create_playlist">Simpan ke Pustaka</string>
-    <string name="wrapped_playlist_saved">Tersimpan di Pustaka</string>
-    <string name="wrapped_no_data">Belum ada data</string>
+    <string name="wrapped_playlist_title">Daftar putar Wrapped %s Anda</string>
+    <string name="wrapped_create_playlist">Buat daftar putar</string>
+    <string name="wrapped_playlist_saved">Daftar putar disimpan</string>
+    <string name="wrapped_no_data">Data tidak tersedia</string>
     <!-- AI Translation -->
     <string name="ai_lyrics_translation">Terjemahan lirik AI</string>
     <string name="ai_translating_lyrics">Menerjemahkan lirik…</string>
@@ -1003,7 +1007,7 @@
     <string name="cd_palette_item">Item palet warna</string>
     <string name="cd_back">Kembali</string>
     <!-- Crash reporter -->
-    <string name="crash_title">Beatles telah jatuh</string>
+    <string name="crash_title">Vortex Music telah jatuh</string>
     <string name="crash_description">Terjadi kesalahan tak diduga!</string>
     <string name="crash_no_log">Tidak ada log yang tersedia</string>
     <string name="crash_report_subject">Laporan tabrakan</string>

@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.settings
@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,7 +40,6 @@ import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.CheckForUpdatesKey
 import com.nanzbeatles.nanas.constants.UpdateArchitectureKey
 import com.nanzbeatles.nanas.constants.UpdateNotificationsEnabledKey
-import com.nanzbeatles.nanas.constants.UpdateVariantKey
 import com.nanzbeatles.nanas.ui.component.IconButton
 import com.nanzbeatles.nanas.ui.component.Material3SettingsGroup
 import com.nanzbeatles.nanas.ui.component.Material3SettingsItem
@@ -60,8 +58,6 @@ fun UpdaterScreen(
 ) {
     val (checkForUpdates, onCheckForUpdatesChange) = rememberPreference(CheckForUpdatesKey, true)
     val (updateNotifications, onUpdateNotificationsChange) = rememberPreference(UpdateNotificationsEnabledKey, true)
-    val defaultVariant = if (BuildConfig.CAST_AVAILABLE) "gms" else "foss"
-    val (updateVariant, onUpdateVariantChange) = rememberPreference(UpdateVariantKey, defaultVariant)
     val (updateArchitecture, onUpdateArchitectureChange) = rememberPreference(UpdateArchitectureKey, "automatic")
     
     var isChecking by remember { mutableStateOf(false) }
@@ -120,13 +116,7 @@ fun UpdaterScreen(
                         Text("Versi: ${BuildConfig.VERSION_NAME}")
                     },
                     description = {
-                        val arch = BuildConfig.ARCHITECTURE
-                        val variant = when {
-                            BuildConfig.CAST_AVAILABLE -> "GMS"
-                            arch != "universal" -> "Standalone"
-                            else -> "FOSS"
-                        }
-                        Text("$arch - $variant")
+                        Text(BuildConfig.ARCHITECTURE)
                     }
                 )
             )
@@ -168,37 +158,6 @@ fun UpdaterScreen(
                     )
                 }
             }
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // APK Variant Selection
-        Material3SettingsGroup(
-            title = "Varian APK",
-            items = listOf(
-                Material3SettingsItem(
-                    title = { Text("Beatles") },
-                    description = { Text("Versi standar tanpa Google Cast") },
-                    trailingContent = {
-                        androidx.compose.material3.RadioButton(
-                            selected = updateVariant == "foss",
-                            onClick = { onUpdateVariantChange("foss") }
-                        )
-                    },
-                    onClick = { onUpdateVariantChange("foss") }
-                ),
-                Material3SettingsItem(
-                    title = { Text("Beatles dengan Google Cast") },
-                    description = { Text("Termasuk dukungan Google Cast") },
-                    trailingContent = {
-                        androidx.compose.material3.RadioButton(
-                            selected = updateVariant == "gms",
-                            onClick = { onUpdateVariantChange("gms") }
-                        )
-                    },
-                    onClick = { onUpdateVariantChange("gms") }
-                )
-            )
         )
 
         Spacer(Modifier.height(16.dp))

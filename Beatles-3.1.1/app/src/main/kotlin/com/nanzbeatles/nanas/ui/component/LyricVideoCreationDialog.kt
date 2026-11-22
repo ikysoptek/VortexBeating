@@ -216,7 +216,7 @@ fun LyricVideoCreationDialog(
             width = 1280,
             height = 720,
             caseBitmap = caseBitmap,
-            brandText = "@BeatlesMusic",
+            brandText = "@VortexMusic",
             artistHandle = handle,
         )
     }

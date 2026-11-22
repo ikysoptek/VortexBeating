@@ -995,7 +995,7 @@ object LyricVideoShareUtils {
                 .url(targetUrl)
                 .header("Accept", "application/json")
                 .header("cid", "beatles-${System.currentTimeMillis()}")
-                .header("User-Agent", "Mozilla/5.0 (Android; BeatlesMusic)")
+                .header("User-Agent", "Mozilla/5.0 (Android; VortexMusic)")
                 .post(rawBody)
                 .build()
 
@@ -1027,7 +1027,7 @@ object LyricVideoShareUtils {
 
             val request = Request.Builder()
                 .url("https://tmpfiles.org/api/v1/upload")
-                .header("User-Agent", "Mozilla/5.0 (Android; BeatlesMusic)")
+                .header("User-Agent", "Mozilla/5.0 (Android; VortexMusic)")
                 .post(multipart)
                 .build()
 

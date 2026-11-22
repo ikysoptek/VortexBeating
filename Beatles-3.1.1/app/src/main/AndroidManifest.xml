@@ -51,10 +51,10 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/vortex_icon"
         android:label="@string/app_name"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/vortex_icon"
         android:supportsRtl="false"
         android:theme="@style/Theme.NanzBeatles"
         tools:targetApi="tiramisu">
@@ -157,19 +157,19 @@
             <!-- Share filter -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
-                
+
                 <category android:name="android.intent.category.DEFAULT" />
-                
+
                 <data android:mimeType="text/plain" />
             </intent-filter>
-            
+
             <!-- Deep link for shared songs: auramusic.site/play/{videoId} -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
-                
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                
+
                 <data android:scheme="https" />
                 <data android:host="www.auramusic.site" />
                 <data android:pathPrefix="/play/" />
@@ -185,7 +185,7 @@
                 <data android:scheme="auramusic" android:host="play" />
                 <data android:scheme="nanzbeatles" android:host="play" />
             </intent-filter>
-            
+
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
@@ -195,9 +195,9 @@
             android:name="${applicationId}.MainActivityAlias"
             android:enabled="true"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@drawable/vortex_icon"
             android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_round"
+            android:roundIcon="@drawable/vortex_icon"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -209,9 +209,9 @@
             android:name="${applicationId}.MainActivityStatic"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_static"
+            android:icon="@drawable/vortex_icon"
             android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_static_round"
+            android:roundIcon="@drawable/vortex_icon"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

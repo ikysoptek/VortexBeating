@@ -8,6 +8,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import com.nanzbeatles.nanas.R
+import com.nanzbeatles.nanas.constants.AccountEmailKey
+import com.nanzbeatles.nanas.constants.DeveloperDetector
 import com.nanzbeatles.nanas.constants.ProfileJourneyJsonV2Key
 import com.nanzbeatles.nanas.constants.ProfileLocalBioV2Key
 import com.nanzbeatles.nanas.constants.ProfileLocalHandleV2Key
@@ -210,6 +212,9 @@ data class MusicJourneyState(
 
 object MusicJourneyManager {
     const val JOURNEY_FILENAME = "profile_journey_data_v2.json"
+    private const val DEV_MAX_LEVEL = 10
+    private const val DEV_MAX_XP = 99_999
+    private const val DEV_MAX_STREAK = 999
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val initialized = AtomicBoolean(false)
@@ -281,6 +286,7 @@ object MusicJourneyManager {
     suspend fun loadState(context: Context): MusicJourneyState = withContext(Dispatchers.IO) {
         val appContext = context.applicationContext
         val prefs = appContext.dataStore.data.first()
+        val isDev = DeveloperDetector.isDeveloper(prefs[AccountEmailKey])
         val rawJson = prefs[ProfileJourneyJsonV2Key]
         val file = File(appContext.filesDir, JOURNEY_FILENAME)
 
@@ -293,8 +299,10 @@ object MusicJourneyManager {
         val streakState = StreakManager.state.value
         val base = parsed ?: MusicJourneyState()
         val synced = base.copy(
-            currentStreak = streakState.currentStreak,
-            longestStreak = maxOf(streakState.longestStreak, base.longestStreak),
+            currentStreak = if (isDev) maxOf(streakState.currentStreak, DEV_MAX_STREAK) else streakState.currentStreak,
+            longestStreak = if (isDev) maxOf(streakState.longestStreak, base.longestStreak, DEV_MAX_STREAK) else maxOf(streakState.longestStreak, base.longestStreak),
+            xp = if (isDev) maxOf(base.xp, DEV_MAX_XP) else base.xp,
+            level = if (isDev) DEV_MAX_LEVEL else base.level,
         )
         _state.value = synced
         persistState(appContext, synced)
@@ -320,6 +328,8 @@ object MusicJourneyManager {
                 initialized.set(true)
                 loadState(appContext)
             }
+            val prefs = appContext.dataStore.data.first()
+            val isDev = DeveloperDetector.isDeveloper(prefs[AccountEmailKey])
             val current = _state.value
             val addSeconds = (listenedMs / 1000L).coerceAtLeast(30L)
             val newTotalSeconds = current.totalListeningSeconds + addSeconds
@@ -400,15 +410,15 @@ object MusicJourneyManager {
 
             // Award XP: +10 XP per song played + 1 XP per minute listened
             val xpGain = 10 + (addSeconds / 60L).toInt().coerceAtLeast(1)
-            val newXp = current.xp + xpGain
-            val newSpec = resolveLevelSpec(newXp, null)
+            val newXp = if (isDev) maxOf(current.xp + xpGain, DEV_MAX_XP) else (current.xp + xpGain)
+            val newSpec = if (isDev) allLevels[DEV_MAX_LEVEL - 1] else resolveLevelSpec(newXp, null)
             val streakState = StreakManager.state.value
 
             val updated = current.copy(
                 totalListeningSeconds = newTotalSeconds,
                 totalSongsPlayed = newTotalSongs,
-                currentStreak = streakState.currentStreak,
-                longestStreak = maxOf(streakState.longestStreak, current.longestStreak),
+                currentStreak = if (isDev) maxOf(streakState.currentStreak, DEV_MAX_STREAK) else streakState.currentStreak,
+                longestStreak = if (isDev) maxOf(streakState.longestStreak, current.longestStreak, DEV_MAX_STREAK) else maxOf(streakState.longestStreak, current.longestStreak),
                 dailyRecordSeconds = newDailyRecord,
                 monthlyRecordSeconds = newMonthlyRecord,
                 xp = newXp,

@@ -1,10 +1,9 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.settings
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
@@ -70,7 +69,6 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.nanzbeatles.nanas.BuildConfig
 import com.nanzbeatles.nanas.LocalPlayerAwareWindowInsets
 import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.AccountChannelHandleKey
@@ -79,8 +77,6 @@ import com.nanzbeatles.nanas.constants.AccountNameKey
 import com.nanzbeatles.nanas.constants.DataSyncIdKey
 import com.nanzbeatles.nanas.constants.InnerTubeCookieKey
 import com.nanzbeatles.nanas.constants.NewReleaseNotificationsEnabledKey
-import com.nanzbeatles.nanas.constants.UpdateArchitectureKey
-import com.nanzbeatles.nanas.constants.UpdateVariantKey
 import com.nanzbeatles.nanas.constants.UseLoginForBrowse
 import com.nanzbeatles.nanas.constants.VisitorDataKey
 import com.nanzbeatles.nanas.constants.YtmSyncKey
@@ -91,7 +87,6 @@ import com.nanzbeatles.nanas.ui.component.Material3SettingsGroup
 import com.nanzbeatles.nanas.ui.component.Material3SettingsItem
 import com.nanzbeatles.nanas.ui.component.TextFieldDialog
 import com.nanzbeatles.nanas.ui.utils.backToMain
-import com.nanzbeatles.nanas.utils.Updater
 import com.nanzbeatles.nanas.utils.rememberPreference
 import com.nanzbeatles.nanas.viewmodels.AccountSettingsViewModel
 import com.nanzbeatles.nanas.viewmodels.HomeViewModel
@@ -119,9 +114,6 @@ fun SettingsScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
-    val defaultVariant = if (BuildConfig.CAST_AVAILABLE) "gms" else "foss"
-    val (updateVariant, _) = rememberPreference(UpdateVariantKey, defaultVariant)
-    val (updateArchitecture, _) = rememberPreference(UpdateArchitectureKey, "automatic")
     val isAndroid12OrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val (accountNamePref, onAccountNameChange) = rememberPreference(AccountNameKey, "")
@@ -131,8 +123,8 @@ fun SettingsScreen(
     val (visitorData, onVisitorDataChange) = rememberPreference(VisitorDataKey, "")
     val (dataSyncId, onDataSyncIdChange) = rememberPreference(DataSyncIdKey, "")
 
-    val isLoggedIn = remember(innerTubeCookie) {
-        "SAPISID" in parseCookieString(innerTubeCookie)
+    val isLoggedIn = remember(innerTubeCookie, accountEmail) {
+        accountEmail.isNotBlank() || "SAPISID" in parseCookieString(innerTubeCookie)
     }
     val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
     val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
@@ -156,11 +148,14 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = { Text(stringResource(R.string.action_logout)) },
-            text = { Text("Apakah Anda yakin ingin keluar dari akun YouTube Music?") },
+            text = { Text("Apakah Anda yakin ingin keluar dari akun Vortex Music?") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showLogoutDialog = false
+                        onAccountEmailChange("")
+                        onAccountNameChange("")
+                        onAccountChannelHandleChange("")
                         accountSettingsViewModel.logoutAndClearSyncedContent(context, onInnerTubeCookieChange)
                     }
                 ) {
@@ -297,7 +292,7 @@ fun SettingsScreen(
                         navController = navController,
                         context = context,
                         isLoggedIn = isLoggedIn,
-                        accountName = accountName,
+                        accountName = accountName.ifEmpty { accountNamePref },
                         accountImageUrl = accountImageUrl,
                         accountEmail = accountEmail,
                         accountChannelHandle = accountChannelHandle,
@@ -329,10 +324,7 @@ fun SettingsScreen(
                         navController = navController,
                         context = context,
                         uriHandler = uriHandler,
-                        isAndroid12OrLater = isAndroid12OrLater,
-                        latestVersionName = latestVersionName,
-                        updateVariant = updateVariant,
-                        updateArchitecture = updateArchitecture
+                        isAndroid12OrLater = isAndroid12OrLater
                     )
                 }
 
@@ -341,7 +333,7 @@ fun SettingsScreen(
                         navController = navController,
                         context = context,
                         isLoggedIn = isLoggedIn,
-                        accountName = accountName,
+                        accountName = accountName.ifEmpty { accountNamePref },
                         accountImageUrl = accountImageUrl,
                         accountEmail = accountEmail,
                         accountChannelHandle = accountChannelHandle,
@@ -373,10 +365,7 @@ fun SettingsScreen(
                         navController = navController,
                         context = context,
                         uriHandler = uriHandler,
-                        isAndroid12OrLater = isAndroid12OrLater,
-                        latestVersionName = latestVersionName,
-                        updateVariant = updateVariant,
-                        updateArchitecture = updateArchitecture
+                        isAndroid12OrLater = isAndroid12OrLater
                     )
                 }
             }
@@ -460,7 +449,7 @@ private fun GeneralSettingsContent(
                 val subtitle = when {
                     isLoggedIn && accountEmail.isNotEmpty() -> accountEmail
                     isLoggedIn && accountChannelHandle.isNotEmpty() -> accountChannelHandle
-                    isLoggedIn -> "Terhubung ke YouTube Music"
+                    isLoggedIn -> "Terhubung ke Vortex Music"
                     else -> "Masuk untuk sinkronisasi playlist & favorit"
                 }
                 Text(
@@ -504,7 +493,7 @@ private fun GeneralSettingsContent(
         )
     }
 
-    // Dynamic Island Quick Feature Card (Visible immediately on Settings opening)
+    // Dynamic Island Quick Feature Card
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -849,9 +838,6 @@ private fun SystemSettingsContent(
     context: android.content.Context,
     uriHandler: androidx.compose.ui.platform.UriHandler,
     isAndroid12OrLater: Boolean,
-    latestVersionName: String,
-    updateVariant: String,
-    updateArchitecture: String
 ) {
     Material3SettingsGroup(
         title = stringResource(R.string.settings_section_system),
@@ -889,40 +875,12 @@ private fun SystemSettingsContent(
                     onClick = { navController.navigate("settings/updater") }
                 )
             )
-            if (latestVersionName != BuildConfig.VERSION_NAME) {
-                val releaseInfo = Updater.getCachedLatestRelease()
-                val downloadUrl = releaseInfo?.let {
-                    Updater.getDownloadUrlForCurrentVariant(it, updateVariant, updateArchitecture)
-                }
-
-                if (downloadUrl != null) {
-                    add(
-                        Material3SettingsItem(
-                            icon = painterResource(R.drawable.update),
-                            title = {
-                                Text(
-                                    text = stringResource(R.string.new_version_available),
-                                )
-                            },
-                            description = {
-                                Text(
-                                    text = latestVersionName,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            showBadge = true,
-                            onClick = { uriHandler.openUri(downloadUrl) }
-                        )
-                    )
-                }
-            }
             add(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.whatsapp),
-                    title = { Text("Join Channels WhatsApp") },
-                    description = { Text("Gabung saluran WhatsApp resmi Beatles") },
-                    onClick = { uriHandler.openUri("https://whatsapp.com/channel/0029VbCsS2r2phHIV3O0nO1a") }
+                    title = { Text("WhatsApp Developer") },
+                    description = { Text("Hubungi Developer Vortex Music via WhatsApp") },
+                    onClick = { uriHandler.openUri("https://wa.me/6285835356933") } // Ganti 6281234567890 dengan nomor WA kamu
                 )
             )
         }

@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas
@@ -134,6 +134,7 @@ import coil3.toBitmap
 import com.nanzbeatles.innertube.YouTube
 import com.nanzbeatles.innertube.models.SongItem
 import com.nanzbeatles.innertube.models.WatchEndpoint
+import com.nanzbeatles.nanas.constants.AccountEmailKey
 import com.nanzbeatles.nanas.constants.AppBarHeight
 import com.nanzbeatles.nanas.constants.AppLanguageKey
 import com.nanzbeatles.nanas.constants.LastSeenVersionKey
@@ -183,7 +184,9 @@ import com.nanzbeatles.nanas.ui.component.rememberBottomSheetState
 import com.nanzbeatles.nanas.ui.component.shimmer.ShimmerTheme
 import com.nanzbeatles.nanas.ui.menu.YouTubeSongMenu
 import com.nanzbeatles.nanas.ui.player.BottomSheetPlayer
+import com.nanzbeatles.nanas.ui.screens.LoginScreen
 import com.nanzbeatles.nanas.ui.screens.Screens
+import com.nanzbeatles.nanas.ui.screens.VortexLoggedInKey
 import com.nanzbeatles.nanas.ui.screens.navigationBuilder
 import com.nanzbeatles.nanas.ui.screens.settings.DarkMode
 import com.nanzbeatles.nanas.ui.screens.settings.NavigationTab
@@ -211,7 +214,6 @@ import com.nanzbeatles.nanas.voice.VoiceCommandViewModel
 import com.nanzbeatles.nanas.streak.StreakManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.DisposableEffect
 import com.valentinilk.shimmer.LocalShimmerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -244,8 +246,6 @@ class MainActivity : ComponentActivity() {
                packageManager.hasSystemFeature("android.software.leanback")
     }
 
-
-
     @Inject
     lateinit var database: MusicDatabase
 
@@ -273,11 +273,9 @@ class MainActivity : ComponentActivity() {
                 try {
                     playerConnection = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
                     Timber.tag("MainActivity").d("PlayerConnection created successfully")
-                    // Connect Listen Together manager to player
                     listenTogetherManager.setPlayerConnection(playerConnection)
                 } catch (e: Exception) {
                     Timber.tag("MainActivity").e(e, "Failed to create PlayerConnection")
-                    // Retry after a delay of 500ms
                     lifecycleScope.launch {
                         delay(500)
                         try {
@@ -292,7 +290,6 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            // Disconnect Listen Together manager
             listenTogetherManager.setPlayerConnection(null)
             playerConnection?.dispose()
             playerConnection = null
@@ -302,16 +299,12 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         com.nanzbeatles.nanas.ui.component.DynamicIslandOverlayState.setAppInForeground(true)
-        // Request notification permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1000)
             }
         }
 
-        // On Android 12+, we can't start foreground services from background
-        // Use BIND_AUTO_CREATE which will create the service if needed
-        // The service will call startForeground() in onCreate() when bound
         bindService(
             Intent(this, MusicService::class.java),
             serviceConnection,
@@ -356,7 +349,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // For TV builds, use TV activity directly
         if (BuildConfig.FLAVOR.contains("tv")) {
             try {
                 val tvActivityClass = Class.forName("com.nanzbeatles.nanas.TvMainActivity")
@@ -372,10 +364,7 @@ class MainActivity : ComponentActivity() {
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
-        // Initialize Listen Together manager
         listenTogetherManager.initialize()
-
-        // Start hardware integration discovery
         hardwareIntegrationManager.start()
 
         val indonesianLocale = Locale("id", "ID")
@@ -438,19 +427,15 @@ class MainActivity : ComponentActivity() {
                     
                     Updater.checkForUpdate(forceRefresh = true).onSuccess { (releaseInfo, hasUpdate) ->
                         if (releaseInfo != null) {
-                            // Normalize version name - extract version from formats like "AuraMusic v1.0.4" or "v1.0.4"
                             val rawVersion = releaseInfo.versionName
                             val normalizedVersion = try {
-                                // Try to find version pattern (e.g., 1.0.4, 1.0.4.5)
                                 val versionRegex = Regex("(\\d+\\.\\d+(\\.\\d+)?)")
                                 versionRegex.find(rawVersion)?.groupValues?.get(1) ?: rawVersion
                             } catch (e: Exception) {
                                 rawVersion
                             }
-                            // Always show badge if there's a new version available
                             onLatestVersionNameChange(normalizedVersion)
                             
-                            // If there's a new version available, show notification
                             if (hasUpdate && notifEnabled) {
                                 val downloadUrl = Updater.getDownloadUrlForCurrentVariant(releaseInfo, preferredVariant, preferredArchitecture)
                                 if (downloadUrl != null) {
@@ -477,7 +462,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             
-                            // Update last seen version
                             runBlocking {
                                 dataStore.edit { 
                                     it[LastSeenVersionKey] = BuildConfig.VERSION_NAME
@@ -583,6 +567,10 @@ class MainActivity : ComponentActivity() {
             defaultValue = com.nanzbeatles.nanas.constants.AppVisualStyle.LIQUID_GLASS
         )
 
+        // Gerbang Wajib Login khusus Supabase
+        val initialVortexLogin = remember { dataStore.get(VortexLoggedInKey, false) }
+        val isVortexLoggedIn by rememberPreference(VortexLoggedInKey, defaultValue = initialVortexLogin)
+
         AuraMusicTheme(
             darkTheme = useDarkTheme,
             pureBlack = pureBlack,
@@ -592,6 +580,16 @@ class MainActivity : ComponentActivity() {
             fontBoldness = fontBoldness,
             visualStyle = appVisualStyle.name,
         ) {
+            if (!isVortexLoggedIn) {
+                val gateNavController = rememberNavController()
+                CompositionLocalProvider(
+                    LocalPlayerAwareWindowInsets provides WindowInsets.systemBars
+                ) {
+                    LoginScreen(navController = gateNavController)
+                }
+                return@AuraMusicTheme
+            }
+
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
@@ -679,7 +677,6 @@ class MainActivity : ComponentActivity() {
                     com.nanzbeatles.nanas.streak.MusicJourneyManager.ensureInitialized(this@MainActivity)
                 }
 
-                // Navigation items: Home (Beranda), Search (Cari), Library (Pustaka), Profile (Profil)
                 val navigationItems = remember {
                     listOf(Screens.Home, Screens.Search, Screens.Library, Screens.Profile)
                 }
@@ -727,7 +724,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Use derivedStateOf to avoid unnecessary recompositions
                 val currentRoute by remember {
                     derivedStateOf { navBackStackEntry?.destination?.route }
                 }
@@ -804,7 +800,6 @@ class MainActivity : ComponentActivity() {
                     },
                 )
 
-                // Navigation tracking
                 LaunchedEffect(navBackStackEntry) {
                     if (inSearchScreen) {
                         val searchQuery = withContext(Dispatchers.IO) {
@@ -827,7 +822,6 @@ class MainActivity : ComponentActivity() {
                         onQueryChange(TextFieldValue())
                     }
 
-                    // Reset scroll behavior for main navigation items
                     if (navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route }) {
                         if (navigationItems.fastAny { it.route == previousTab }) {
                             topAppBarScrollBehavior.state.resetHeightOffset()
@@ -836,7 +830,6 @@ class MainActivity : ComponentActivity() {
 
                     topAppBarScrollBehavior.state.resetHeightOffset()
 
-                    // Track previous tab for animations
                     navController.currentBackStackEntry?.destination?.route?.let {
                         setPreviousTab(it)
                     }
@@ -1040,7 +1033,6 @@ class MainActivity : ComponentActivity() {
                                                     )
                                                 }
                                             }
-                                            // Quick Monochrome Hitam/Putih & Theme Settings Button
                                             Box(
                                                 modifier = Modifier
                                                     .size(34.dp)
@@ -1165,7 +1157,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
 
                             if (!showRail && currentRoute != "wrapped") {
@@ -1216,7 +1207,6 @@ class MainActivity : ComponentActivity() {
                                         .fillMaxWidth()
                                         .align(Alignment.BottomCenter)
                                         .height(bottomInsetDp)
-                                        // Use graphicsLayer for background color changes
                                         .graphicsLayer {
                                             val progress = playerBottomSheetState.progress
                                             alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar)) 0f else 1f
@@ -1264,8 +1254,6 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
-                            // Smoothly animate the sub-slot finger offset so the screen viewport physically
-                            // glides with the user's finger inside the 3D Liquid Glass Navbar and settles with a spring
                             val rawFingerSubSlotOffset = if (navDragTransitionState.isDragging && shouldShowNavigationBar) {
                                 (navDragTransitionState.activeSlotIndex.toFloat() - navDragTransitionState.fractionalIndex)
                                     .coerceIn(-1f, 1f)
@@ -1308,7 +1296,6 @@ class MainActivity : ComponentActivity() {
                                     .graphicsLayer {
                                         val offsetFraction = animatedFingerSubSlotOffset
                                         if (kotlin.math.abs(offsetFraction) > 0.001f) {
-                                            // Screen follows finger direction smoothly before and after crossing slot boundaries
                                             translationX = offsetFraction * size.width * 0.14f
                                             val depthScale = 1f - kotlin.math.abs(offsetFraction) * 0.022f
                                             scaleX = depthScale
@@ -1316,7 +1303,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                             ) {
-                                // NavHost with directional spring transitions synchronized with the 3D Liquid Glass Navbar
                                 NavHost(
                                     navController = navController,
                                     startDestination = when (tabOpenedFromShortcut ?: defaultOpenTab) {
@@ -1498,7 +1484,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Global voice command overlay (Siri/Gemini-like)
                     VoiceCommandOverlay(
                         state = voiceUiState,
                         onDismiss = { voiceCommandViewModel.dismissOverlay() },
@@ -1510,7 +1495,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    // Global Spotify Dynamic Island overlay (opt-in, disabled by default)
                     com.nanzbeatles.nanas.ui.component.DynamicIslandOverlay(
                         isPlayerExpanded = playerBottomSheetState.isExpanded,
                         onExpandPlayer = { playerBottomSheetState.expandSoft() },
@@ -1526,7 +1510,6 @@ class MainActivity : ComponentActivity() {
     private fun handleDeepLinkIntent(intent: Intent?, navController: NavHostController) {
         if (intent == null) return
 
-        // Music alarm: fire playback of the user-selected songs.
         if (intent.action == com.nanzbeatles.nanas.alarm.AlarmReceiver.ACTION_OPEN_ALARM) {
             intent.action = null
             handleAlarmFire()
@@ -1639,7 +1622,6 @@ class MainActivity : ComponentActivity() {
             val mediaItems = ordered.map { it.toMediaItem() }
             if (mediaItems.isEmpty()) return@launch
             withContext(Dispatchers.Main) {
-                // Wait briefly for the service binding to complete.
                 var attempts = 0
                 while (playerConnection == null && attempts < 30) {
                     delay(100)

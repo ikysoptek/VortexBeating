@@ -1278,7 +1278,7 @@ fun AppearanceSettings(
                         title = { Text(stringResource(R.string.enable_dynamic_icon)) },
                         description = {
                             Text(
-                                "Mengubah ikon aplikasi Beatles di layar utama (Home Screen) agar mengikuti warna tema sistem / Material You secara otomatis."
+                                "Mengubah ikon aplikasi Vortex Music di layar utama (Home Screen) agar mengikuti warna tema sistem / Material You secara otomatis."
                             )
                         },
                         trailingContent = {

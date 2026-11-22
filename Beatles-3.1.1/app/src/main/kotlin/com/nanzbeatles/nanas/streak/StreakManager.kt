@@ -8,6 +8,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import androidx.datastore.preferences.core.edit
+import com.nanzbeatles.nanas.constants.AccountEmailKey
+import com.nanzbeatles.nanas.constants.DeveloperDetector
 import com.nanzbeatles.nanas.constants.StreakCountKey
 import com.nanzbeatles.nanas.constants.StreakFreezeResetKey
 import com.nanzbeatles.nanas.constants.StreakHistoryEpochDaysKey
@@ -253,6 +255,7 @@ data class StreakState(
 
 object StreakManager {
     const val STREAK_FILENAME = "streak_data.json"
+    private const val DEV_MAX_STREAK = 999
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val initialized = AtomicBoolean(false)
@@ -289,6 +292,7 @@ object StreakManager {
     suspend fun loadAndEvaluate(context: Context): StreakState = withContext(Dispatchers.IO) {
         val appContext = context.applicationContext
         val prefs = appContext.dataStore.data.first()
+        val isDev = DeveloperDetector.isDeveloper(prefs[AccountEmailKey])
         val initializedZeroV2 = prefs[StreakInitializedZeroV2Key] ?: false
         var count = prefs[StreakCountKey] ?: 0
         var lastDay = prefs[StreakLastListenEpochDayKey] ?: -1L
@@ -326,7 +330,16 @@ object StreakManager {
             count = 0
         }
 
-        longest = maxOf(longest, count)
+        if (isDev) {
+            count = maxOf(count, DEV_MAX_STREAK)
+            longest = maxOf(longest, DEV_MAX_STREAK)
+            lastDay = today
+            freezeReset = true
+            history = (history + today).toSortedSet()
+        } else {
+            longest = maxOf(longest, count)
+        }
+
         val newState = StreakState(
             currentStreak = count,
             previousStreak = count,
@@ -344,8 +357,30 @@ object StreakManager {
 
     suspend fun evaluateMidnightReset(context: Context): StreakState = withContext(Dispatchers.IO) {
         val appContext = context.applicationContext
+        val prefs = appContext.dataStore.data.first()
+        val isDev = DeveloperDetector.isDeveloper(prefs[AccountEmailKey])
         val current = _state.value
         val today = LocalDate.now().toEpochDay()
+
+        if (isDev) {
+            val devCount = maxOf(current.currentStreak, DEV_MAX_STREAK)
+            val devLongest = maxOf(current.longestStreak, DEV_MAX_STREAK)
+            val updated = current.copy(
+                previousStreak = current.currentStreak,
+                currentStreak = devCount,
+                lastListenEpochDay = today,
+                longestStreak = devLongest,
+                historyEpochDays = (current.historyEpochDays + today).toSortedSet(),
+                todayEpochDay = today,
+                freezeReset = true,
+            )
+            if (updated != current) {
+                _state.value = updated
+                persistState(appContext, updated)
+            }
+            return@withContext updated
+        }
+
         val shouldReset = !current.freezeReset &&
             current.lastListenEpochDay >= 0L &&
             today - current.lastListenEpochDay > 1L &&
@@ -381,16 +416,22 @@ object StreakManager {
                 evaluateMidnightReset(appContext)
             }
 
+            val prefs = appContext.dataStore.data.first()
+            val isDev = DeveloperDetector.isDeveloper(prefs[AccountEmailKey])
             val today = LocalDate.now().toEpochDay()
-            if (loaded.lastListenEpochDay == today && loaded.currentStreak > 0) {
+            if (loaded.lastListenEpochDay == today && loaded.currentStreak > 0 && !isDev) {
+                return@launch
+            }
+            if (isDev && loaded.currentStreak >= DEV_MAX_STREAK && loaded.lastListenEpochDay == today) {
                 return@launch
             }
 
-            val newStreak = when {
+            val baseStreak = when {
                 loaded.lastListenEpochDay == today - 1L && loaded.currentStreak > 0 -> loaded.currentStreak + 1
                 loaded.freezeReset && loaded.currentStreak > 0 -> loaded.currentStreak + 1
                 else -> 1
             }
+            val newStreak = if (isDev) maxOf(baseStreak, DEV_MAX_STREAK) else baseStreak
             val newLongest = maxOf(loaded.longestStreak, newStreak)
             val newHistory = (loaded.historyEpochDays + today)
                 .filter { today - it <= 365L }
@@ -403,6 +444,7 @@ object StreakManager {
                 longestStreak = newLongest,
                 historyEpochDays = newHistory,
                 todayEpochDay = today,
+                freezeReset = if (isDev) true else loaded.freezeReset,
                 animationTriggerToken = loaded.animationTriggerToken + 1,
             )
             _state.value = updated

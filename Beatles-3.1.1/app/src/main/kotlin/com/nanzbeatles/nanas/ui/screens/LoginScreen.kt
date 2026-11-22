@@ -8,13 +8,14 @@ import android.annotation.SuppressLint
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,14 +28,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,19 +43,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.navigation.NavController
 import com.nanzbeatles.nanas.LocalPlayerAwareWindowInsets
@@ -79,22 +86,84 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
-// Kunci khusus status login Supabase (tidak bentrok dengan data YouTube lama)
 val VortexLoggedInKey = booleanPreferencesKey("vortexSupabaseLoggedIn")
 
 private const val SUPABASE_URL = "https://aglwqdrunfsepsrvfjma.supabase.co"
 private const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFnbHdxZHJ1bmZzZXBzcnZmam1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUzMTAzNjQsImV4cCI6MjExMDg4NjM2NH0.auoxFHN4mm7gS44Lgk1sr1LeaHSefb_z7s987DaJ2Yg"
-private const val DEV_WHATSAPP_NUMBER = "6285835356933" // Ganti dengan nomor WA kamu
+private const val DEV_WHATSAPP_NUMBER = "6285835356933"
 
-// Palet Warna Tema Vortex Music
-private val VortexBgTop = Color(0xFF0A1026)
-private val VortexBgMid = Color(0xFF131D42)
-private val VortexBgBottom = Color(0xFF090D1C)
-private val VortexCyan = Color(0xFF00E5FF)
-private val VortexBlue = Color(0xFF3A7BD5)
-private val VortexPurple = Color(0xFF8E54E9)
-private val VortexCardBg = Color(0xFF151E3C).copy(alpha = 0.85f)
-private val WhatsAppGreen = Color(0xFF25D366)
+// Palet Warna Notebook Neo-Brutalist
+private val PaperBg = Color(0xFFF3F6FB)
+private val PaperLine = Color(0xFFDCE4F0)
+private val PaperMarginLine = Color(0xFFE7A9BE)
+private val CardYellow = Color(0xFFFFF2AD)
+private val NeoNavy = Color(0xFF1D2948)
+private val NeoTealStart = Color(0xFF1A7C8C)
+private val NeoTealEnd = Color(0xFF2896A6)
+private val NeoBadgeTeal = Color(0xFF1E8494)
+private val NeoHighlighter = Color(0xFFA7E3D8)
+private val NeoMintBtn = Color(0xFFD8F5E5)
+private val NeoMutedText = Color(0xFF5A6782)
+
+private fun Modifier.neoBox(
+    fillColor: Color,
+    cornerRadius: Dp = 12.dp,
+    borderWidth: Dp = 2.dp,
+    shadowOffset: Dp = 3.dp,
+): Modifier = this.drawBehind {
+    val radius = cornerRadius.toPx()
+    val offset = shadowOffset.toPx()
+    val stroke = borderWidth.toPx()
+    drawRoundRect(
+        color = NeoNavy,
+        topLeft = Offset(offset, offset),
+        size = size,
+        cornerRadius = CornerRadius(radius, radius)
+    )
+    drawRoundRect(
+        color = fillColor,
+        topLeft = Offset.Zero,
+        size = size,
+        cornerRadius = CornerRadius(radius, radius)
+    )
+    drawRoundRect(
+        color = NeoNavy,
+        topLeft = Offset.Zero,
+        size = size,
+        cornerRadius = CornerRadius(radius, radius),
+        style = Stroke(width = stroke)
+    )
+}
+
+private fun Modifier.neoGradientBox(
+    brush: Brush,
+    cornerRadius: Dp = 12.dp,
+    borderWidth: Dp = 2.dp,
+    shadowOffset: Dp = 4.dp,
+): Modifier = this.drawBehind {
+    val radius = cornerRadius.toPx()
+    val offset = shadowOffset.toPx()
+    val stroke = borderWidth.toPx()
+    drawRoundRect(
+        color = NeoNavy,
+        topLeft = Offset(offset, offset),
+        size = size,
+        cornerRadius = CornerRadius(radius, radius)
+    )
+    drawRoundRect(
+        brush = brush,
+        topLeft = Offset.Zero,
+        size = size,
+        cornerRadius = CornerRadius(radius, radius)
+    )
+    drawRoundRect(
+        color = NeoNavy,
+        topLeft = Offset.Zero,
+        size = size,
+        cornerRadius = CornerRadius(radius, radius),
+        style = Stroke(width = stroke)
+    )
+}
 
 @SuppressLint("HardwareIds")
 @Composable
@@ -117,16 +186,10 @@ fun LoginScreen(
     var nameInput by remember { mutableStateOf("") }
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var isError by remember { mutableStateOf(false) }
-
-    fun openWhatsAppDeveloper() {
-        val emailText = emailInput.trim().ifBlank { "(belum diisi)" }
-        val message = "Halo Developer Vortex Music, saya sudah mendaftar dengan email: $emailText. Mohon ACC akun saya."
-        val encodedMsg = URLEncoder.encode(message, "UTF-8")
-        uriHandler.openUri("https://wa.me/$DEV_WHATSAPP_NUMBER?text=$encodedMsg")
-    }
 
     fun handleSubmit() {
         val cleanEmail = emailInput.trim().lowercase()
@@ -176,64 +239,53 @@ fun LoginScreen(
         }
     }
 
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = VortexCyan,
-        unfocusedBorderColor = Color.White.copy(alpha = 0.22f),
-        focusedLabelColor = VortexCyan,
-        unfocusedLabelColor = Color(0xFFAAB4D4),
-        cursorColor = VortexCyan,
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedContainerColor = Color(0xFF0E152E).copy(alpha = 0.7f),
-        unfocusedContainerColor = Color(0xFF0E152E).copy(alpha = 0.5f),
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(VortexBgTop, VortexBgMid, VortexBgBottom)
-                )
-            )
+            .background(PaperBg)
     ) {
-        // Efek Cahaya Ambient Cyan (Kiri Atas)
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .align(Alignment.TopStart)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(VortexCyan.copy(alpha = 0.22f), Color.Transparent),
-                        center = Offset(100f, 100f),
-                        radius = 450f
-                    )
+        // Latar Kertas Buku Bergaris + Garis Margin Kiri
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val lineSpacing = 28.dp.toPx()
+            var y = lineSpacing
+            while (y < size.height) {
+                drawLine(
+                    color = PaperLine,
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1.dp.toPx()
                 )
-        )
-
-        // Efek Cahaya Ambient Ungu (Kanan Bawah)
-        Box(
-            modifier = Modifier
-                .size(320.dp)
-                .align(Alignment.BottomEnd)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(VortexPurple.copy(alpha = 0.25f), Color.Transparent),
-                        center = Offset(600f, 600f),
-                        radius = 500f
-                    )
-                )
-        )
+                y += lineSpacing
+            }
+            val marginX = 24.dp.toPx()
+            drawLine(
+                color = PaperMarginLine,
+                start = Offset(marginX, 0f),
+                end = Offset(marginX, size.height),
+                strokeWidth = 1.5.dp.toPx()
+            )
+            // Aksen kelopak pastel kecil
+            drawCircle(
+                color = Color(0xFFF6C2D0),
+                radius = 7.dp.toPx(),
+                center = Offset(size.width * 0.88f, size.height * 0.09f)
+            )
+            drawCircle(
+                color = Color(0xFFFCE28B),
+                radius = 8.dp.toPx(),
+                center = Offset(marginX, size.height * 0.84f)
+            )
+        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(LocalPlayerAwareWindowInsets.current)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // Tombol Kembali (hanya tampil jika dibuka dari Pengaturan)
             if (navController.previousBackStackEntry != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -246,274 +298,399 @@ fun LoginScreen(
                         Icon(
                             painter = painterResource(R.drawable.arrow_back),
                             contentDescription = null,
-                            tint = Color.White
+                            tint = NeoNavy
                         )
                     }
                 }
-            } else {
-                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Logo Vortex Music dengan Ring Gradasi
+            // Kartu Kuning + Logo Bulat di Atasnya
             Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(listOf(VortexCyan, VortexBlue, VortexPurple))
-                    )
-                    .padding(3.dp)
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.TopCenter
             ) {
-                Image(
-                    painter = painterResource(R.drawable.vortex_icon),
-                    contentDescription = "Vortex Music Logo",
-                    contentScale = ContentScale.Crop,
+                // Logo Bulat Overlapping di Atas Kartu
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Vortex Music",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Streaming Musik Tanpa Batas",
-                fontSize = 13.sp,
-                color = VortexCyan.copy(alpha = 0.9f),
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Kartu Kaca Utama (Glassmorphism Card)
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(VortexCardBg)
-                    .border(
-                        width = 1.dp,
-                        brush = Brush.linearGradient(
-                            listOf(
-                                VortexCyan.copy(alpha = 0.45f),
-                                VortexPurple.copy(alpha = 0.35f)
+                        .zIndex(2f)
+                        .size(86.dp)
+                        .drawBehind {
+                            val offset = 3.dp.toPx()
+                            drawCircle(
+                                color = NeoNavy,
+                                radius = size.minDimension / 2f,
+                                center = Offset(center.x + offset, center.y + offset)
                             )
-                        ),
-                        shape = RoundedCornerShape(24.dp)
+                            drawCircle(
+                                color = Color.White,
+                                radius = size.minDimension / 2f,
+                                center = center
+                            )
+                            drawCircle(
+                                color = NeoNavy,
+                                radius = size.minDimension / 2f,
+                                center = center,
+                                style = Stroke(width = 2.5.dp.toPx())
+                            )
+                        }
+                        .padding(5.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.vortex_icon),
+                        contentDescription = "Vortex Music",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
                     )
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Sakelar Tab Masuk / Daftar
-                Row(
+                }
+
+                // Kartu Kuning Utama
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF0B1126))
-                        .padding(4.dp)
+                        .padding(top = 43.dp)
+                        .drawBehind {
+                            val radius = 16.dp.toPx()
+                            drawRoundRect(
+                                color = Color(0x221D2948),
+                                topLeft = Offset(0f, 5.dp.toPx()),
+                                size = size,
+                                cornerRadius = CornerRadius(radius, radius)
+                            )
+                            drawRoundRect(
+                                color = CardYellow,
+                                topLeft = Offset.Zero,
+                                size = size,
+                                cornerRadius = CornerRadius(radius, radius)
+                            )
+                        }
+                        .padding(top = 56.dp, start = 20.dp, end = 20.dp, bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val activeBrush = Brush.horizontalGradient(listOf(VortexBlue, VortexPurple))
+                    // Badge Garis Putus-Putus
                     Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (!isRegisterMode) activeBrush
-                                else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                            )
-                            .clickable {
-                                isRegisterMode = false
-                                statusMessage = null
+                            .drawBehind {
+                                val radius = 8.dp.toPx()
+                                drawRoundRect(
+                                    color = Color(0xFFFAF6C8),
+                                    cornerRadius = CornerRadius(radius, radius)
+                                )
+                                drawRoundRect(
+                                    color = NeoNavy.copy(alpha = 0.65f),
+                                    cornerRadius = CornerRadius(radius, radius),
+                                    style = Stroke(
+                                        width = 1.2.dp.toPx(),
+                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 7f), 0f)
+                                    )
+                                )
                             }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
                     ) {
                         Text(
-                            text = "Masuk",
-                            color = if (!isRegisterMode) Color.White else Color(0xFF8E9BBF),
+                            text = if (isRegisterMode) "REGISTER · DAFTAR" else "LOGIN · MASUK",
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            letterSpacing = 1.2.sp,
+                            color = NeoNavy
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (isRegisterMode) activeBrush
-                                else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                            )
-                            .clickable {
-                                isRegisterMode = true
-                                statusMessage = null
-                            }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Daftar",
-                            color = if (isRegisterMode) Color.White else Color(0xFF8E9BBF),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = if (isRegisterMode) {
-                        "Daftar akun baru lalu minta ACC Developer via WhatsApp. 1 akun hanya untuk 1 perangkat."
-                    } else {
-                        "Masuk menggunakan akun Vortex Music yang sudah di-ACC."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFB8C4E6),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                AnimatedVisibility(visible = isRegisterMode) {
-                    Column {
-                        OutlinedTextField(
-                            value = nameInput,
-                            onValueChange = { nameInput = it },
-                            label = { Text("Nama Pengguna") },
-                            singleLine = true,
-                            colors = textFieldColors,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                }
-
-                OutlinedTextField(
-                    value = emailInput,
-                    onValueChange = { emailInput = it },
-                    label = { Text("Email") },
-                    singleLine = true,
-                    colors = textFieldColors,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = passwordInput,
-                    onValueChange = { passwordInput = it },
-                    label = { Text("Kata Sandi") },
-                    singleLine = true,
-                    colors = textFieldColors,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Kotak Pesan Error / Sukses
-                statusMessage?.let { msg ->
                     Spacer(modifier = Modifier.height(14.dp))
+
+                    // Judul VORTEX MUSIC dengan Highlighter
+                    Box(
+                        modifier = Modifier.width(IntrinsicSize.Max),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(10.dp)
+                                .padding(bottom = 2.dp)
+                                .background(NeoHighlighter, RoundedCornerShape(4.dp))
+                        )
+                        Text(
+                            text = "VORTEX MUSIC",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp,
+                            color = NeoNavy
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "STREAMING MUSIK · VORTEX",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.5.sp,
+                        color = NeoMutedText
+                    )
+
+                    Spacer(modifier = Modifier.height(22.dp))
+
+                    // Field Nama (Mode Daftar)
+                    AnimatedVisibility(visible = isRegisterMode) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            NumberedFieldLabel(number = "1", label = "NAMA PENGGUNA")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            NeoTextField(
+                                value = nameInput,
+                                onValueChange = { nameInput = it },
+                                placeholder = "Nama kamu",
+                                keyboardType = KeyboardType.Text
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+
+                    // Field Email
+                    NumberedFieldLabel(
+                        number = if (isRegisterMode) "2" else "1",
+                        label = "EMAIL"
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    NeoTextField(
+                        value = emailInput,
+                        onValueChange = { emailInput = it },
+                        placeholder = "nama@email.com",
+                        keyboardType = KeyboardType.Email
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Field Password
+                    NumberedFieldLabel(
+                        number = if (isRegisterMode) "3" else "2",
+                        label = "PASSWORD"
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    NeoTextField(
+                        value = passwordInput,
+                        onValueChange = { passwordInput = it },
+                        placeholder = "••••••••",
+                        keyboardType = KeyboardType.Password,
+                        isPassword = true,
+                        showPassword = showPassword,
+                        onTogglePassword = { showPassword = !showPassword }
+                    )
+
+                    // Kotak Pesan Status / Error
+                    statusMessage?.let { msg ->
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isError) Color(0xFFFFE4E6) else Color(0xFFDCFCE7)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = msg,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isError) Color(0xFFBE123C) else Color(0xFF166534),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(22.dp))
+
+                    // Tombol Utama MASUK → / DAFTAR →
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(50.dp)
+                            .neoGradientBox(
+                                brush = Brush.horizontalGradient(listOf(NeoTealStart, NeoTealEnd))
+                            )
                             .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                if (isError) Color(0xFFFF4D6D).copy(alpha = 0.16f)
-                                else VortexCyan.copy(alpha = 0.16f)
+                            .clickable(enabled = !isLoading) { handleSubmit() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.5.dp,
+                                color = Color.White
                             )
-                            .border(
-                                width = 1.dp,
-                                color = if (isError) Color(0xFFFF4D6D).copy(alpha = 0.5f)
-                                else VortexCyan.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(12.dp)
+                        } else {
+                            Text(
+                                text = if (isRegisterMode) "DAFTAR →" else "MASUK →",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                letterSpacing = 1.sp
                             )
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Tombol Sekunder Putih (Ganti Mode Masuk / Daftar)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                            .neoBox(fillColor = Color.White)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                isRegisterMode = !isRegisterMode
+                                statusMessage = null
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = msg,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isError) Color(0xFFFF8FA3) else VortexCyan,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Tombol Utama Gradasi Cyan - Biru - Ungu
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(VortexCyan, VortexBlue, VortexPurple)
-                            )
-                        )
-                        .clickable(enabled = !isLoading) { handleSubmit() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            strokeWidth = 2.5.dp,
-                            color = Color.White
-                        )
-                    } else {
-                        Text(
-                            text = if (isRegisterMode) "Daftar Sekarang" else "Masuk Sekarang",
-                            color = Color.White,
+                            text = if (isRegisterMode) "Sudah punya akun? Masuk" else "Belum punya akun? Daftar",
+                            color = NeoNavy,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
+                            fontSize = 14.sp
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            // Tombol WhatsApp Developer Berwarna Hijau
-            OutlinedButton(
-                onClick = { openWhatsAppDeveloper() },
-                shape = RoundedCornerShape(14.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    width = 1.dp,
-                    color = WhatsAppGreen.copy(alpha = 0.7f)
-                ),
+            // Footer Kontak Developer
+            Text(
+                text = "Butuh bantuan? Hubungi developer",
+                fontSize = 13.sp,
+                color = NeoMutedText,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
+                    .neoBox(fillColor = NeoMintBtn, cornerRadius = 12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { uriHandler.openUri("https://wa.me/$DEV_WHATSAPP_NUMBER") }
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.whatsapp),
-                    contentDescription = null,
-                    tint = WhatsAppGreen,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Hubungi Developer (Minta ACC)",
-                    color = WhatsAppGreen,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.whatsapp),
+                        contentDescription = null,
+                        tint = NeoNavy,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "+$DEV_WHATSAPP_NUMBER",
+                        color = NeoNavy,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun NumberedFieldLabel(
+    number: String,
+    label: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(NeoBadgeTeal),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = number,
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = label,
+            color = NeoNavy,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.8.sp
+        )
+    }
+}
+
+@Composable
+private fun NeoTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    keyboardType: KeyboardType,
+    isPassword: Boolean = false,
+    showPassword: Boolean = false,
+    onTogglePassword: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .neoBox(fillColor = Color.White, cornerRadius = 12.dp, borderWidth = 2.dp, shadowOffset = 3.dp)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            if (value.isEmpty()) {
+                Text(
+                    text = placeholder,
+                    color = Color(0xFF94A3B8),
+                    fontSize = 14.sp
+                )
+            }
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = NeoNavy,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                cursorBrush = SolidColor(NeoTealStart),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                visualTransformation = if (isPassword && !showPassword) {
+                    PasswordVisualTransformation()
+                } else {
+                    VisualTransformation.None
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        if (isPassword && onTogglePassword != null) {
+            Text(
+                text = if (showPassword) "Tutup" else "Lihat",
+                color = NeoTealStart,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable { onTogglePassword() }
+                    .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
+            )
         }
     }
 }
@@ -560,9 +737,9 @@ private suspend fun supabaseRegister(
         val code = conn.responseCode
         if (code in 200..299) {
             if (isDev) {
-                true to "Akun Developer terdaftar & otomatis di-ACC! Silakan masuk."
+                true to "Akun Developer berhasil didaftarkan. Silakan masuk."
             } else {
-                true to "Pendaftaran berhasil! Klik tombol WhatsApp Developer di bawah untuk minta ACC."
+                true to "Pendaftaran berhasil! Tunggu persetujuan Developer untuk masuk."
             }
         } else {
             val err = conn.errorStream?.bufferedReader()?.readText().orEmpty()
@@ -612,7 +789,7 @@ private suspend fun supabaseLogin(
         if (!isApproved && !isDev) {
             return@withContext SupabaseLoginResult(
                 false,
-                "Akun Anda belum di-ACC. Silakan klik tombol WhatsApp Developer di bawah."
+                "Akun Anda belum disetujui. Silakan hubungi Developer."
             )
         }
 
@@ -622,7 +799,7 @@ private suspend fun supabaseLogin(
             } else if (savedDeviceId != currentDeviceId) {
                 return@withContext SupabaseLoginResult(
                     false,
-                    "Akses ditolak! Akun ini sudah terikat di perangkat lain (1 akun hanya untuk 1 perangkat)."
+                    "Akses ditolak! Akun ini sudah terikat di perangkat lain."
                 )
             }
         }

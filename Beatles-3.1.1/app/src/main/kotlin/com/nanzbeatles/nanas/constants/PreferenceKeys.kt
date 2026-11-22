@@ -873,3 +873,11 @@ val CountryCodeToName =
         "YE" to "Yemen",
         "ZW" to "Zimbabwe",
     )
+
+object DeveloperDetector {
+    const val DEV_EMAIL = "ikyvortex12@gmail.com"
+
+    fun isDeveloper(email: String?): Boolean {
+        return email?.trim()?.equals(DEV_EMAIL, ignoreCase = true) == true
+    }
+}

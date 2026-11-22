@@ -121,7 +121,7 @@ object LyricVideoEncoder {
                     width = VIDEO_WIDTH,
                     height = VIDEO_HEIGHT,
                     caseBitmap = config.caseBitmap,
-                    brandText = "@BeatlesMusic",
+                    brandText = "@VortexMusic",
                     artistHandle = artistHandle,
                     cardStyle = config.cardStyle,
                     effectStyle = config.effectStyle,

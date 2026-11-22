@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.listentogether
@@ -19,10 +19,10 @@ object ListenTogetherServers {
     private const val ServersJson = """
         [
           {
-            "name": "NanzBeatles Server",
+            "name": "Server Utama",
             "url": "wss://api.auramusic.site/ws",
             "location": "Ohio (US East)",
-            "operator": "chila254"
+            "operator": "Vortex"
           }
         ]
     """

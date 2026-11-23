@@ -176,8 +176,9 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/widget_liquid_glass_btn_circle"
-                android:padding="9dp"
-                android:src="@drawable/ic_widget_music_logo"
+                android:padding="4dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/vortex_icon"
                 android:contentDescription="Buka Aplikasi" />
         </LinearLayout>
 

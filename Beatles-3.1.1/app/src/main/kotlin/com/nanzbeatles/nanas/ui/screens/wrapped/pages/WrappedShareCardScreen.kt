@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.wrapped.pages
@@ -181,7 +181,7 @@ private fun generateShareCardBitmap(context: Context, state: WrappedState): Bitm
         textAlign = Paint.Align.CENTER
         isAntiAlias = true
     }
-    canvas.drawText("NanzBeatles", width / 2f, 310f, subtitlePaint)
+    canvas.drawText("Vortex Music", width / 2f, 310f, subtitlePaint)
 
     val statValuePaint = Paint().apply {
         color = android.graphics.Color.WHITE
@@ -249,13 +249,13 @@ private fun generateShareCardBitmap(context: Context, state: WrappedState): Bitm
         textAlign = Paint.Align.CENTER
         isAntiAlias = true
     }
-    canvas.drawText("Dibuat dengan Beatles", width / 2f, height - 100f, footerPaint)
+    canvas.drawText("Dibuat dengan Vortex Music", width / 2f, height - 100f, footerPaint)
 
     return bitmap
 }
 
 private fun saveAndShareBitmap(context: Context, bitmap: Bitmap) {
-    val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "Beatles_Wrapped_${System.currentTimeMillis()}.png")
+    val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "VortexMusic_Wrapped_${System.currentTimeMillis()}.png")
     FileOutputStream(file).use { out ->
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
     }
@@ -270,7 +270,7 @@ private fun saveAndShareBitmap(context: Context, bitmap: Bitmap) {
         type = "image/png"
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        putExtra(Intent.EXTRA_TEXT, "Lihat Ringkasan ${WrappedConstants.displayMonthYear} saya di Beatles!")
+        putExtra(Intent.EXTRA_TEXT, "Lihat Ringkasan ${WrappedConstants.displayMonthYear} saya di Vortex Music!")
     }
     context.startActivity(Intent.createChooser(shareIntent, "Bagikan Ringkasan Anda"))
 }

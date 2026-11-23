@@ -6,8 +6,8 @@
         </shape>
     </item>
     <item
-        android:width="72dp"
-        android:height="72dp"
+        android:width="96dp"
+        android:height="96dp"
         android:gravity="center"
-        android:drawable="@drawable/ic_widget_music_logo" />
+        android:drawable="@drawable/vortex_icon" />
 </layer-list>

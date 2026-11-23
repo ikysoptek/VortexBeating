@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.component
@@ -428,7 +428,7 @@ fun ProfileShareCanvasDialog(
                                                 context = context,
                                                 file = motionPhotoFile,
                                                 mimeType = "image/jpeg",
-                                                displayName = "Beatles_LivePhoto_${System.currentTimeMillis()}.jpg"
+                                                displayName = "VortexMusic_LivePhoto_${System.currentTimeMillis()}.jpg"
                                             )
                                             Toast.makeText(
                                                 context,
@@ -471,7 +471,7 @@ fun ProfileShareCanvasDialog(
                             onClick = {
                                 val formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
                                 savePngLauncher.launch(
-                                    "Beatles_Profile_Stats_${LocalDateTime.now().format(formatter)}.png"
+                                    "VortexMusic_Profile_Stats_${LocalDateTime.now().format(formatter)}.png"
                                 )
                             },
                             enabled = renderedBitmap != null && !isLiveRendering,
@@ -517,7 +517,7 @@ object ProfileShareCanvasRenderer {
     ) = withContext(Dispatchers.IO) {
         runCatching {
             val shareDir = File(context.cacheDir, "shared_profile_canvas").apply { mkdirs() }
-            val outFile = File(shareDir, "Beatles_Statistik_${System.currentTimeMillis()}.png")
+            val outFile = File(shareDir, "VortexMusic_Statistik_${System.currentTimeMillis()}.png")
             FileOutputStream(outFile).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                 out.flush()

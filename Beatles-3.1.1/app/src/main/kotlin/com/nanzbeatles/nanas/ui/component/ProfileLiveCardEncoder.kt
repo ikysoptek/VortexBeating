@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.component
@@ -34,7 +34,7 @@ import java.util.Locale
 import kotlin.coroutines.coroutineContext
 
 /**
- * High-performance on-device encoder for Beatles Live Profile Cards.
+ * High-performance on-device encoder for Vortex Music Live Profile Cards.
  * Encodes a 720x1360 30fps H.264 video loop of the user's music journey stats,
  * and packages it into either a standalone social video story (MP4) or
  * a Google Camera-compliant Motion Photo (.jpg).
@@ -62,7 +62,7 @@ object ProfileLiveCardEncoder {
         onProgress: (Float) -> Unit,
     ): File? = withContext(Dispatchers.Default) {
         val cacheDir = File(context.cacheDir, "live_profile_cards").apply { mkdirs() }
-        val outputFile = File(cacheDir, "Beatles_LiveCard_${System.currentTimeMillis()}.mp4")
+        val outputFile = File(cacheDir, "VortexMusic_LiveCard_${System.currentTimeMillis()}.mp4")
         val muxSession = Mp4ContainerWriter.Mp4MuxSession(
             outputFile = outputFile,
             videoWidth = VIDEO_WIDTH,
@@ -219,7 +219,7 @@ object ProfileLiveCardEncoder {
     ): File? = withContext(Dispatchers.IO) {
         runCatching {
             val cacheDir = File(context.cacheDir, "motion_photos").apply { mkdirs() }
-            val outputFile = File(cacheDir, "Beatles_MotionPhoto_${System.currentTimeMillis()}.jpg")
+            val outputFile = File(cacheDir, "VortexMusic_MotionPhoto_${System.currentTimeMillis()}.jpg")
 
             val jpegBytes = ByteArrayOutputStream().use { baos ->
                 coverBitmap.compress(Bitmap.CompressFormat.JPEG, 92, baos)
@@ -309,7 +309,7 @@ object ProfileLiveCardEncoder {
             val caption = buildString {
                 appendLine("🎵 Foto Live Statistik Musik — ${data.displayName} (${data.displayHandle})")
                 appendLine("🏆 Level ${levelSpec.level}: ${levelSpec.title}")
-                append("🔥 Streak: ${data.streakState.currentStreak} Hari • 🎧 Total: ${fmtInt(data.journeyState.totalHours)} Jam • Diputar di Beatles")
+                append("🔥 Streak: ${data.streakState.currentStreak} Hari • 🎧 Total: ${fmtInt(data.journeyState.totalHours)} Jam • Diputar di Vortex Music")
             }
 
             val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -340,7 +340,7 @@ object ProfileLiveCardEncoder {
         runCatching {
             val isVideo = mimeType.startsWith("video/")
             val targetUri = if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            val targetDir = if (isVideo) Environment.DIRECTORY_MOVIES + "/Beatles" else Environment.DIRECTORY_PICTURES + "/Beatles"
+            val targetDir = if (isVideo) Environment.DIRECTORY_MOVIES + "/VortexMusic" else Environment.DIRECTORY_PICTURES + "/VortexMusic"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val values = ContentValues().apply {
@@ -364,7 +364,7 @@ object ProfileLiveCardEncoder {
                 val publicDir = Environment.getExternalStoragePublicDirectory(
                     if (isVideo) Environment.DIRECTORY_MOVIES else Environment.DIRECTORY_PICTURES
                 )
-                val outFolder = File(publicDir, "Beatles").apply { mkdirs() }
+                val outFolder = File(publicDir, "VortexMusic").apply { mkdirs() }
                 val targetFile = File(outFolder, displayName)
                 file.copyTo(targetFile, overwrite = true)
                 val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE).apply {
@@ -387,7 +387,7 @@ object ProfileLiveCardEncoder {
 
         val yRowStride = yPlane.rowStride
         val uRowStride = uPlane.rowStride
-        val vRowStride = vPlane.rowStride
+        val vRowStride = uPlane.rowStride
         val uPixelStride = uPlane.pixelStride
         val vPixelStride = vPlane.pixelStride
 

@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.component
@@ -145,7 +145,7 @@ fun LyricVideoCreationDialog(
 
     val songDurationSec = mediaMetadata.duration.takeIf { it > 0 } ?: 180
     val artistNames = remember(mediaMetadata.artists) {
-        mediaMetadata.artists.joinToString { it.name }.ifBlank { "Beatles" }
+        mediaMetadata.artists.joinToString { it.name }.ifBlank { "Vortex Music" }
     }
 
     val currentSongEntity by (playerConnection?.currentSong ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState(initial = null)
@@ -532,7 +532,7 @@ fun LyricVideoCreationDialog(
                                             isSavedToGallery = true
                                             Toast.makeText(
                                                 context,
-                                                "Tersimpan di Galeri (Movies/Beatles)",
+                                                "Tersimpan di Galeri (Movies/VortexMusic)",
                                                 Toast.LENGTH_LONG
                                             ).show()
                                         } else {
@@ -2161,14 +2161,14 @@ private fun WaveSettingsWithDummyPreviewCard(
                         }
                         native.drawCircle(caseCx, caseCy, discR * 0.32f, hubPaint)
 
-                        // Mini @BeatlesMusic above dummy case
+                        // Mini @VortexMusic above dummy case
                         val miniTagPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                             color = android.graphics.Color.WHITE
                             textSize = h * 0.085f
                             textAlign = android.graphics.Paint.Align.CENTER
                             typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
                         }
-                        native.drawText("@BeatlesMusic", caseCx, dummyCaseRect.top - 4f, miniTagPaint)
+                        native.drawText("@VortexMusic", caseCx, dummyCaseRect.top - 4f, miniTagPaint)
 
                         // Mini bass bars below dummy case
                         val miniBarPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {

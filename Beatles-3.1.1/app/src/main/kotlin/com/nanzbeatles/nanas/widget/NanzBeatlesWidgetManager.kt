@@ -225,8 +225,8 @@ class NanzBeatlesWidgetManager @Inject constructor(
         }
         views.setImageViewBitmap(R.id.widget_glass_album_art, artBitmap)
 
-        // Bright white solid circular Play/Pause button with dark contrast icon like reference
-        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_dark else R.drawable.ic_widget_play_dark
+        // Bright white solid circular Play/Pause button with pure black icon
+        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_black else R.drawable.ic_widget_play_black
         views.setImageViewResource(R.id.widget_glass_play_pause, playPauseIcon)
 
         val likeIcon = if (isLiked) R.drawable.ic_widget_heart_nav else R.drawable.ic_widget_heart_outline_nav
@@ -274,7 +274,7 @@ class NanzBeatlesWidgetManager @Inject constructor(
         )
         views.setImageViewBitmap(R.id.widget_glass_wide_album_art, discBitmap)
 
-        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_dark else R.drawable.ic_widget_play_dark
+        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_black else R.drawable.ic_widget_play_black
         views.setImageViewResource(R.id.widget_glass_wide_play_pause, playPauseIcon)
 
         val likeIcon = if (isLiked) R.drawable.ic_widget_heart_nav else R.drawable.ic_widget_heart_outline_nav
@@ -314,7 +314,7 @@ class NanzBeatlesWidgetManager @Inject constructor(
         )
         views.setImageViewBitmap(R.id.widget_glass_square_album_art, discBitmap)
 
-        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_dark else R.drawable.ic_widget_play_dark
+        val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_black else R.drawable.ic_widget_play_black
         views.setImageViewResource(R.id.widget_glass_square_play_pause, playPauseIcon)
 
         views.setOnClickPendingIntent(R.id.widget_glass_square_album_art, getOpenAppIntent())

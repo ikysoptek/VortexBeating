@@ -1,3 +1,7 @@
+/**
+ * Vortex Music Project (C) 2026
+ */
+
 package com.nanzbeatles.nanas.ui.screens.wrapped.pages
 
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -40,10 +45,12 @@ fun ConclusionPage(onClose: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_notification_icon),
+                painter = painterResource(id = R.drawable.vortex_icon),
                 contentDescription = stringResource(R.string.wrapped_logo_content_description),
-                modifier = Modifier.size(96.dp),
-                tint = Color.White
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape),
+                tint = Color.Unspecified
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(

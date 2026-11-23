@@ -28,7 +28,6 @@ import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
 import com.nanzbeatles.nanas.constants.AudioQuality
-import com.nanzbeatles.nanas.constants.AudioQualityKey
 import com.nanzbeatles.nanas.constants.AudioStyleMode
 import com.nanzbeatles.nanas.constants.AudioStyleModeKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
@@ -48,7 +47,6 @@ import androidx.media3.common.audio.AudioProcessor
 import com.nanzbeatles.nanas.utils.ShareUtils
 import com.nanzbeatles.nanas.utils.YTPlayerUtils
 import com.nanzbeatles.nanas.utils.dataStore
-import com.nanzbeatles.nanas.utils.enumPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -76,9 +74,6 @@ object LyricVideoShareUtils {
     private const val TAG = "LyricVideoShareUtils"
     private val clipMutex = Mutex()
 
-    /**
-     * Checks if the given local file is a valid, readable AAC audio file that MediaExtractor and MediaMuxer can handle.
-     */
     fun isValidAudioFile(file: File): Boolean {
         if (!file.exists() || file.length() < 4 * 1024L) return false
         val extractor = MediaExtractor()
@@ -147,11 +142,9 @@ object LyricVideoShareUtils {
 
             if (startUs > 0L) {
                 extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-                while (extractor.sampleTime in 0 until startUs) {
-                    if (extractor.sampleTime >= startUs - 12_000L) {
-                        break
-                    }
-                    extractor.advance()
+                // Discard audio frames prior to startUs so audio and lyrics start at the exact same timestamp
+                while (extractor.sampleTime in 0L until startUs) {
+                    if (!extractor.advance()) break
                 }
             }
 
@@ -171,7 +164,7 @@ object LyricVideoShareUtils {
                 }
 
                 if (firstSampleTimeUs == -1L) {
-                    firstSampleTimeUs = sampleTime
+                    firstSampleTimeUs = maxOf(startUs, sampleTime)
                 }
                 val relativePtsUs = (sampleTime - firstSampleTimeUs).coerceAtLeast(0L)
                 if (relativePtsUs > targetDurationUs) break
@@ -194,7 +187,6 @@ object LyricVideoShareUtils {
                 extractor.advance()
             }
 
-            // Require at least 10 valid audio packets and reasonable duration
             val minRequiredDurationUs = minOf(targetDurationUs / 2L, 1_500_000L)
             if (packets.size < 10 || lastPtsUs < minRequiredDurationUs) {
                 return false
@@ -213,11 +205,6 @@ object LyricVideoShareUtils {
         }
     }
 
-    /**
-     * Transcodes any audio format (Opus, Vorbis, WebM, MP3, FLAC, AAC) to standard MP4 AAC
-     * using MediaCodec decoder and encoder, optionally applying [AudioStyleMode]
-     * (Speed Up or Slowed + Reverb) via [ReverbAudioProcessor].
-     */
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun transcodeAudioToAac(
         sourceFile: File,
@@ -283,18 +270,16 @@ object LyricVideoShareUtils {
                 inputFormat.getLong(MediaFormat.KEY_DURATION)
             } else 0L
 
-            var startUs = if (inputDurationUs in 1L..(startTimeMs * 1000L)) {
+            val startUs = if (inputDurationUs in 1L..(startTimeMs * 1000L)) {
                 0L
             } else {
                 startTimeMs * 1000L
             }
             val targetDurationUs = durationMs * 1000L
-            var endUs = startUs + targetDurationUs
+            val endUs = startUs + targetDurationUs
 
             if (startUs > 0L) {
                 extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-                // If seeking failed or jumped to EOF (common on concatenated/VBR MP3 without Xing TOC),
-                // fall back to reading from 0L so we still reach the requested timestamp.
                 if (extractor.sampleTime < 0L) {
                     extractor.seekTo(0L, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
                 }
@@ -327,7 +312,6 @@ object LyricVideoShareUtils {
                     return false
                 }
 
-                // 1. Feed extractor into decoder
                 if (!extractorDone) {
                     val inIdx = decoder.dequeueInputBuffer(timeoutUs)
                     if (inIdx >= 0) {
@@ -340,7 +324,6 @@ object LyricVideoShareUtils {
                                 decoder.queueInputBuffer(inIdx, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                                 extractorDone = true
                             } else {
-                                // Always pass 0 for flags (extractor.sampleFlags uses MediaExtractor constants, not MediaCodec)
                                 decoder.queueInputBuffer(inIdx, 0, sampleSize, maxOf(0L, sampleTime), 0)
                                 extractor.advance()
                             }
@@ -349,7 +332,6 @@ object LyricVideoShareUtils {
                     }
                 }
 
-                // 2. Drain decoder -> optional ReverbAudioProcessor -> chunked into AAC encoder
                 val currentPending = pendingPcmBuffer
                 if ((currentPending == null || !currentPending.hasRemaining()) && !decoderDone) {
                     val decOutIdx = decoder.dequeueOutputBuffer(decoderBufferInfo, timeoutUs)
@@ -358,17 +340,20 @@ object LyricVideoShareUtils {
                         val decBuf = decoder.getOutputBuffer(decOutIdx)
                         val isEos = (decoderBufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0
 
-                        if (decBuf != null && decoderBufferInfo.size > 0 && decoderBufferInfo.presentationTimeUs >= startUs) {
-                            decBuf.position(decoderBufferInfo.offset)
-                            decBuf.limit(decoderBufferInfo.offset + decoderBufferInfo.size)
-                            if (reverbProcessor != null) {
-                                reverbProcessor.queueInput(decBuf)
-                                pendingPcmBuffer = reverbProcessor.getOutput()
-                            } else {
-                                val copy = ByteBuffer.allocateDirect(decoderBufferInfo.size)
-                                copy.put(decBuf)
-                                copy.flip()
-                                pendingPcmBuffer = copy
+                        if (decBuf != null && decoderBufferInfo.size > 0) {
+                            val ptsUs = decoderBufferInfo.presentationTimeUs
+                            if (ptsUs >= startUs && ptsUs <= endUs + 50_000L) {
+                                decBuf.position(decoderBufferInfo.offset)
+                                decBuf.limit(decoderBufferInfo.offset + decoderBufferInfo.size)
+                                if (reverbProcessor != null) {
+                                    reverbProcessor.queueInput(decBuf)
+                                    pendingPcmBuffer = reverbProcessor.getOutput()
+                                } else {
+                                    val copy = ByteBuffer.allocateDirect(decoderBufferInfo.size)
+                                    copy.put(decBuf)
+                                    copy.flip()
+                                    pendingPcmBuffer = copy
+                                }
                             }
                         }
 
@@ -418,7 +403,6 @@ object LyricVideoShareUtils {
                     }
                 }
 
-                // 3. Drain encoder into memory packet list
                 val encOutIdx = encoder.dequeueOutputBuffer(encoderBufferInfo, timeoutUs)
                 if (encOutIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     lastActivityNs = System.nanoTime()
@@ -490,7 +474,6 @@ object LyricVideoShareUtils {
         startTimeMs: Long,
         durationMs: Long
     ): Boolean {
-        // 1. Try direct remux if audio is already AAC (fastest)
         val extractor = MediaExtractor()
         val directOk = try {
             extractor.setDataSource(sourceFile.absolutePath)
@@ -506,7 +489,6 @@ object LyricVideoShareUtils {
             return true
         }
 
-        // 2. Transcode to standard AAC via MediaCodec (supports Opus, WebM, MP3, etc.)
         Timber.tag(TAG).d("Falling back to MediaCodec transcode to AAC")
         return transcodeAudioToAac(sourceFile, targetFile, startTimeMs, durationMs)
     }
@@ -531,10 +513,6 @@ object LyricVideoShareUtils {
         }
     }
 
-    /**
-     * Resolves strictly the selected audio range (startTimeMs to startTimeMs + durationMs)
-     * and applies [audioStyleMode] (Normal, Speed Up, or Slowed + Reverb) if active.
-     */
     suspend fun resolveAudioClip(
         context: Context,
         mediaId: String,
@@ -553,7 +531,7 @@ object LyricVideoShareUtils {
 
             val styledClipFile = File(
                 audioDir,
-                "clip_${mediaId}_${startTimeMs}_${durationMs}_${audioStyleMode.name}.m4a"
+                "clip_v2_${mediaId}_${startTimeMs}_${durationMs}_${audioStyleMode.name}.m4a"
             )
             if (styledClipFile.exists() && isValidAudioFile(styledClipFile)) {
                 Timber.tag(TAG).d("Reusing existing valid styled audio clip: ${styledClipFile.absolutePath}")
@@ -563,7 +541,7 @@ object LyricVideoShareUtils {
             val rawClipFile = if (audioStyleMode == AudioStyleMode.NORMAL) {
                 styledClipFile
             } else {
-                File(audioDir, "clip_${mediaId}_${startTimeMs}_${sourceDurationMs}_RAW.m4a")
+                File(audioDir, "clip_v2_${mediaId}_${startTimeMs}_${sourceDurationMs}_RAW.m4a")
             }
 
             if (!rawClipFile.exists() || !isValidAudioFile(rawClipFile)) {
@@ -571,7 +549,6 @@ object LyricVideoShareUtils {
 
                 var rawExtracted = false
 
-                // 0. Check FallbackAudioResolver local disk cache first (complete file already downloaded)
                 FallbackAudioResolver.getCachedStreamFile(mediaId)?.let { fallbackFile ->
                     onProgress?.invoke("Menyiapkan audio dari cache...", 0.10f)
                     if (extractClipFromFile(fallbackFile, rawClipFile, startTimeMs, sourceDurationMs) &&
@@ -582,7 +559,6 @@ object LyricVideoShareUtils {
                     }
                 }
 
-                // 1. Check playerCache and downloadCache (offline / in-memory cache)
                 val activeCaches = listOfNotNull(downloadCache, playerCache)
                 for (cache in activeCaches) {
                     if (rawExtracted) break
@@ -607,7 +583,6 @@ object LyricVideoShareUtils {
                 }
 
                 if (!rawExtracted) {
-                    // 2. Stream online directly according to selected duration
                     val connectivityManager = context.getSystemService<ConnectivityManager>()
                         ?: error("ConnectivityManager tidak tersedia")
 
@@ -619,7 +594,6 @@ object LyricVideoShareUtils {
                         preferMp4Audio = true
                     ).getOrThrow()
 
-                    // 3. Extract clip directly from stream without downloading full audio
                     val durSec = sourceDurationMs / 1000L
                     onProgress?.invoke("Mengunduh audio segmen ($durSec detik)...", 0.12f)
                     val streamSuccess = try {
@@ -637,7 +611,6 @@ object LyricVideoShareUtils {
                     }
 
                     if (!streamSuccess || !isValidAudioFile(rawClipFile)) {
-                        // 4. Fallback: Download temp audio with generous timeout and streaming buffer
                         onProgress?.invoke("Mengunduh audio...", 0.14f)
                         val client = OkHttpClient.Builder()
                             .connectTimeout(30, TimeUnit.SECONDS)
@@ -709,7 +682,7 @@ object LyricVideoShareUtils {
                 .createDataSource()
 
             val dataSpec = DataSpec.Builder().setKey(key).build()
-            val totalBytes = dataSource.open(dataSpec)
+            dataSource.open(dataSpec)
 
             FileOutputStream(destFile).use { output ->
                 val buffer = ByteArray(32 * 1024)
@@ -727,9 +700,6 @@ object LyricVideoShareUtils {
         }
     }
 
-    /**
-     * Loads cover art bitmap via Coil.
-     */
     suspend fun loadCoverBitmap(context: Context, thumbnailUrl: String?): Bitmap? = withContext(Dispatchers.IO) {
         if (thumbnailUrl.isNullOrBlank()) return@withContext null
         try {
@@ -748,10 +718,6 @@ object LyricVideoShareUtils {
         }
     }
 
-    /**
-     * Generates a complete lyric video file, automatically applying the active [AudioStyleMode]
-     * (Normal, Speed Up, or Slowed + Reverb).
-     */
     suspend fun generateLyricVideo(
         context: Context,
         mediaMetadata: MediaMetadata,
@@ -866,9 +832,6 @@ object LyricVideoShareUtils {
         }
     }
 
-    /**
-     * Shares the rendered lyric video MP4 file to a selected platform or system chooser.
-     */
     fun shareLyricVideo(
         context: Context,
         videoFile: File,
@@ -901,16 +864,12 @@ object LyricVideoShareUtils {
                 context.startActivity(intent)
             }
         } catch (e: Exception) {
-            // Fallback to generic chooser if specific app isn't installed
             if (platform != ShareUtils.SharePlatform.GENERIC) {
                 shareLyricVideo(context, videoFile, songTitle, songArtist, ShareUtils.SharePlatform.GENERIC)
             }
         }
     }
 
-    /**
-     * Saves the generated lyric video MP4 directly to the device Gallery (Movies/VortexMusic).
-     */
     fun saveVideoToGallery(
         context: Context,
         videoFile: File,
@@ -966,10 +925,6 @@ object LyricVideoShareUtils {
         }
     }
 
-    /**
-     * Uploads the generated lyric video MP4 to filebin.net (Primary #1 provider) with automatic fallbacks
-     * (tmpfiles.org, litterbox.catbox.moe, and uguu.se) and returns the public temporary share URL.
-     */
     suspend fun uploadVideoToTempFiles(videoFile: File): Result<String> = withContext(Dispatchers.IO) {
         if (!videoFile.exists() || videoFile.length() == 0L) {
             return@withContext Result.failure(IllegalArgumentException("Berkas video tidak ditemukan"))
@@ -983,7 +938,6 @@ object LyricVideoShareUtils {
             .followSslRedirects(true)
             .build()
 
-        // 1. Primary (#1 Provider): filebin.net API (POST https://filebin.net/{bin}/{filename})
         val compactUploadName = "vortexmusic_${System.currentTimeMillis() % 1_000_000L}.mp4"
         try {
             val randomSuffix = java.util.UUID.randomUUID().toString().replace("-", "").take(8).lowercase()
@@ -1018,7 +972,6 @@ object LyricVideoShareUtils {
         val mediaType = "video/mp4".toMediaType()
         val fileBody = videoFile.asRequestBody(mediaType)
 
-        // 2. Fallback 1: tmpfiles.org API
         try {
             val multipart = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -1046,7 +999,6 @@ object LyricVideoShareUtils {
             Timber.tag(TAG).w(e, "tmpfiles.org upload failed, trying litterbox fallback")
         }
 
-        // 3. Fallback 2: litterbox.catbox.moe (24h temp file host)
         try {
             val multipart = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -1071,7 +1023,6 @@ object LyricVideoShareUtils {
             Timber.tag(TAG).w(e, "litterbox upload failed, trying uguu.se fallback")
         }
 
-        // 4. Fallback 3: uguu.se temp file host
         try {
             val multipart = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)

@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.wrapped.pages
@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -92,10 +93,12 @@ fun WrappedIntro(onNext: () -> Unit) {
                     }
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_notification_icon),
+                    painter = painterResource(id = R.drawable.vortex_icon),
                     contentDescription = stringResource(R.string.wrapped_logo_content_description),
-                    modifier = Modifier.size(84.dp),
-                    tint = Color.White
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(CircleShape),
+                    tint = Color.Unspecified
                 )
             }
             Spacer(modifier = Modifier.height(14.dp))
@@ -117,21 +120,21 @@ fun WrappedIntro(onNext: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Beatles",
-                fontFamily = bbh_bartle,
-                fontSize = 64.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                lineHeight = 60.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Ringkasan ${WrappedConstants.displayMonthYear}",
+                text = "Vortex Music",
                 fontFamily = bbh_bartle,
                 fontSize = 48.sp,
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 lineHeight = 52.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Ringkasan ${WrappedConstants.displayMonthYear}",
+                fontFamily = bbh_bartle,
+                fontSize = 40.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                lineHeight = 46.sp
             )
             Spacer(modifier = Modifier.height(18.dp))
             Row(

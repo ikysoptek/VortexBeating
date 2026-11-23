@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@android:color/transparent">
 
-    <!-- Single-layer ultra-clear 3D Liquid Glass lens backdrop -->
+    <!-- Vivid Album-Synced Liquid Glass Backdrop -->
     <ImageView
         android:id="@+id/widget_glass_backdrop"
         android:layout_width="match_parent"
@@ -14,18 +14,18 @@
         android:src="@drawable/widget_liquid_glass_bg"
         android:contentDescription="@null" />
 
-    <!-- Main interior padding container -->
+    <!-- Main Interior Container -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center_vertical"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
 
-        <!-- Top Row: Floating Glass Album Art + Song Info + Liquid Glass Badge -->
+        <!-- Top Row: Larger Framed Album Art + Bold Song Info -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -33,10 +33,9 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- Framed Album Artwork -->
             <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
                 android:background="@drawable/widget_liquid_glass_album_frame"
                 android:padding="3dp">
 
@@ -49,12 +48,11 @@
                     android:contentDescription="@string/widget_album_art" />
             </FrameLayout>
 
-            <!-- Song Title, Artist & Progress Bar -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="14dp"
                 android:orientation="vertical">
 
                 <LinearLayout
@@ -72,27 +70,27 @@
                         android:maxLines="1"
                         android:text="@string/no_song_playing"
                         android:textColor="#FFFFFF"
-                        android:textSize="16sp"
+                        android:textSize="17.5sp"
                         android:textStyle="bold"
-                        android:shadowColor="#B3000000"
+                        android:shadowColor="#CC000000"
                         android:shadowDy="1"
-                        android:shadowRadius="6" />
+                        android:shadowRadius="7" />
 
                     <TextView
                         android:id="@+id/widget_glass_badge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
+                        android:layout_marginStart="8dp"
                         android:background="@drawable/widget_liquid_glass_badge_bg"
-                        android:paddingStart="7dp"
-                        android:paddingEnd="7dp"
-                        android:paddingTop="2dp"
-                        android:paddingBottom="2dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp"
                         android:text="GLASS"
                         android:textColor="#FFFFFF"
-                        android:textSize="9sp"
+                        android:textSize="9.5sp"
                         android:textStyle="bold"
-                        android:shadowColor="#99000000"
+                        android:shadowColor="#AA000000"
                         android:shadowRadius="4" />
                 </LinearLayout>
 
@@ -100,81 +98,81 @@
                     android:id="@+id/widget_glass_artist_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
+                    android:layout_marginTop="3dp"
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="@string/tap_to_open"
-                    android:textColor="#F2FFFFFF"
-                    android:textSize="12.5sp"
-                    android:shadowColor="#B3000000"
+                    android:textColor="#F8FFFFFF"
+                    android:textSize="13.5sp"
+                    android:textStyle="bold"
+                    android:shadowColor="#CC000000"
                     android:shadowDy="1"
-                    android:shadowRadius="5" />
+                    android:shadowRadius="6" />
 
-                <!-- Liquid Glass Glowing Progress Bar -->
                 <ProgressBar
                     android:id="@+id/widget_glass_progress"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
-                    android:layout_height="4.5dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_height="5.5dp"
+                    android:layout_marginTop="9dp"
                     android:max="10000"
                     android:progress="0"
                     android:progressDrawable="@drawable/widget_liquid_glass_progress" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Bottom Row: Translucent Glass Pill Controls -->
+        <!-- Bottom Row: Larger Controls + Solid White Play/Pause Circle -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:orientation="horizontal"
             android:gravity="center">
 
             <ImageView
                 android:id="@+id/widget_glass_like_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="@drawable/widget_liquid_glass_btn_circle"
-                android:padding="9dp"
+                android:padding="10dp"
                 android:src="@drawable/ic_widget_heart_outline_nav"
                 android:contentDescription="@string/widget_like_button" />
 
             <ImageView
                 android:id="@+id/widget_glass_previous"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:layout_marginStart="16dp"
                 android:background="@drawable/widget_liquid_glass_btn_circle"
-                android:padding="10dp"
+                android:padding="11dp"
                 android:src="@drawable/ic_widget_skip_previous"
                 android:contentDescription="Sebelumnya" />
 
             <ImageView
                 android:id="@+id/widget_glass_play_pause"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:background="@drawable/widget_liquid_glass_play_pill"
-                android:padding="12dp"
-                android:src="@drawable/ic_widget_play"
+                android:background="@drawable/widget_play_button_bg"
+                android:padding="13dp"
+                android:src="@drawable/ic_widget_play_dark"
                 android:contentDescription="@string/widget_play_pause" />
 
             <ImageView
                 android:id="@+id/widget_glass_next"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/widget_liquid_glass_btn_circle"
-                android:padding="10dp"
+                android:padding="11dp"
                 android:src="@drawable/ic_widget_skip_next"
                 android:contentDescription="Berikutnya" />
 
             <ImageView
                 android:id="@+id/widget_glass_open_app"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="@drawable/widget_liquid_glass_btn_circle"
                 android:padding="4dp"
                 android:scaleType="centerCrop"

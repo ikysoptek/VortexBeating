@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.lyricvideo
@@ -805,7 +805,7 @@ object LyricVideoShareUtils {
             }
 
             val outputDir = File(context.cacheDir, "lyric_videos").apply { mkdirs() }
-            val outputFile = File(outputDir, "Beatles_${mediaMetadata.id}_${System.currentTimeMillis()}.mp4")
+            val outputFile = File(outputDir, "VortexMusic_${mediaMetadata.id}_${System.currentTimeMillis()}.mp4")
 
             val styleStr = prefs[VideoLyricsCardStyleKey] ?: VideoLyricsCardStyle.KASET.name
             val effectiveCardStyle = cardStyle ?: try {
@@ -882,7 +882,7 @@ object LyricVideoShareUtils {
             videoFile
         )
 
-        val shareText = "🎵 $songTitle - $songArtist\nVideo lirik dibuat dengan Beatles"
+        val shareText = "🎵 $songTitle - $songArtist\nVideo lirik dibuat dengan Vortex Music"
 
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "video/mp4"
@@ -909,7 +909,7 @@ object LyricVideoShareUtils {
     }
 
     /**
-     * Saves the generated lyric video MP4 directly to the device Gallery (Movies/NanzBeatles).
+     * Saves the generated lyric video MP4 directly to the device Gallery (Movies/VortexMusic).
      */
     fun saveVideoToGallery(
         context: Context,
@@ -920,13 +920,13 @@ object LyricVideoShareUtils {
         if (!videoFile.exists() || videoFile.length() == 0L) return null
         return try {
             val safeTitle = songTitle.replace(Regex("[^a-zA-Z0-9_-]"), "_").take(40)
-            val fileName = "Beatles_${safeTitle}_${System.currentTimeMillis()}.mp4"
+            val fileName = "VortexMusic_${safeTitle}_${System.currentTimeMillis()}.mp4"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val contentValues = ContentValues().apply {
                     put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
                     put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                    put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/Beatles")
+                    put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/VortexMusic")
                     put(MediaStore.Video.Media.IS_PENDING, 1)
                 }
 
@@ -948,7 +948,7 @@ object LyricVideoShareUtils {
                 @Suppress("DEPRECATION")
                 val moviesDir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-                    "Beatles"
+                    "VortexMusic"
                 ).apply { mkdirs() }
                 val targetFile = File(moviesDir, fileName)
                 videoFile.copyTo(targetFile, overwrite = true)
@@ -984,17 +984,17 @@ object LyricVideoShareUtils {
             .build()
 
         // 1. Primary (#1 Provider): filebin.net API (POST https://filebin.net/{bin}/{filename})
-        val compactUploadName = "beatles_${System.currentTimeMillis() % 1_000_000L}.mp4"
+        val compactUploadName = "vortexmusic_${System.currentTimeMillis() % 1_000_000L}.mp4"
         try {
             val randomSuffix = java.util.UUID.randomUUID().toString().replace("-", "").take(8).lowercase()
-            val binId = "beatles$randomSuffix"
+            val binId = "vortexmusic$randomSuffix"
             val targetUrl = "https://filebin.net/$binId/$compactUploadName"
             val rawBody = videoFile.asRequestBody("application/octet-stream".toMediaType())
 
             val request = Request.Builder()
                 .url(targetUrl)
                 .header("Accept", "application/json")
-                .header("cid", "beatles-${System.currentTimeMillis()}")
+                .header("cid", "vortexmusic-${System.currentTimeMillis()}")
                 .header("User-Agent", "Mozilla/5.0 (Android; VortexMusic)")
                 .post(rawBody)
                 .build()
@@ -1057,7 +1057,7 @@ object LyricVideoShareUtils {
 
             val request = Request.Builder()
                 .url("https://litterbox.catbox.moe/resources/internals/api.php")
-                .header("User-Agent", "Mozilla/5.0 (Android; BeatlesMusic)")
+                .header("User-Agent", "Mozilla/5.0 (Android; VortexMusic)")
                 .post(multipart)
                 .build()
 
@@ -1080,7 +1080,7 @@ object LyricVideoShareUtils {
 
             val request = Request.Builder()
                 .url("https://uguu.se/upload")
-                .header("User-Agent", "Mozilla/5.0 (Android; BeatlesMusic)")
+                .header("User-Agent", "Mozilla/5.0 (Android; VortexMusic)")
                 .post(multipart)
                 .build()
 

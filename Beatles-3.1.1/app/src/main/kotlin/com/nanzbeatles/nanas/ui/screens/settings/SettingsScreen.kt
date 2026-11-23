@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -64,11 +66,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.nanzbeatles.innertube.YouTube
+import com.nanzbeatles.innertube.utils.parseCookieString
 import com.nanzbeatles.nanas.LocalPlayerAwareWindowInsets
 import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.AccountChannelHandleKey
@@ -90,8 +95,6 @@ import com.nanzbeatles.nanas.ui.utils.backToMain
 import com.nanzbeatles.nanas.utils.rememberPreference
 import com.nanzbeatles.nanas.viewmodels.AccountSettingsViewModel
 import com.nanzbeatles.nanas.viewmodels.HomeViewModel
-import com.nanzbeatles.innertube.YouTube
-import com.nanzbeatles.innertube.utils.parseCookieString
 
 enum class SettingsTab(
     @StringRes val titleRes: Int,
@@ -393,89 +396,146 @@ private fun GeneralSettingsContent(
     onShowTokenEditor: () -> Unit,
     onShowLogoutDialog: () -> Unit,
 ) {
-    // Account Card
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .clickable {
-                if (isLoggedIn) navController.navigate("account")
-                else navController.navigate("login")
-            },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-        )
+    // Side-by-side Row: Left = User Account Card | Right = Developer Profile Card
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Left Card: User Account
+        Card(
+            modifier = Modifier
+                .weight(1.35f)
+                .clip(RoundedCornerShape(20.dp))
+                .clickable {
+                    if (isLoggedIn) navController.navigate("account")
+                    else navController.navigate("login")
+                },
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
         ) {
-            if (isLoggedIn && accountImageUrl != null) {
-                AsyncImage(
-                    model = accountImageUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(if (isLoggedIn) R.drawable.account else R.drawable.login),
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isLoggedIn && accountImageUrl != null) {
+                    AsyncImage(
+                        model = accountImageUrl,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(if (isLoggedIn) R.drawable.account else R.drawable.login),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isLoggedIn) accountName.ifEmpty { stringResource(R.string.account) } else stringResource(R.string.login),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    val subtitle = when {
+                        isLoggedIn && accountEmail.isNotEmpty() -> accountEmail
+                        isLoggedIn && accountChannelHandle.isNotEmpty() -> accountChannelHandle
+                        isLoggedIn -> "Akun Aktif"
+                        else -> "Masuk akun"
+                    }
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+        }
 
-            Spacer(Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (isLoggedIn) accountName.ifEmpty { stringResource(R.string.account) } else stringResource(R.string.login),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+        // Right Card: Developer Page Shortcut (ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者)
+        Card(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(20.dp))
+                .clickable { navController.navigate("settings/about") },
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = "https://files.catbox.moe/21bgwe.jpg",
+                    contentDescription = "Developer",
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(R.mipmap.ic_launcher),
+                    error = painterResource(R.mipmap.ic_launcher),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .border(1.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
                 )
-                val subtitle = when {
-                    isLoggedIn && accountEmail.isNotEmpty() -> accountEmail
-                    isLoggedIn && accountChannelHandle.isNotEmpty() -> accountChannelHandle
-                    isLoggedIn -> "Terhubung ke Vortex Music"
-                    else -> "Masuk untuk sinkronisasi playlist & favorit"
-                }
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
 
-            if (isLoggedIn) {
-                OutlinedButton(
-                    onClick = onShowLogoutDialog,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(stringResource(R.string.action_logout))
-                }
-            } else {
-                Button(
-                    onClick = { navController.navigate("login") },
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(stringResource(R.string.login))
+                Spacer(Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Developer",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "ɪᴋʏ ᴠᴏʀᴛᴇx",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
     }
+
+    if (isLoggedIn) {
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = onShowLogoutDialog,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text(stringResource(R.string.action_logout))
+        }
+    }
+
+    Spacer(modifier = Modifier.height(10.dp))
 
     var showDynamicIslandDialog by rememberSaveable { mutableStateOf(false) }
     val (dynamicIslandEnabled, _) = rememberPreference(
@@ -502,7 +562,7 @@ private fun GeneralSettingsContent(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (dynamicIslandEnabled) {
-                androidx.compose.ui.graphics.Color(0xFF1DB954).copy(alpha = 0.16f)
+                Color(0xFF1DB954).copy(alpha = 0.16f)
             } else {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
             }
@@ -516,13 +576,13 @@ private fun GeneralSettingsContent(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(androidx.compose.ui.graphics.Color(0xFF1DB954).copy(alpha = 0.2f)),
+                    .background(Color(0xFF1DB954).copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(R.drawable.equalizer),
                     contentDescription = null,
-                    tint = androidx.compose.ui.graphics.Color(0xFF1DB954),
+                    tint = Color(0xFF1DB954),
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -531,7 +591,7 @@ private fun GeneralSettingsContent(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Spotify Dynamic Island",
+                    text = "Dynamic Island & Lirik Layar Kunci",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -543,9 +603,9 @@ private fun GeneralSettingsContent(
                 }
                 Text(
                     text = if (dynamicIslandEnabled) {
-                        "Aktif • Mode $modeName & Kostumisasi Warna"
+                        "Aktif • Mode $modeName + Lirik Layar Kunci"
                     } else {
-                        "Nonaktif • Ketuk untuk aktifkan & atur tampilan"
+                        "Nonaktif • Ketuk untuk aktifkan & tampilkan lirik di layar kunci"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -877,10 +937,18 @@ private fun SystemSettingsContent(
             )
             add(
                 Material3SettingsItem(
+                    icon = painterResource(R.drawable.info),
+                    title = { Text("Developer & Tentang") },
+                    description = { Text("ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者 • Profil & Kontak Resmi") },
+                    onClick = { navController.navigate("settings/about") }
+                )
+            )
+            add(
+                Material3SettingsItem(
                     icon = painterResource(R.drawable.whatsapp),
                     title = { Text("WhatsApp Developer") },
-                    description = { Text("Hubungi Developer Vortex Music via WhatsApp") },
-                    onClick = { uriHandler.openUri("https://wa.me/6285835356933") } // Ganti 6281234567890 dengan nomor WA kamu
+                    description = { Text("085835356933 • Hubungi Developer Vortex Music") },
+                    onClick = { uriHandler.openUri("https://wa.me/6285835356933") }
                 )
             )
         }

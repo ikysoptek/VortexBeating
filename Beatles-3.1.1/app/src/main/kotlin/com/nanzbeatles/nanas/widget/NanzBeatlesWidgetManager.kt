@@ -225,7 +225,6 @@ class NanzBeatlesWidgetManager @Inject constructor(
         }
         views.setImageViewBitmap(R.id.widget_glass_album_art, artBitmap)
 
-        // Bright white solid circular Play/Pause button with pure black icon
         val playPauseIcon = if (isPlaying) R.drawable.ic_widget_pause_black else R.drawable.ic_widget_play_black
         views.setImageViewResource(R.id.widget_glass_play_pause, playPauseIcon)
 
@@ -326,8 +325,9 @@ class NanzBeatlesWidgetManager @Inject constructor(
     }
 
     /**
-     * Renders a vivid, bright 3D Liquid Glass backdrop that dynamically adapts to the
-     * currently playing song's album artwork (high-visibility blurred cover + bright glass sheen).
+     * Ultra-clear crystal 3D Liquid Glass backdrop:
+     * ~92% transparent water-lens body with delicate album tint, specular highlights,
+     * and gleaming prismatic crystal border so the Home Screen wallpaper shines cleanly through.
      */
     private fun renderLiquidGlassBackdrop(
         albumArt: Bitmap?,
@@ -346,14 +346,14 @@ class NanzBeatlesWidgetManager @Inject constructor(
         canvas.save()
         canvas.clipPath(clipPath)
 
-        // 1. Base frosted glass gradient (bright translucent tint when no song is playing)
+        // 1. Ultra-clear crystal water glass base (~92% transparent)
         val basePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(
                 0f, 0f, width.toFloat(), height.toFloat(),
                 intArrayOf(
-                    Color.argb(145, 38, 48, 68),
-                    Color.argb(120, 24, 34, 52),
-                    Color.argb(140, 18, 24, 38)
+                    Color.argb(24, 255, 255, 255),
+                    Color.argb(10, 210, 245, 255),
+                    Color.argb(18, 12, 18, 30)
                 ),
                 floatArrayOf(0f, 0.5f, 1f),
                 Shader.TileMode.CLAMP
@@ -361,66 +361,48 @@ class NanzBeatlesWidgetManager @Inject constructor(
         }
         canvas.drawRect(rect, basePaint)
 
-        // 2. Vivid & bright blurred album artwork layer (dynamically follows current song)
+        // 2. Subtle airy refractive album art tint (~10% alpha so it stays crystal-clear without pixelation)
         if (albumArt != null) {
             try {
-                // Multi-step smooth blur scaling so cover colors & shapes remain vibrant & recognizable
-                val step1 = Bitmap.createScaledBitmap(albumArt, 64, 48, true)
-                val step2 = Bitmap.createScaledBitmap(step1, 32, 24, true)
-                val blurred = Bitmap.createScaledBitmap(step2, width, height, true)
+                val tiny = Bitmap.createScaledBitmap(albumArt, 24, 16, true)
+                val blurred = Bitmap.createScaledBitmap(tiny, width, height, true)
                 val artPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
-                    alpha = 215
+                    alpha = 26
                 }
                 canvas.drawBitmap(blurred, 0f, 0f, artPaint)
-                if (blurred != step2) blurred.recycle()
-                if (step2 != step1) step2.recycle()
-                if (step1 != albumArt) step1.recycle()
-
-                // Balanced readability scrim so white text & controls stay crisp without darkening the cover
-                val scrimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    shader = LinearGradient(
-                        0f, 0f, 0f, height.toFloat(),
-                        intArrayOf(
-                            Color.argb(36, 10, 14, 24),
-                            Color.argb(58, 8, 12, 20),
-                            Color.argb(92, 6, 10, 18)
-                        ),
-                        floatArrayOf(0f, 0.5f, 1f),
-                        Shader.TileMode.CLAMP
-                    )
-                }
-                canvas.drawRect(rect, scrimPaint)
+                if (blurred != tiny) blurred.recycle()
+                if (tiny != albumArt) tiny.recycle()
             } catch (_: Exception) {
             }
         }
 
-        // 3. Top bright curved glass specular reflection
-        val topDomeHeight = height * 0.44f
+        // 3. Top curved lens specular reflection
+        val topDomeHeight = height * 0.38f
         val topDomePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(
                 0f, inset, 0f, topDomeHeight,
                 intArrayOf(
-                    Color.argb(105, 255, 255, 255),
-                    Color.argb(32, 255, 255, 255),
+                    Color.argb(78, 255, 255, 255),
+                    Color.argb(20, 255, 255, 255),
                     Color.TRANSPARENT
                 ),
-                floatArrayOf(0f, 0.5f, 1f),
+                floatArrayOf(0f, 0.45f, 1f),
                 Shader.TileMode.CLAMP
             )
         }
         canvas.drawRect(inset, inset, width - inset, topDomeHeight, topDomePaint)
 
-        // 4. Bottom crystal water caustic shimmer
-        val causticTop = height * 0.65f
+        // 4. Bottom cyan/crystal water caustic shimmer
+        val causticTop = height * 0.68f
         val causticPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(
                 0f, causticTop, width.toFloat(), height.toFloat(),
                 intArrayOf(
                     Color.TRANSPARENT,
-                    Color.argb(46, 255, 255, 255),
-                    Color.argb(42, 140, 235, 255)
+                    Color.argb(36, 100, 233, 255),
+                    Color.argb(30, 196, 181, 253)
                 ),
-                floatArrayOf(0f, 0.6f, 1f),
+                floatArrayOf(0f, 0.65f, 1f),
                 Shader.TileMode.CLAMP
             )
         }
@@ -434,10 +416,10 @@ class NanzBeatlesWidgetManager @Inject constructor(
             shader = LinearGradient(
                 0f, 0f, width.toFloat(), height.toFloat(),
                 intArrayOf(
-                    Color.argb(75, 255, 255, 255),
-                    Color.argb(32, 160, 240, 255),
-                    Color.argb(18, 255, 255, 255),
-                    Color.argb(55, 255, 255, 255)
+                    Color.argb(52, 255, 255, 255),
+                    Color.argb(24, 100, 233, 255),
+                    Color.argb(12, 255, 255, 255),
+                    Color.argb(38, 255, 255, 255)
                 ),
                 floatArrayOf(0f, 0.35f, 0.7f, 1f),
                 Shader.TileMode.CLAMP
@@ -452,18 +434,18 @@ class NanzBeatlesWidgetManager @Inject constructor(
 
         canvas.restore()
 
-        // 6. Gleaming Bright Crystal Rim Border
+        // 6. Gleaming Prismatic 3D Crystal Rim Border
         val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 3.6f
+            strokeWidth = 3.2f
             shader = LinearGradient(
                 0f, 0f, width.toFloat(), height.toFloat(),
                 intArrayOf(
-                    Color.argb(250, 255, 255, 255),
-                    Color.argb(210, 165, 243, 252),
-                    Color.argb(135, 255, 255, 255),
-                    Color.argb(190, 224, 231, 255),
-                    Color.argb(245, 255, 255, 255)
+                    Color.argb(235, 255, 255, 255),
+                    Color.argb(190, 100, 233, 252),
+                    Color.argb(90, 255, 255, 255),
+                    Color.argb(165, 167, 139, 250),
+                    Color.argb(215, 255, 255, 255)
                 ),
                 floatArrayOf(0f, 0.28f, 0.52f, 0.78f, 1f),
                 Shader.TileMode.CLAMP
@@ -472,24 +454,43 @@ class NanzBeatlesWidgetManager @Inject constructor(
         canvas.drawRoundRect(rect, cornerRadius, cornerRadius, borderPaint)
 
         // 7. Top & bottom razor-sharp specular glint lines
-        val glintWidth = width * 0.76f
+        val glintWidth = width * 0.72f
         val glintStartX = (width - glintWidth) / 2f
         val topGlintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 3.2f
+            strokeWidth = 2.8f
             strokeCap = Paint.Cap.ROUND
             shader = LinearGradient(
                 glintStartX, 0f, glintStartX + glintWidth, 0f,
                 intArrayOf(
                     Color.TRANSPARENT,
-                    Color.argb(255, 255, 255, 255),
+                    Color.argb(245, 255, 255, 255),
                     Color.TRANSPARENT
                 ),
                 floatArrayOf(0f, 0.5f, 1f),
                 Shader.TileMode.CLAMP
             )
         }
-        canvas.drawLine(glintStartX, inset + 1.4f, glintStartX + glintWidth, inset + 1.4f, topGlintPaint)
+        canvas.drawLine(glintStartX, inset + 1.2f, glintStartX + glintWidth, inset + 1.2f, topGlintPaint)
+
+        val bottomGlintWidth = width * 0.56f
+        val bottomStartX = (width - bottomGlintWidth) / 2f
+        val bottomGlintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 2.2f
+            strokeCap = Paint.Cap.ROUND
+            shader = LinearGradient(
+                bottomStartX, 0f, bottomStartX + bottomGlintWidth, 0f,
+                intArrayOf(
+                    Color.TRANSPARENT,
+                    Color.argb(165, 100, 233, 255),
+                    Color.TRANSPARENT
+                ),
+                floatArrayOf(0f, 0.5f, 1f),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawLine(bottomStartX, height - inset - 1.2f, bottomStartX + bottomGlintWidth, height - inset - 1.2f, bottomGlintPaint)
 
         return output
     }

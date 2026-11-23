@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.component
@@ -66,8 +66,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -134,7 +132,6 @@ import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.DynamicIslandAccentColorKey
 import com.nanzbeatles.nanas.constants.DynamicIslandAutoEnableOnStartKey
 import com.nanzbeatles.nanas.constants.DynamicIslandBgColorKey
-import com.nanzbeatles.nanas.constants.DynamicIslandBlurEnabledKey
 import com.nanzbeatles.nanas.constants.DynamicIslandBlurRadiusKey
 import com.nanzbeatles.nanas.constants.DynamicIslandBorderGlowKey
 import com.nanzbeatles.nanas.constants.DynamicIslandDismissedKey
@@ -160,7 +157,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -169,10 +165,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/**
- * Shared runtime state between the in-app [DynamicIslandOverlay] and the outside-app
- * [DynamicIslandSystemOverlayManager] hosted by `MusicService`.
- */
 object DynamicIslandOverlayState {
     private val _isAppInForeground = MutableStateFlow(false)
     val isAppInForeground: StateFlow<Boolean> = _isAppInForeground.asStateFlow()
@@ -184,14 +176,6 @@ object DynamicIslandOverlayState {
         _isAppInForeground.value = inForeground
     }
 
-    /**
-     * Called once when the APK process starts in `MainActivity.onCreate`.
-     * Always starts with `DynamicIslandEnabledKey = false` after exiting/restarting the APK:
-     * - If `DynamicIslandAutoEnableOnStartKey` (Otomatis) is `true`, Dynamic Island will automatically
-     *   appear as soon as music is played.
-     * - If `DynamicIslandAutoEnableOnStartKey` (Otomatis) is `false`, Dynamic Island will NOT appear
-     *   when music is played unless manually enabled by the user.
-     */
     suspend fun initializeOnAppProcessStart(context: Context) {
         if (hasInitializedProcessSession) return
         hasInitializedProcessSession = true
@@ -205,10 +189,6 @@ object DynamicIslandOverlayState {
         }
     }
 
-    /**
-     * Automatically hides/resets Dynamic Island when the user exits the application.
-     * Preserves `DynamicIslandAutoEnableOnStartKey` so Auto mode remains configured for next playback.
-     */
     fun resetOnAppExit(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
@@ -221,31 +201,24 @@ object DynamicIslandOverlayState {
     }
 }
 
-/**
- * Extracts a bright, vivid color from album artwork for Dynamic Island.
- * Unlike `Theme.kt`'s monochrome `extractThemeColor()`, this preserves saturation
- * and guarantees high luminance so the waveform and progress bar never look dark or grey.
- */
 internal fun Bitmap.extractVibrantIslandColor(): Color {
     val palette = Palette.from(this).maximumColorCount(16).generate()
-    val candidateInt = palette.vibrantSwatch?.rgb
-        ?: palette.lightVibrantSwatch?.rgb
+    val candidateInt = palette.lightVibrantSwatch?.rgb
+        ?: palette.vibrantSwatch?.rgb
         ?: palette.dominantSwatch?.rgb
-        ?: return Color(0xFF1DB954)
+        ?: return Color(0xFF38BDF8)
 
     val raw = Color(candidateInt)
     val maxChannel = max(raw.red, max(raw.green, raw.blue))
     val minChannel = min(raw.red, min(raw.green, raw.blue))
     val saturation = if (maxChannel > 0f) (maxChannel - minChannel) / maxChannel else 0f
 
-    // If the cover is monochrome / black & white (like B&W album art), fallback to bright Spotify Green
-    if (saturation < 0.15f) {
-        return Color(0xFF1DB954)
+    if (saturation < 0.14f) {
+        return Color(0xFF38BDF8)
     }
 
-    // Boost brightness if the extracted color is too dark
-    return if (raw.luminance() < 0.42f) {
-        lerp(raw, Color.White, 0.42f)
+    return if (raw.luminance() < 0.50f) {
+        lerp(raw, Color.White, 0.45f)
     } else {
         raw
     }
@@ -268,19 +241,14 @@ val DynamicIslandAccentPresets = listOf(
 )
 
 val DynamicIslandBgPresets = listOf(
+    DynamicIslandColorPreset("Crystal Glass", 0xFF1A2234.toInt()),
     DynamicIslandColorPreset("Deep Black", 0xFF000000.toInt()),
     DynamicIslandColorPreset("Charcoal Glass", 0xFF12141C.toInt()),
     DynamicIslandColorPreset("Midnight Blue", 0xFF0B132B.toInt()),
     DynamicIslandColorPreset("Dark Emerald", 0xFF071C15.toInt()),
-    DynamicIslandColorPreset("Dark Wine", 0xFF210912.toInt()),
     DynamicIslandColorPreset("Cosmic Violet", 0xFF160C28.toInt()),
 )
 
-/**
- * Floating Dynamic Island overlay anchored at the top-center of the screen inside the app.
- * When the user leaves the app, [DynamicIslandSystemOverlayManager] in `MusicService` seamlessly
- * displays the exact same Dynamic Island over the Home screen / other apps if overlay permission is granted.
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DynamicIslandOverlay(
@@ -307,19 +275,19 @@ fun DynamicIslandOverlay(
     )
     val (accentColorInt, _) = rememberPreference(
         DynamicIslandAccentColorKey,
-        defaultValue = 0xFF1DB954.toInt()
+        defaultValue = 0xFF38BDF8.toInt()
     )
     val (useDynamicAccent, _) = rememberPreference(
         DynamicIslandUseDynamicAccentKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (bgColorInt, _) = rememberPreference(
         DynamicIslandBgColorKey,
-        defaultValue = 0xFF000000.toInt()
+        defaultValue = 0xFF161D2C.toInt()
     )
     val (useDynamicBg, _) = rememberPreference(
         DynamicIslandUseDynamicBgKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (borderGlow, _) = rememberPreference(
         DynamicIslandBorderGlowKey,
@@ -327,7 +295,7 @@ fun DynamicIslandOverlay(
     )
     val (blurRadius, _) = rememberPreference(
         DynamicIslandBlurRadiusKey,
-        defaultValue = 22
+        defaultValue = 20
     )
 
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -346,9 +314,6 @@ fun DynamicIslandOverlay(
 
     val metadata = mediaMetadata
 
-    // Ketika musik diputar:
-    // - Jika fitur Otomatis aktif (autoMode == true), Dynamic Island otomatis muncul.
-    // - Jika fitur Otomatis tidak aktif (autoMode == false), Dynamic Island TIDAK akan muncul otomatis.
     LaunchedEffect(isPlaying, metadata?.id, autoMode) {
         if (autoMode && isPlaying && metadata != null) {
             if (isDismissed) {
@@ -360,16 +325,12 @@ fun DynamicIslandOverlay(
         }
     }
 
-    // Saat musik di-pause, Dynamic Island TIDAK hilang (tetap tampil selama enabled && !isDismissed).
-    // Dynamic Island hanya otomatis hilang saat keluar dari aplikasi.
     val shouldShowIsland = enabled && !isDismissed
-
     if (!shouldShowIsland) return
 
     var extractedArtworkColor by remember { mutableStateOf<Color?>(null) }
 
     LaunchedEffect(metadata?.thumbnailUrl, useDynamicAccent, useDynamicBg) {
-        if (!useDynamicAccent && !useDynamicBg) return@LaunchedEffect
         val thumb = metadata?.thumbnailUrl
         if (thumb.isNullOrBlank()) {
             extractedArtworkColor = null
@@ -400,7 +361,7 @@ fun DynamicIslandOverlay(
 
     val effectiveBgColor = remember(bgColorInt, useDynamicBg, extractedArtworkColor) {
         if (useDynamicBg && extractedArtworkColor != null) {
-            lerp(Color.Black, extractedArtworkColor!!, 0.20f).copy(alpha = 1f)
+            lerp(Color(0xFF141A26), extractedArtworkColor!!, 0.34f).copy(alpha = 1f)
         } else {
             Color(bgColorInt).copy(alpha = 1f)
         }
@@ -426,7 +387,7 @@ fun DynamicIslandOverlay(
     val topStatusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
     val isLiked = currentSong?.song?.liked == true
-    val displayTitle = metadata?.title ?: "Dynamic Island Aktif"
+    val displayTitle = metadata?.title ?: "Vortex Music"
     val displayArtist = metadata?.artists?.joinToString(", ") { it.name } ?: "Putar lagu untuk mulai"
     val displayDuration = if (metadata != null) {
         duration.takeIf { it > 0L } ?: ((metadata.duration.toLong()) * 1000L)
@@ -540,7 +501,7 @@ internal fun DynamicIslandCapsuleSurface(
 ) {
     val isLiquidGlass = islandTheme == DynamicIslandTheme.LIQUID_GLASS
     val cornerRadius by animateDpAsState(
-        targetValue = if (mode == DynamicIslandMode.SEDANG) 30.dp else 50.dp,
+        targetValue = if (mode == DynamicIslandMode.SEDANG) 32.dp else 50.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "islandCorner"
     )
@@ -556,17 +517,16 @@ internal fun DynamicIslandCapsuleSurface(
     Surface(
         shape = shape,
         color = if (isLiquidGlass) {
-            effectiveBgColor.copy(alpha = 0.24f)
+            effectiveBgColor.copy(alpha = 0.36f)
         } else {
             effectiveBgColor.copy(alpha = 1f)
         },
         contentColor = Color.White,
-        // Avoid rectangular shadow clipping inside WRAP_CONTENT WindowManager overlays
-        shadowElevation = if (isSystemOverlay) 0.dp else 16.dp,
+        shadowElevation = if (isSystemOverlay) 0.dp else 18.dp,
         tonalElevation = 0.dp,
         modifier = Modifier
             .offset { IntOffset(animatedOffsetX.roundToInt(), 0) }
-            .padding(horizontal = if (isSystemOverlay) 4.dp else 12.dp)
+            .padding(horizontal = if (isSystemOverlay) 4.dp else 10.dp)
             .pointerInput(mode) {
                 var horizontalDragSum = 0f
                 detectHorizontalDragGestures(
@@ -587,12 +547,10 @@ internal fun DynamicIslandCapsuleSurface(
                     onDragEnd = {
                         horizontalDragOffset = 0f
                         if (horizontalDragSum < -35f) {
-                            // Geser ke kiri -> ubah Dynamic Island menjadi Bola
                             if (mode != DynamicIslandMode.BOLA) {
                                 onModeChange(DynamicIslandMode.BOLA)
                             }
                         } else if (horizontalDragSum > 35f && mode == DynamicIslandMode.BOLA) {
-                            // Geser ke kanan saat mode Bola -> kembali normal (Mode Kecil)
                             onModeChange(DynamicIslandMode.KECIL)
                         }
                     }
@@ -625,20 +583,20 @@ internal fun DynamicIslandCapsuleSurface(
             .then(
                 if (isLiquidGlass) {
                     Modifier.border(
-                        width = if (borderGlow) 1.6.dp else 1.25.dp,
+                        width = if (borderGlow) 1.8.dp else 1.4.dp,
                         brush = Brush.linearGradient(
                             colors = if (borderGlow) {
                                 listOf(
-                                    Color.White.copy(alpha = 0.85f),
-                                    effectiveAccentColor.copy(alpha = 0.78f),
-                                    Color.White.copy(alpha = 0.25f),
-                                    effectiveAccentColor.copy(alpha = 0.62f)
+                                    Color.White.copy(alpha = 0.95f),
+                                    effectiveAccentColor.copy(alpha = 0.85f),
+                                    Color.White.copy(alpha = 0.45f),
+                                    effectiveAccentColor.copy(alpha = 0.72f)
                                 )
                             } else {
                                 listOf(
-                                    Color.White.copy(alpha = 0.68f),
-                                    Color.White.copy(alpha = 0.16f),
-                                    Color.White.copy(alpha = 0.36f)
+                                    Color.White.copy(alpha = 0.80f),
+                                    Color.White.copy(alpha = 0.25f),
+                                    Color.White.copy(alpha = 0.48f)
                                 )
                             }
                         ),
@@ -646,12 +604,12 @@ internal fun DynamicIslandCapsuleSurface(
                     )
                 } else if (borderGlow) {
                     Modifier.border(
-                        width = 1.4.dp,
+                        width = 1.5.dp,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                effectiveAccentColor.copy(alpha = 0.85f),
-                                Color.White.copy(alpha = 0.35f),
-                                effectiveAccentColor.copy(alpha = 0.55f)
+                                effectiveAccentColor.copy(alpha = 0.90f),
+                                Color.White.copy(alpha = 0.45f),
+                                effectiveAccentColor.copy(alpha = 0.65f)
                             )
                         ),
                         shape = shape
@@ -659,7 +617,7 @@ internal fun DynamicIslandCapsuleSurface(
                 } else {
                     Modifier.border(
                         width = 1.dp,
-                        color = Color.White.copy(alpha = 0.18f),
+                        color = Color.White.copy(alpha = 0.24f),
                         shape = shape
                     )
                 }
@@ -670,9 +628,9 @@ internal fun DynamicIslandCapsuleSurface(
                 .width(IntrinsicSize.Max)
                 .height(IntrinsicSize.Max)
         ) {
-            // Tema Liquid Glass: Frosted glass backdrop + blurred artwork + inner glow & specular reflection
+            // Vivid & Bright Liquid Glass backdrop with blurred album artwork & top specular reflection
             if (isLiquidGlass) {
-                val safeBlurDp = blurRadius.coerceIn(8, 40).dp
+                val safeBlurDp = blurRadius.coerceIn(8, 36).dp
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -686,7 +644,7 @@ internal fun DynamicIslandCapsuleSurface(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .blur(safeBlurDp)
-                                .alpha(0.55f)
+                                .alpha(0.78f)
                         )
                     } else {
                         Box(
@@ -695,35 +653,35 @@ internal fun DynamicIslandCapsuleSurface(
                                 .background(
                                     Brush.linearGradient(
                                         colors = listOf(
-                                            effectiveAccentColor.copy(alpha = 0.45f),
-                                            effectiveBgColor.copy(alpha = 0.65f),
-                                            effectiveAccentColor.copy(alpha = 0.30f)
+                                            effectiveAccentColor.copy(alpha = 0.60f),
+                                            effectiveBgColor.copy(alpha = 0.72f),
+                                            effectiveAccentColor.copy(alpha = 0.45f)
                                         )
                                     )
                                 )
                                 .blur(safeBlurDp)
                         )
                     }
-                    // Crystal-Clear ("Bening") Liquid Glass tint + top meniscus catchlight
+                    // Bright Crystal-Clear Liquid Glass sheen + contrast protection
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.28f),
-                                        Color(0xFF0A0E18).copy(alpha = 0.22f),
-                                        effectiveBgColor.copy(alpha = 0.34f)
+                                        Color.White.copy(alpha = 0.36f),
+                                        Color(0xFF0E131F).copy(alpha = 0.18f),
+                                        effectiveBgColor.copy(alpha = 0.32f)
                                     )
                                 )
                             )
                             .background(
                                 Brush.linearGradient(
                                     colors = listOf(
-                                        Color(0xFF00E5FF).copy(alpha = 0.18f),
-                                        Color.White.copy(alpha = 0.24f),
+                                        Color.White.copy(alpha = 0.28f),
+                                        effectiveAccentColor.copy(alpha = 0.22f),
                                         Color.Transparent,
-                                        Color(0xFFFF5500).copy(alpha = 0.14f)
+                                        Color.White.copy(alpha = 0.16f)
                                     )
                                 )
                             )
@@ -734,8 +692,8 @@ internal fun DynamicIslandCapsuleSurface(
             AnimatedContent(
                 targetState = mode,
                 transitionSpec = {
-                    (fadeIn(tween(200)) + scaleIn(initialScale = 0.88f, animationSpec = tween(220)))
-                        .togetherWith(fadeOut(tween(150)) + scaleOut(targetScale = 0.88f, animationSpec = tween(150)))
+                    (fadeIn(tween(200)) + scaleIn(initialScale = 0.90f, animationSpec = tween(220)))
+                        .togetherWith(fadeOut(tween(150)) + scaleOut(targetScale = 0.90f, animationSpec = tween(150)))
                 },
                 label = "DynamicIslandModeContent"
             ) { targetMode ->
@@ -749,7 +707,6 @@ internal fun DynamicIslandCapsuleSurface(
                             duration = duration,
                             accentColor = effectiveAccentColor,
                             onTap = {
-                                // Klik pada bola mengembalikan Dynamic Island ke tampilan normal (Kecil)
                                 onModeChange(DynamicIslandMode.KECIL)
                             },
                             onLongPress = {
@@ -834,12 +791,12 @@ internal fun DynamicIslandBallContent(
         label = "ballRingProgress"
     )
     val ringColor = remember(accentColor) {
-        if (accentColor.luminance() < 0.25f) Color(0xFF1DB954) else accentColor
+        if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
     }
 
     Box(
         modifier = Modifier
-            .size(48.dp)
+            .size(54.dp)
             .clip(CircleShape)
             .combinedClickable(
                 onClick = onTap,
@@ -847,14 +804,12 @@ internal fun DynamicIslandBallContent(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Circular progress ring encircling the ball
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokePx = 2.8.dp.toPx()
-            val inset = strokePx / 2f + 1.2.dp.toPx()
+            val strokePx = 3.2.dp.toPx()
+            val inset = strokePx / 2f + 1.5.dp.toPx()
             val arcSize = Size(size.width - inset * 2f, size.height - inset * 2f)
-            // Subtle circular track
             drawArc(
-                color = Color.White.copy(alpha = 0.22f),
+                color = Color.White.copy(alpha = 0.28f),
                 startAngle = 0f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -862,7 +817,6 @@ internal fun DynamicIslandBallContent(
                 size = arcSize,
                 style = Stroke(width = strokePx, cap = StrokeCap.Round)
             )
-            // Active circular music progress
             if (animatedProgress > 0.005f) {
                 drawArc(
                     color = ringColor,
@@ -879,7 +833,7 @@ internal fun DynamicIslandBallContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(5.5.dp)
+                .padding(6.dp)
                 .clip(CircleShape),
             contentAlignment = Alignment.Center
         ) {
@@ -897,14 +851,14 @@ internal fun DynamicIslandBallContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = if (isPlaying) 0.38f else 0.25f)),
+                        .background(Color.Black.copy(alpha = if (isPlaying) 0.32f else 0.20f)),
                     contentAlignment = Alignment.Center
                 ) {
                     DynamicIslandWaveform(
                         isPlaying = isPlaying,
-                        accentColor = accentColor,
+                        accentColor = Color.White,
                         barCount = 3,
-                        modifier = Modifier.size(width = 15.dp, height = 13.dp)
+                        modifier = Modifier.size(width = 17.dp, height = 15.dp)
                     )
                 }
             } else {
@@ -912,22 +866,22 @@ internal fun DynamicIslandBallContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.26f)),
+                        .background(accentColor.copy(alpha = 0.34f)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isPlaying) {
                         DynamicIslandWaveform(
                             isPlaying = true,
-                            accentColor = accentColor,
+                            accentColor = Color.White,
                             barCount = 3,
-                            modifier = Modifier.size(width = 16.dp, height = 14.dp)
+                            modifier = Modifier.size(width = 18.dp, height = 15.dp)
                         )
                     } else {
                         Icon(
                             painter = painterResource(R.drawable.music_note),
                             contentDescription = title,
-                            tint = accentColor,
-                            modifier = Modifier.size(18.dp)
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -951,7 +905,7 @@ internal fun DynamicIslandSmallContent(
     onDismissIsland: () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
-    val pillWidth = (configuration.screenWidthDp.dp * 0.80f).coerceIn(248.dp, 340.dp)
+    val pillWidth = (configuration.screenWidthDp.dp * 0.86f).coerceIn(272.dp, 368.dp)
 
     val safeDuration = duration.coerceAtLeast(1L)
     val rawProgress = if (duration > 0L) {
@@ -965,13 +919,13 @@ internal fun DynamicIslandSmallContent(
         label = "smallLineProgress"
     )
     val barColor = remember(accentColor) {
-        if (accentColor.luminance() < 0.25f) Color(0xFF1DB954) else accentColor
+        if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
     }
 
     Box(
         modifier = Modifier
             .width(pillWidth)
-            .height(46.dp)
+            .height(54.dp)
             .combinedClickable(
                 onClick = onTap,
                 onLongClick = onLongPress
@@ -980,106 +934,115 @@ internal fun DynamicIslandSmallContent(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 10.dp, end = 8.dp, top = 5.dp, bottom = 9.dp),
+                .padding(start = 10.dp, end = 9.dp, top = 6.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left: Album art thumbnail or music note badge when idle
             if (!thumbnailUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = thumbnailUrl,
                     contentDescription = title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(27.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
                         .background(Color.DarkGray)
                 )
             } else {
                 Box(
                     modifier = Modifier
-                        .size(27.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(accentColor.copy(alpha = 0.28f)),
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(accentColor.copy(alpha = 0.34f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.music_note),
                         contentDescription = title,
-                        tint = accentColor,
-                        modifier = Modifier.size(15.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // Center: Pure bright #FFFFFF SansSerif Bold text
-            val fullSmallLabel = remember(title, artist) {
-                if (artist.isNotBlank() && artist != "Putar lagu untuk mulai" && artist != "Ketuk untuk kembali ke aplikasi") {
-                    "$title • $artist"
-                } else {
-                    title
-                }
-            }
-            Text(
-                text = fullSmallLabel,
-                color = Color(0xFFFFFFFF),
-                style = TextStyle(
-                    fontFamily = FontFamily.SansSerif,
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFFFFF),
-                    platformStyle = PlatformTextStyle(includeFontPadding = false)
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            Column(
                 modifier = Modifier
                     .weight(1f)
-                    .basicMarquee(iterations = Int.MAX_VALUE)
-            )
+                    .padding(end = 6.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = title,
+                    color = Color(0xFFFFFFFF),
+                    style = TextStyle(
+                        fontFamily = FontFamily.SansSerif,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFFFFF),
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
+                )
+                if (artist.isNotBlank() && artist != "Putar lagu untuk mulai") {
+                    Text(
+                        text = artist,
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = TextStyle(
+                            fontFamily = FontFamily.SansSerif,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.85f),
+                            platformStyle = PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Right: Animated audio waveform bars + Close/Hide button (keeps music playing)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(7.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 DynamicIslandWaveform(
                     isPlaying = isPlaying,
-                    accentColor = accentColor,
+                    accentColor = barColor,
                     barCount = 5,
-                    modifier = Modifier.size(width = 22.dp, height = 16.dp)
+                    modifier = Modifier.size(width = 24.dp, height = 18.dp)
                 )
 
                 Box(
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(26.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.24f))
+                        .background(Color.White.copy(alpha = 0.28f))
                         .clickable { onDismissIsland() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.close),
-                        contentDescription = "Tutup Dynamic Island (Musik Tetap Berputar)",
+                        contentDescription = "Tutup Dynamic Island",
                         tint = Color(0xFFFFFFFF),
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
         }
 
-        // Bottom horizontal music progress line (garis progres musik untuk Mode Kecil)
+        // Bottom horizontal music progress line
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 3.5.dp)
-                .height(3.dp)
+                .padding(horizontal = 18.dp, vertical = 4.dp)
+                .height(3.5.dp)
                 .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.24f))
+                .background(Color.White.copy(alpha = 0.30f))
         ) {
             Box(
                 modifier = Modifier
@@ -1089,9 +1052,8 @@ internal fun DynamicIslandSmallContent(
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
-                                barColor.copy(alpha = 0.88f),
                                 barColor,
-                                Color.White.copy(alpha = 0.85f)
+                                Color.White
                             )
                         )
                     )
@@ -1128,22 +1090,22 @@ internal fun DynamicIslandMediumContent(
     onOpenCustomize: () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp * 0.92f).coerceIn(300.dp, 388.dp)
+    val cardWidth = (configuration.screenWidthDp.dp * 0.94f).coerceIn(316.dp, 408.dp)
 
     val safeDuration = duration.coerceAtLeast(1L)
     val progress = (position.toFloat() / safeDuration.toFloat()).coerceIn(0f, 1f)
     val remainingMs = (safeDuration - position).coerceAtLeast(0L)
     val visibleAccent = remember(accentColor) {
-        if (accentColor.luminance() < 0.25f) Color(0xFF1DB954) else accentColor
+        if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
     }
 
     Column(
         modifier = Modifier
             .width(cardWidth)
             .clickable { onOpenFullPlayer() }
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .padding(horizontal = 18.dp, vertical = 16.dp)
     ) {
-        // Top Row: Album Art + Song Title & Artist + Customize (Palette) + Equalizer Waveform (Collapse) + Close/Hide Button
+        // Top Row: Larger Framed Album Art + Song Title & Artist + Waveform + Customize + Close
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -1154,28 +1116,29 @@ internal fun DynamicIslandMediumContent(
                     contentDescription = title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(1.2.dp, Color.White.copy(alpha = 0.50f), RoundedCornerShape(14.dp))
                         .background(Color.DarkGray)
                 )
             } else {
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(accentColor.copy(alpha = 0.28f)),
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(accentColor.copy(alpha = 0.34f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.music_note),
                         contentDescription = title,
-                        tint = accentColor,
-                        modifier = Modifier.size(24.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -1185,8 +1148,8 @@ internal fun DynamicIslandMediumContent(
                     color = Color(0xFFFFFFFF),
                     style = TextStyle(
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 15.5.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFFFFFFFF),
                         platformStyle = PlatformTextStyle(includeFontPadding = false)
                     ),
@@ -1194,15 +1157,15 @@ internal fun DynamicIslandMediumContent(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
                 )
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = artist.ifBlank { "Unknown Artist" },
-                    color = Color(0xFFF2F2F7),
+                    color = Color.White.copy(alpha = 0.90f),
                     style = TextStyle(
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFF2F2F7),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White.copy(alpha = 0.90f),
                         platformStyle = PlatformTextStyle(includeFontPadding = false)
                     ),
                     maxLines = 1,
@@ -1212,7 +1175,6 @@ internal fun DynamicIslandMediumContent(
 
             Spacer(modifier = Modifier.width(6.dp))
 
-            // Clicking the waveform collapses back to Mode Kecil
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
@@ -1222,77 +1184,74 @@ internal fun DynamicIslandMediumContent(
             ) {
                 DynamicIslandWaveform(
                     isPlaying = isPlaying,
-                    accentColor = accentColor,
+                    accentColor = visibleAccent,
                     barCount = 5,
-                    modifier = Modifier.size(width = 20.dp, height = 17.dp)
+                    modifier = Modifier.size(width = 22.dp, height = 19.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(5.dp))
 
-            // Customize / Settings button
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(30.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.16f))
+                    .background(Color.White.copy(alpha = 0.22f))
                     .clickable { onOpenCustomize() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(R.drawable.palette),
                     contentDescription = "Kostumisasi Dynamic Island",
-                    tint = Color.White.copy(alpha = 0.92f),
-                    modifier = Modifier.size(15.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
-            // Close / Hide Dynamic Island button (without stopping music)
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(30.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.22f))
+                    .background(Color.White.copy(alpha = 0.26f))
                     .clickable { onDismissIsland() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close),
-                    contentDescription = "Tutup Dynamic Island (Musik Tetap Berputar)",
+                    contentDescription = "Tutup Dynamic Island",
                     tint = Color(0xFFFFFFFF),
-                    modifier = Modifier.size(15.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Middle Row: Elapsed time + Custom slim progress bar + Remaining time (-mm:ss)
+        // Middle Row: Elapsed time + Bright Interactive Progress Track + Remaining time
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = makeTimeString(position),
-                color = Color(0xFFF2F2F7),
+                color = Color.White,
                 style = TextStyle(
                     fontFamily = FontFamily.SansSerif,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFF2F2F7),
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
                     platformStyle = PlatformTextStyle(includeFontPadding = false)
                 )
             )
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // Interactive slim progress track matching the reference Spotify Dynamic Island
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(16.dp)
+                    .height(18.dp)
                     .pointerInput(safeDuration) {
                         detectTapGestures { offset ->
                             val frac = (offset.x / size.width.toFloat()).coerceIn(0f, 1f)
@@ -1311,16 +1270,20 @@ internal fun DynamicIslandMediumContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(5.dp)
+                        .height(6.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.28f))
+                        .background(Color.White.copy(alpha = 0.34f))
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(progress)
-                        .height(5.dp)
+                        .height(6.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(visibleAccent)
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(visibleAccent, Color.White)
+                            )
+                        )
                 )
             }
 
@@ -1328,89 +1291,74 @@ internal fun DynamicIslandMediumContent(
 
             Text(
                 text = "-${makeTimeString(remainingMs)}",
-                color = Color(0xFFF2F2F7),
+                color = Color.White,
                 style = TextStyle(
                     fontFamily = FontFamily.SansSerif,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFF2F2F7),
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
                     platformStyle = PlatformTextStyle(includeFontPadding = false)
                 )
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Bottom Row: Complete Playback Controls
-        // Left: Shuffle + Rewind 10s + Previous | Center: Play/Pause | Right: Next + Repeat (Off/All/One) + Like
+        // Bottom Row: Larger & Clearer Playback Controls
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // 1. Shuffle Button
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .background(
-                        if (shuffleModeEnabled) visibleAccent.copy(alpha = 0.22f) else Color.Transparent
+                        if (shuffleModeEnabled) Color.White.copy(alpha = 0.26f) else Color.Transparent
                     )
                     .clickable { onToggleShuffle() },
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        painter = painterResource(
-                            if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle
-                        ),
-                        contentDescription = "Acak Lagu (Shuffle)",
-                        tint = if (shuffleModeEnabled) visibleAccent else Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(19.dp)
-                    )
-                    if (shuffleModeEnabled) {
-                        Spacer(modifier = Modifier.height(1.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(3.5.dp)
-                                .clip(CircleShape)
-                                .background(visibleAccent)
-                        )
-                    }
-                }
+                Icon(
+                    painter = painterResource(
+                        if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle
+                    ),
+                    contentDescription = "Acak Lagu",
+                    tint = if (shuffleModeEnabled) visibleAccent else Color.White.copy(alpha = 0.92f),
+                    modifier = Modifier.size(21.dp)
+                )
             }
 
-            // 2. Rewind 10s Button
             IconButton(
                 onClick = { onSeekTo((position - 10_000L).coerceAtLeast(0L)) },
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.replay),
                     contentDescription = "Mundur 10 Detik",
-                    tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.size(19.dp)
+                    tint = Color.White.copy(alpha = 0.92f),
+                    modifier = Modifier.size(21.dp)
                 )
             }
 
-            // 3. Previous Button
             IconButton(
                 onClick = onPrevious,
                 enabled = canSkipPrevious,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(40.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.skip_previous),
                     contentDescription = "Sebelumnya",
                     tint = if (canSkipPrevious) Color.White else Color.White.copy(alpha = 0.45f),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
-            // 4. Center Play/Pause Button (White circle with black icon)
+            // Center Play/Pause Button (Large Bright White Circle)
             Box(
                 modifier = Modifier
-                    .size(42.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(Color.White)
                     .clickable { onTogglePlayPause() },
@@ -1420,25 +1368,23 @@ internal fun DynamicIslandMediumContent(
                     painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
                     contentDescription = if (isPlaying) "Jeda" else "Putar",
                     tint = Color.Black,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
 
-            // 5. Next Button
             IconButton(
                 onClick = onNext,
                 enabled = canSkipNext,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(40.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.skip_next),
                     contentDescription = "Selanjutnya",
                     tint = if (canSkipNext) Color.White else Color.White.copy(alpha = 0.45f),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
-            // 6. Repeat Button (cycles Off -> Repeat All -> Repeat One)
             val isRepeatActive = repeatMode != Player.REPEAT_MODE_OFF
             val repeatIconRes = when (repeatMode) {
                 Player.REPEAT_MODE_ONE -> R.drawable.repeat_one_on
@@ -1447,40 +1393,28 @@ internal fun DynamicIslandMediumContent(
             }
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isRepeatActive) visibleAccent.copy(alpha = 0.22f) else Color.Transparent
+                        if (isRepeatActive) Color.White.copy(alpha = 0.26f) else Color.Transparent
                     )
                     .clickable { onToggleRepeat() },
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        painter = painterResource(repeatIconRes),
-                        contentDescription = "Ulangi Lagu (Repeat)",
-                        tint = if (isRepeatActive) visibleAccent else Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(19.dp)
-                    )
-                    if (isRepeatActive) {
-                        Spacer(modifier = Modifier.height(1.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(3.5.dp)
-                                .clip(CircleShape)
-                                .background(visibleAccent)
-                        )
-                    }
-                }
+                Icon(
+                    painter = painterResource(repeatIconRes),
+                    contentDescription = "Ulangi Lagu",
+                    tint = if (isRepeatActive) visibleAccent else Color.White.copy(alpha = 0.92f),
+                    modifier = Modifier.size(21.dp)
+                )
             }
 
-            // 7. Right button: Like / Favorite heart
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isLiked) visibleAccent.copy(alpha = 0.20f) else Color.Transparent
+                        if (isLiked) Color.White.copy(alpha = 0.24f) else Color.Transparent
                     )
                     .clickable { onToggleLike() },
                 contentAlignment = Alignment.Center
@@ -1488,8 +1422,8 @@ internal fun DynamicIslandMediumContent(
                 Icon(
                     painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
                     contentDescription = "Sukai",
-                    tint = if (isLiked) visibleAccent else Color.White.copy(alpha = 0.90f),
-                    modifier = Modifier.size(20.dp)
+                    tint = if (isLiked) Color(0xFFFF4D67) else Color.White.copy(alpha = 0.92f),
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
@@ -1552,10 +1486,9 @@ fun DynamicIslandWaveform(
 
     val phases = listOf(phase1, phase2, phase3, phase4, phase5)
 
-    // Guarantee the waveform color is always bright & visible even if a dark custom color was picked
     val visibleWaveColor = remember(accentColor) {
-        if (accentColor.luminance() < 0.25f) {
-            Color(0xFF1DB954)
+        if (accentColor.luminance() < 0.30f) {
+            Color(0xFF38BDF8)
         } else {
             accentColor
         }
@@ -1565,10 +1498,10 @@ fun DynamicIslandWaveform(
         val count = barCount.coerceIn(3, 5)
         val spacing = size.width * 0.11f
         val totalSpacing = spacing * (count - 1)
-        val barWidth = ((size.width - totalSpacing) / count).coerceAtLeast(2.2f)
+        val barWidth = ((size.width - totalSpacing) / count).coerceAtLeast(2.4f)
 
         for (i in 0 until count) {
-            val fraction = if (isPlaying) phases[i % phases.size] else 0.32f
+            val fraction = if (isPlaying) phases[i % phases.size] else 0.34f
             val barHeight = (size.height * fraction).coerceAtLeast(size.height * 0.28f)
             val x = i * (barWidth + spacing)
             val y = (size.height - barHeight) / 2f
@@ -1582,14 +1515,6 @@ fun DynamicIslandWaveform(
     }
 }
 
-/**
- * Full settings & customization dialog for Dynamic Island:
- * - Opt-in activation toggle + "Otomatis Aktif Saat Buka / Restart APK" toggle
- * - Background Blur (Glassmorphism) toggle & blur intensity selector
- * - Mode selector: Kecil (Compact Pill) & Sedang (Expanded Card)
- * - Live interactive preview of the Dynamic Island
- * - Accent Color & Background Color customization + Dynamic Album Art color sync + Border Glow
- */
 @Composable
 fun DynamicIslandSettingsDialog(
     onDismiss: () -> Unit,
@@ -1616,19 +1541,19 @@ fun DynamicIslandSettingsDialog(
     )
     val (accentColorInt, onAccentColorChange) = rememberPreference(
         DynamicIslandAccentColorKey,
-        defaultValue = 0xFF1DB954.toInt()
+        defaultValue = 0xFF38BDF8.toInt()
     )
     val (useDynamicAccent, onUseDynamicAccentChange) = rememberPreference(
         DynamicIslandUseDynamicAccentKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (bgColorInt, onBgColorChange) = rememberPreference(
         DynamicIslandBgColorKey,
-        defaultValue = 0xFF000000.toInt()
+        defaultValue = 0xFF161D2C.toInt()
     )
     val (useDynamicBg, onUseDynamicBgChange) = rememberPreference(
         DynamicIslandUseDynamicBgKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (borderGlow, onBorderGlowChange) = rememberPreference(
         DynamicIslandBorderGlowKey,
@@ -1636,7 +1561,7 @@ fun DynamicIslandSettingsDialog(
     )
     val (blurRadius, onBlurRadiusChange) = rememberPreference(
         DynamicIslandBlurRadiusKey,
-        defaultValue = 22
+        defaultValue = 20
     )
     val (permissionConfirmed, onPermissionConfirmedChange) = rememberPreference(
         DynamicIslandPermissionConfirmedKey,
@@ -1666,7 +1591,6 @@ fun DynamicIslandSettingsDialog(
         )
     }
 
-    // Refresh permission states whenever user returns from system settings
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -1779,7 +1703,6 @@ fun DynamicIslandSettingsDialog(
                         baseTint = Color(0xFF0A1120).copy(alpha = 0.44f)
                     )
             ) {
-                // Translucent Liquid Glass backdrop with hardware blur & refractive light orbs
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -1802,32 +1725,6 @@ fun DynamicIslandSettingsDialog(
                             )
                         )
                 )
-                Canvas(modifier = Modifier.matchParentSize()) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                previewAccent.copy(alpha = 0.34f),
-                                Color.Transparent
-                            ),
-                            center = Offset(size.width * 0.18f, size.height * 0.15f),
-                            radius = size.width * 0.62f
-                        ),
-                        center = Offset(size.width * 0.18f, size.height * 0.15f),
-                        radius = size.width * 0.62f
-                    )
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF38BDF8).copy(alpha = 0.26f),
-                                Color.Transparent
-                            ),
-                            center = Offset(size.width * 0.85f, size.height * 0.82f),
-                            radius = size.width * 0.56f
-                        ),
-                        center = Offset(size.width * 0.85f, size.height * 0.82f),
-                        radius = size.width * 0.56f
-                    )
-                }
 
                 Column(
                     modifier = Modifier
@@ -1883,7 +1780,6 @@ fun DynamicIslandSettingsDialog(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 1. Overlay Permission Card (Outside App)
                     val permCardShape = RoundedCornerShape(16.dp)
                     Box(
                         modifier = Modifier
@@ -1923,47 +1819,6 @@ fun DynamicIslandSettingsDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // 2. Notification & Media Session Card
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(permCardShape)
-                            .background(Color.White.copy(alpha = 0.06f))
-                            .frostedGlassSurface(
-                                shape = permCardShape,
-                                isHighlighted = true,
-                                baseTint = Color(0xFF1DB954).copy(alpha = 0.1f)
-                            )
-                            .padding(12.dp)
-                    ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(R.drawable.check),
-                                    contentDescription = null,
-                                    tint = Color(0xFF1DB954),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Notifikasi & Sesi Media Aktif",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Menjaga sinkronisasi pemutaran musik, sampul album, dan durasi lagu secara real-time.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.72f)
-                            )
-                        }
-                    }
-
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Column(
@@ -1986,15 +1841,10 @@ fun DynamicIslandSettingsDialog(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(46.dp)
-                                .frostedGlassSurface(
-                                    shape = RoundedCornerShape(14.dp),
-                                    isHighlighted = true,
-                                    baseTint = Color(0xFF1DB954).copy(alpha = 0.35f)
-                                ),
+                                .height(46.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF1DB954).copy(alpha = 0.85f),
+                                containerColor = Color(0xFF1DB954),
                                 contentColor = Color.Black
                             )
                         ) {
@@ -2018,11 +1868,7 @@ fun DynamicIslandSettingsDialog(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(42.dp)
-                                .liquidGlassPill(
-                                    shape = RoundedCornerShape(14.dp),
-                                    isSelected = false
-                                ),
+                                .height(42.dp),
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Text(
@@ -2057,7 +1903,6 @@ fun DynamicIslandSettingsDialog(
                     baseTint = Color(0xFF0A1222).copy(alpha = 0.38f)
                 )
         ) {
-            // Frosted 3D Liquid Glass translucent backdrop layer with hardware blur & prismatic sheen
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -2072,56 +1917,14 @@ fun DynamicIslandSettingsDialog(
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.22f),
-                                previewAccent.copy(alpha = 0.16f),
-                                Color(0xFF38BDF8).copy(alpha = 0.12f),
-                                Color.White.copy(alpha = 0.08f)
+                                Color.White.copy(alpha = 0.24f),
+                                previewAccent.copy(alpha = 0.18f),
+                                Color(0xFF38BDF8).copy(alpha = 0.14f),
+                                Color.White.copy(alpha = 0.10f)
                             )
                         )
                     )
             )
-
-            // Refractive Liquid Glass ambient glow orbs behind the dialog content
-            Canvas(modifier = Modifier.matchParentSize()) {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            previewAccent.copy(alpha = 0.34f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.15f, size.height * 0.1f),
-                        radius = size.width * 0.7f
-                    ),
-                    center = Offset(size.width * 0.15f, size.height * 0.1f),
-                    radius = size.width * 0.7f
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF38BDF8).copy(alpha = 0.24f),
-                            Color(0xFF6366F1).copy(alpha = 0.14f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.88f, size.height * 0.45f),
-                        radius = size.width * 0.65f
-                    ),
-                    center = Offset(size.width * 0.88f, size.height * 0.45f),
-                    radius = size.width * 0.65f
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            previewAccent.copy(alpha = 0.24f),
-                            Color.White.copy(alpha = 0.08f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.25f, size.height * 0.88f),
-                        radius = size.width * 0.6f
-                    ),
-                    center = Offset(size.width * 0.25f, size.height * 0.88f),
-                    radius = size.width * 0.6f
-                )
-            }
 
             Column(
                 modifier = Modifier
@@ -2129,31 +1932,25 @@ fun DynamicIslandSettingsDialog(
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Pengaturan Dynamic Island",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        Text(
+                            text = "Pengaturan Dynamic Island",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Kapsul musik interaktif • Liquid Glass 3D",
+                            text = "Kapsul musik interaktif • Liquid Glass Vivid",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.82f),
+                            color = Color.White.copy(alpha = 0.85f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -2182,7 +1979,7 @@ fun DynamicIslandSettingsDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Live Interactive Preview Box (Liquid Glass stage)
+                // Live Preview Stage
                 val previewStageShape = RoundedCornerShape(22.dp)
                 Box(
                     modifier = Modifier
@@ -2191,16 +1988,16 @@ fun DynamicIslandSettingsDialog(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color.White.copy(alpha = 0.16f),
-                                    previewAccent.copy(alpha = 0.18f),
-                                    Color(0xFF38BDF8).copy(alpha = 0.12f)
+                                    Color.White.copy(alpha = 0.18f),
+                                    previewAccent.copy(alpha = 0.22f),
+                                    Color(0xFF38BDF8).copy(alpha = 0.14f)
                                 )
                             )
                         )
                         .frostedGlassSurface(
                             shape = previewStageShape,
                             isHighlighted = true,
-                            baseTint = Color.White.copy(alpha = 0.10f)
+                            baseTint = Color.White.copy(alpha = 0.12f)
                         )
                 ) {
                     Column(
@@ -2222,7 +2019,7 @@ fun DynamicIslandSettingsDialog(
                             text = "PRATINJAU LANGSUNG • $previewModeLabel • $previewThemeLabel",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.8f),
+                            color = Color.White.copy(alpha = 0.85f),
                             letterSpacing = 0.8.sp,
                             maxLines = 1,
                             softWrap = false,
@@ -2231,201 +2028,107 @@ fun DynamicIslandSettingsDialog(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Render the selected mode & theme inside the preview container
                         val previewShape = RoundedCornerShape(
-                            if (mode == DynamicIslandMode.SEDANG) 26.dp else 50.dp
+                            if (mode == DynamicIslandMode.SEDANG) 28.dp else 50.dp
                         )
                         val isPreviewGlass = islandTheme == DynamicIslandTheme.LIQUID_GLASS
                         Surface(
                             shape = previewShape,
-                            color = if (isPreviewGlass) previewBg.copy(alpha = 0.45f) else previewBg,
-                            shadowElevation = 10.dp,
-                            modifier = Modifier
-                                .pointerInput(mode) {
-                                    var dragSum = 0f
-                                    detectHorizontalDragGestures(
-                                        onDragStart = { dragSum = 0f },
-                                        onHorizontalDrag = { change, dragAmount ->
-                                            change.consume()
-                                            dragSum += dragAmount
-                                        },
-                                        onDragEnd = {
-                                            if (dragSum < -30f && mode != DynamicIslandMode.BOLA) {
-                                                onModeChange(DynamicIslandMode.BOLA)
-                                            } else if (dragSum > 30f && mode == DynamicIslandMode.BOLA) {
-                                                onModeChange(DynamicIslandMode.KECIL)
-                                            }
-                                        }
+                            color = if (isPreviewGlass) previewBg.copy(alpha = 0.40f) else previewBg,
+                            shadowElevation = 12.dp,
+                            modifier = Modifier.then(
+                                if (isPreviewGlass) {
+                                    Modifier
+                                        .background(
+                                            Brush.linearGradient(
+                                                colors = listOf(
+                                                    Color.White.copy(alpha = 0.32f),
+                                                    previewAccent.copy(alpha = 0.26f),
+                                                    Color.White.copy(alpha = 0.12f)
+                                                )
+                                            ),
+                                            shape = previewShape
+                                        )
+                                        .border(
+                                            width = 1.6.dp,
+                                            brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    Color.White.copy(alpha = 0.92f),
+                                                    previewAccent.copy(alpha = 0.82f),
+                                                    Color.White.copy(alpha = 0.35f)
+                                                )
+                                            ),
+                                            shape = previewShape
+                                        )
+                                } else {
+                                    Modifier.border(
+                                        1.2.dp,
+                                        previewAccent.copy(alpha = 0.72f),
+                                        previewShape
                                     )
                                 }
-                                .then(
-                                    if (isPreviewGlass) {
-                                        Modifier
-                                            .background(
-                                                Brush.linearGradient(
-                                                    colors = listOf(
-                                                        Color.White.copy(alpha = 0.25f),
-                                                        previewAccent.copy(alpha = 0.22f),
-                                                        Color.White.copy(alpha = 0.08f)
-                                                    )
-                                                ),
-                                                shape = previewShape
-                                            )
-                                            .border(
-                                                width = 1.5.dp,
-                                                brush = Brush.linearGradient(
-                                                    colors = listOf(
-                                                        Color.White.copy(alpha = 0.85f),
-                                                        previewAccent.copy(alpha = 0.75f),
-                                                        Color.White.copy(alpha = 0.25f)
-                                                    )
-                                                ),
-                                                shape = previewShape
-                                            )
-                                    } else if (borderGlow) {
-                                        Modifier.border(
-                                            1.2.dp,
-                                            previewAccent.copy(alpha = 0.72f),
-                                            previewShape
-                                        )
-                                    } else {
-                                        Modifier.border(
-                                            0.85.dp,
-                                            Color.White.copy(alpha = 0.22f),
-                                            previewShape
-                                        )
-                                    }
-                                )
+                            )
                         ) {
                             if (mode == DynamicIslandMode.BOLA) {
                                 Box(
                                     modifier = Modifier
-                                        .size(46.dp)
+                                        .size(50.dp)
                                         .clip(CircleShape)
                                         .clickable { onModeChange(DynamicIslandMode.KECIL) },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Canvas(modifier = Modifier.fillMaxSize()) {
-                                        val strokePx = 2.6.dp.toPx()
-                                        val inset = strokePx / 2f + 1.dp.toPx()
-                                        val arcSize = Size(size.width - inset * 2f, size.height - inset * 2f)
-                                        drawArc(
-                                            color = Color.White.copy(alpha = 0.22f),
-                                            startAngle = 0f,
-                                            sweepAngle = 360f,
-                                            useCenter = false,
-                                            topLeft = Offset(inset, inset),
-                                            size = arcSize,
-                                            style = Stroke(width = strokePx, cap = StrokeCap.Round)
-                                        )
-                                        drawArc(
-                                            color = previewAccent,
-                                            startAngle = -90f,
-                                            sweepAngle = 210f,
-                                            useCenter = false,
-                                            topLeft = Offset(inset, inset),
-                                            size = arcSize,
-                                            style = Stroke(width = strokePx, cap = StrokeCap.Round)
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(5.5.dp)
-                                            .clip(CircleShape)
-                                            .background(previewAccent.copy(alpha = 0.28f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        DynamicIslandWaveform(
-                                            isPlaying = true,
-                                            accentColor = previewAccent,
-                                            barCount = 3,
-                                            modifier = Modifier.size(width = 15.dp, height = 13.dp)
-                                        )
-                                    }
+                                    DynamicIslandWaveform(
+                                        isPlaying = true,
+                                        accentColor = Color.White,
+                                        barCount = 3,
+                                        modifier = Modifier.size(width = 16.dp, height = 14.dp)
+                                    )
                                 }
                             } else if (mode == DynamicIslandMode.KECIL) {
                                 Box(
                                     modifier = Modifier
-                                        .width(230.dp)
-                                        .height(44.dp)
+                                        .width(250.dp)
+                                        .height(50.dp)
                                         .clickable { onModeChange(DynamicIslandMode.SEDANG) }
                                 ) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(start = 10.dp, end = 7.dp, top = 4.dp, bottom = 8.dp),
+                                            .padding(start = 10.dp, end = 8.dp, top = 5.dp, bottom = 9.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(24.dp)
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .background(previewAccent.copy(alpha = 0.28f)),
+                                                .size(30.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(previewAccent.copy(alpha = 0.35f)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.music_note),
                                                 contentDescription = null,
-                                                tint = previewAccent,
-                                                modifier = Modifier.size(14.dp)
+                                                tint = Color.White,
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         }
                                         Text(
                                             text = "Passionfruit • Drake",
-                                            color = Color(0xFFFFFFFF),
+                                            color = Color.White,
                                             style = TextStyle(
                                                 fontFamily = FontFamily.SansSerif,
-                                                fontSize = 12.5.sp,
+                                                fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFFFFFFF)
+                                                color = Color.White
                                             ),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                        ) {
-                                            DynamicIslandWaveform(
-                                                isPlaying = true,
-                                                accentColor = previewAccent,
-                                                barCount = 5,
-                                                modifier = Modifier.size(width = 18.dp, height = 15.dp)
-                                            )
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(20.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color.White.copy(alpha = 0.22f)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.close),
-                                                    contentDescription = null,
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(11.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                    // Bottom progress line (garis progres musik)
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 14.dp, vertical = 3.dp)
-                                            .height(2.8.dp)
-                                            .clip(RoundedCornerShape(50))
-                                            .background(Color.White.copy(alpha = 0.24f))
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth(0.56f)
-                                                .fillMaxHeight()
-                                                .clip(RoundedCornerShape(50))
-                                                .background(previewAccent)
+                                        DynamicIslandWaveform(
+                                            isPlaying = true,
+                                            accentColor = previewAccent,
+                                            barCount = 5,
+                                            modifier = Modifier.size(width = 20.dp, height = 16.dp)
                                         )
                                     }
                                 }
@@ -2434,48 +2137,44 @@ fun DynamicIslandSettingsDialog(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onModeChange(DynamicIslandMode.KECIL) }
-                                        .padding(14.dp)
+                                        .padding(16.dp)
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Box(
                                             modifier = Modifier
-                                                .size(40.dp)
-                                                .clip(RoundedCornerShape(9.dp))
-                                                .background(previewAccent.copy(alpha = 0.28f)),
+                                                .size(48.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(previewAccent.copy(alpha = 0.35f)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.music_note),
                                                 contentDescription = null,
-                                                tint = previewAccent,
-                                                modifier = Modifier.size(22.dp)
+                                                tint = Color.White,
+                                                modifier = Modifier.size(24.dp)
                                             )
                                         }
-                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Spacer(modifier = Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = "Passionfruit",
-                                                color = Color(0xFFFFFFFF),
+                                                color = Color.White,
                                                 style = TextStyle(
                                                     fontFamily = FontFamily.SansSerif,
-                                                    fontSize = 15.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color(0xFFFFFFFF)
-                                                ),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color.White
+                                                )
                                             )
                                             Text(
                                                 text = "Drake",
-                                                color = Color(0xFFF2F2F7),
+                                                color = Color.White.copy(alpha = 0.88f),
                                                 style = TextStyle(
                                                     fontFamily = FontFamily.SansSerif,
-                                                    fontSize = 12.5.sp,
+                                                    fontSize = 13.sp,
                                                     fontWeight = FontWeight.Medium,
-                                                    color = Color(0xFFF2F2F7)
-                                                ),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                    color = Color.White.copy(alpha = 0.88f)
+                                                )
                                             )
                                         }
                                         DynamicIslandWaveform(
@@ -2484,108 +2183,22 @@ fun DynamicIslandSettingsDialog(
                                             barCount = 5,
                                             modifier = Modifier.size(width = 20.dp, height = 16.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(5.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .clip(CircleShape)
-                                                .background(Color.White.copy(alpha = 0.16f)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.palette),
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(13.dp)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(5.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .clip(CircleShape)
-                                                .background(Color.White.copy(alpha = 0.22f)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.close),
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(13.dp)
-                                            )
-                                        }
                                     }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "1:10",
-                                            color = Color(0xFFF2F2F7),
-                                            style = TextStyle(
-                                                fontFamily = FontFamily.SansSerif,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = Color(0xFFF2F2F7)
-                                            )
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(4.5.dp)
-                                                .clip(RoundedCornerShape(50))
-                                                .background(Color.White.copy(alpha = 0.28f))
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth(0.38f)
-                                                    .fillMaxHeight()
-                                                    .clip(RoundedCornerShape(50))
-                                                    .background(previewAccent)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "-2:10",
-                                            color = Color(0xFFF2F2F7),
-                                            style = TextStyle(
-                                                fontFamily = FontFamily.SansSerif,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = Color(0xFFF2F2F7)
-                                            )
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                                        horizontalArrangement = Arrangement.SpaceEvenly
                                     ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.shuffle),
-                                            contentDescription = null,
-                                            tint = Color.White.copy(alpha = 0.85f),
-                                            modifier = Modifier.size(17.dp)
-                                        )
-                                        Icon(
-                                            painter = painterResource(R.drawable.replay),
-                                            contentDescription = null,
-                                            tint = Color.White.copy(alpha = 0.85f),
-                                            modifier = Modifier.size(17.dp)
-                                        )
                                         Icon(
                                             painter = painterResource(R.drawable.skip_previous),
                                             contentDescription = null,
                                             tint = Color.White,
-                                            modifier = Modifier.size(20.dp)
+                                            modifier = Modifier.size(24.dp)
                                         )
                                         Box(
                                             modifier = Modifier
-                                                .size(34.dp)
+                                                .size(40.dp)
                                                 .clip(CircleShape)
                                                 .background(Color.White),
                                             contentAlignment = Alignment.Center
@@ -2594,26 +2207,14 @@ fun DynamicIslandSettingsDialog(
                                                 painter = painterResource(R.drawable.pause),
                                                 contentDescription = null,
                                                 tint = Color.Black,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(22.dp)
                                             )
                                         }
                                         Icon(
                                             painter = painterResource(R.drawable.skip_next),
                                             contentDescription = null,
                                             tint = Color.White,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Icon(
-                                            painter = painterResource(R.drawable.repeat_on),
-                                            contentDescription = null,
-                                            tint = previewAccent,
-                                            modifier = Modifier.size(17.dp)
-                                        )
-                                        Icon(
-                                            painter = painterResource(R.drawable.favorite),
-                                            contentDescription = null,
-                                            tint = previewAccent,
-                                            modifier = Modifier.size(17.dp)
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
                                 }
@@ -2624,7 +2225,6 @@ fun DynamicIslandSettingsDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // If Dynamic Island was hidden via the X button while enabled, offer a 1-tap restore banner
                 if (enabled && isDismissed) {
                     val restoreShape = RoundedCornerShape(16.dp)
                     Box(
@@ -2685,7 +2285,7 @@ fun DynamicIslandSettingsDialog(
                     }
                 }
 
-                // 1. Enable / Disable Toggle (Manual vs Otomatis Saat Musik Diputar) — Liquid Glass Card
+                // Toggles
                 val toggleCardShape = RoundedCornerShape(18.dp)
                 Box(
                     modifier = Modifier
@@ -2732,9 +2332,9 @@ fun DynamicIslandSettingsDialog(
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = if (enabled) {
-                                        "Aktif • Tetap tampil saat musik di-pause & otomatis hilang saat keluar aplikasi"
+                                        "Aktif • Tetap tampil saat musik di-pause"
                                     } else {
-                                        "Nonaktif • Nyalakan manual atau gunakan fitur Otomatis di bawah"
+                                        "Nonaktif • Nyalakan manual atau gunakan Otomatis"
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color.White.copy(alpha = 0.72f)
@@ -2764,7 +2364,6 @@ fun DynamicIslandSettingsDialog(
                             color = Color.White.copy(alpha = 0.14f)
                         )
 
-                        // Auto-Trigger on Music Playback toggle
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -2796,9 +2395,9 @@ fun DynamicIslandSettingsDialog(
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = if (autoEnableOnStart) {
-                                        "Aktif • Muncul otomatis saat musik diputar & hilang saat keluar aplikasi"
+                                        "Aktif • Muncul otomatis saat musik diputar"
                                     } else {
-                                        "Nonaktif • Dynamic Island hanya muncul jika diaktifkan manual"
+                                        "Nonaktif • Hanya muncul jika diaktifkan manual"
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color.White.copy(alpha = 0.72f)
@@ -2828,7 +2427,7 @@ fun DynamicIslandSettingsDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Overlay Permission status card (For Outside-App display) — Liquid Glass & zero squished text
+                // Overlay permission card
                 val overlayPermShape = RoundedCornerShape(16.dp)
                 Box(
                     modifier = Modifier
@@ -2852,89 +2451,49 @@ fun DynamicIslandSettingsDialog(
                             }
                         }
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp)
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    if (canDrawOverlays) R.drawable.check else R.drawable.info
-                                ),
-                                contentDescription = null,
-                                tint = if (canDrawOverlays) Color(0xFF1DB954) else Color(0xFFF59E0B),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = if (canDrawOverlays) {
-                                    "Izin Overlay Luar Aplikasi"
-                                } else {
-                                    "Izin Tampil di Atas Aplikasi"
-                                },
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .liquidGlassPill(
-                                        shape = RoundedCornerShape(50),
-                                        isSelected = true,
-                                        accentColor = if (canDrawOverlays) Color(0xFF1DB954) else Color(0xFFF59E0B)
-                                    )
-                                    .padding(horizontal = 12.dp, vertical = 5.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (canDrawOverlays) "Aktif" else "Berikan Izin",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (canDrawOverlays) Color(0xFF4ADE80) else Color(0xFFFDE68A),
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Icon(
+                            painter = painterResource(
+                                if (canDrawOverlays) R.drawable.check else R.drawable.info
+                            ),
+                            contentDescription = null,
+                            tint = if (canDrawOverlays) Color(0xFF1DB954) else Color(0xFFF59E0B),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = if (canDrawOverlays) {
-                                "Kapsul dapat tetap melayang saat kamu membuka layar utama atau aplikasi lain."
-                            } else {
-                                "Saat ini hanya tampil di dalam aplikasi. Ketuk di sini untuk memberikan izin overlay."
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.72f)
+                            text = if (canDrawOverlays) "Izin Overlay Luar Aplikasi" else "Izin Tampil di Atas Aplikasi",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (canDrawOverlays) "Aktif" else "Berikan Izin",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (canDrawOverlays) Color(0xFF4ADE80) else Color(0xFFFDE68A)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // 2. Mode Selection (Bola vs Kecil vs Sedang) — Liquid Glass Cards
+                // Mode Selection
                 Text(
                     text = "Ukuran & Mode Dynamic Island",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = previewAccent
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Geser kapsul ke kiri untuk jadi Bola • Ketuk Bola untuk kembali normal",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.72f)
-                )
-
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
@@ -2942,260 +2501,57 @@ fun DynamicIslandSettingsDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val modeCardShape = RoundedCornerShape(16.dp)
-                    val isBall = mode == DynamicIslandMode.BOLA
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(modeCardShape)
-                            .background(Color.White.copy(alpha = if (isBall) 0.1f else 0.05f))
-                            .frostedGlassSurface(
-                                shape = modeCardShape,
-                                isHighlighted = isBall,
-                                baseTint = if (isBall) previewAccent.copy(alpha = 0.22f) else null
-                            )
-                            .clickable {
-                                onDismissedChange(false)
-                                onModeChange(DynamicIslandMode.BOLA)
-                            }
-                    ) {
-                        Column(
+                    listOf(
+                        Triple(DynamicIslandMode.BOLA, "Bola", "Ring progres"),
+                        Triple(DynamicIslandMode.KECIL, "Kecil", "Garis progres"),
+                        Triple(DynamicIslandMode.SEDANG, "Sedang", "Kontrol penuh")
+                    ).forEach { (itemMode, label, sub) ->
+                        val isSel = mode == itemMode
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp, horizontal = 6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(22.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.Black),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Canvas(modifier = Modifier.fillMaxSize()) {
-                                    val strokePx = 1.8.dp.toPx()
-                                    val inset = strokePx / 2f + 0.5.dp.toPx()
-                                    val arcSize = Size(size.width - inset * 2f, size.height - inset * 2f)
-                                    drawArc(
-                                        color = Color.White.copy(alpha = 0.25f),
-                                        startAngle = 0f,
-                                        sweepAngle = 360f,
-                                        useCenter = false,
-                                        topLeft = Offset(inset, inset),
-                                        size = arcSize,
-                                        style = Stroke(width = strokePx, cap = StrokeCap.Round)
-                                    )
-                                    drawArc(
-                                        color = previewAccent,
-                                        startAngle = -90f,
-                                        sweepAngle = 220f,
-                                        useCenter = false,
-                                        topLeft = Offset(inset, inset),
-                                        size = arcSize,
-                                        style = Stroke(width = strokePx, cap = StrokeCap.Round)
-                                    )
+                                .weight(1f)
+                                .clip(modeCardShape)
+                                .background(Color.White.copy(alpha = if (isSel) 0.12f else 0.05f))
+                                .frostedGlassSurface(
+                                    shape = modeCardShape,
+                                    isHighlighted = isSel,
+                                    baseTint = if (isSel) previewAccent.copy(alpha = 0.24f) else null
+                                )
+                                .clickable {
+                                    onDismissedChange(false)
+                                    onModeChange(itemMode)
                                 }
-                                Box(
-                                    modifier = Modifier
-                                        .size(9.dp)
-                                        .clip(CircleShape)
-                                        .background(previewAccent)
+                                .padding(vertical = 12.dp, horizontal = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = sub,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 11.sp,
+                                    color = Color.White.copy(alpha = 0.72f),
+                                    maxLines = 1
                                 )
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Bola",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Ring progres",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    val isSmall = mode == DynamicIslandMode.KECIL
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(modeCardShape)
-                            .background(Color.White.copy(alpha = if (isSmall) 0.1f else 0.05f))
-                            .frostedGlassSurface(
-                                shape = modeCardShape,
-                                isHighlighted = isSmall,
-                                baseTint = if (isSmall) previewAccent.copy(alpha = 0.22f) else null
-                            )
-                            .clickable {
-                                onDismissedChange(false)
-                                onModeChange(DynamicIslandMode.KECIL)
-                            }
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp, horizontal = 6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(52.dp)
-                                    .height(22.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(Color.Black)
-                                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(50))
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 5.dp, end = 5.dp, top = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(previewAccent)
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .width(10.dp)
-                                            .height(4.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(previewAccent)
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 7.dp, vertical = 2.5.dp)
-                                        .height(2.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(Color.White.copy(alpha = 0.25f))
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(0.6f)
-                                            .fillMaxHeight()
-                                            .clip(RoundedCornerShape(50))
-                                            .background(previewAccent)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Kecil",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Garis progres",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    val isMedium = mode == DynamicIslandMode.SEDANG
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(modeCardShape)
-                            .background(Color.White.copy(alpha = if (isMedium) 0.1f else 0.05f))
-                            .frostedGlassSurface(
-                                shape = modeCardShape,
-                                isHighlighted = isMedium,
-                                baseTint = if (isMedium) previewAccent.copy(alpha = 0.22f) else null
-                            )
-                            .clickable {
-                                onDismissedChange(false)
-                                onModeChange(DynamicIslandMode.SEDANG)
-                            }
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp, horizontal = 6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(64.dp)
-                                    .height(22.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color.Black)
-                                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(44.dp)
-                                        .height(3.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(previewAccent)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Sedang",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Kontrol penuh",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-                HorizontalDivider(color = Color.White.copy(alpha = 0.14f))
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 3. Tema Dynamic Island (Normal vs Liquid Glass)
+                // Theme Selection
                 Text(
                     text = "Tema Dynamic Island",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = previewAccent
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Pilih gaya visual kapsul antara Normal (hitam pekat) atau Liquid Glass (kaca buram transparan)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.72f)
-                )
-
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
@@ -3203,140 +2559,40 @@ fun DynamicIslandSettingsDialog(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     val themeCardShape = RoundedCornerShape(16.dp)
-                    val isNormalTheme = islandTheme == DynamicIslandTheme.NORMAL
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(themeCardShape)
-                            .background(Color.White.copy(alpha = if (isNormalTheme) 0.1f else 0.05f))
-                            .frostedGlassSurface(
-                                shape = themeCardShape,
-                                isHighlighted = isNormalTheme,
-                                baseTint = if (isNormalTheme) previewAccent.copy(alpha = 0.22f) else null
-                            )
-                            .clickable {
-                                onIslandThemeChange(DynamicIslandTheme.NORMAL)
-                            }
-                    ) {
-                        Column(
+                    listOf(
+                        Triple(DynamicIslandTheme.NORMAL, "Normal", "Kapsul gelap solid"),
+                        Triple(DynamicIslandTheme.LIQUID_GLASS, "Liquid Glass", "Kaca transparan 3D")
+                    ).forEach { (tItem, tLabel, tSub) ->
+                        val isSel = islandTheme == tItem
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .weight(1f)
+                                .clip(themeCardShape)
+                                .background(Color.White.copy(alpha = if (isSel) 0.12f else 0.05f))
+                                .frostedGlassSurface(
+                                    shape = themeCardShape,
+                                    isHighlighted = isSel,
+                                    baseTint = if (isSel) previewAccent.copy(alpha = 0.24f) else null
+                                )
+                                .clickable { onIslandThemeChange(tItem) }
                                 .padding(vertical = 12.dp, horizontal = 10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(56.dp)
-                                    .height(22.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(Color.Black)
-                                    .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(50)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(24.dp)
-                                        .height(4.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(previewAccent)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = tLabel,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = tSub,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 11.sp,
+                                    color = Color.White.copy(alpha = 0.72f),
+                                    maxLines = 1
                                 )
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Normal",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Kapsul gelap solid",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    val isGlassTheme = islandTheme == DynamicIslandTheme.LIQUID_GLASS
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(themeCardShape)
-                            .background(Color.White.copy(alpha = if (isGlassTheme) 0.1f else 0.05f))
-                            .frostedGlassSurface(
-                                shape = themeCardShape,
-                                isHighlighted = isGlassTheme,
-                                baseTint = if (isGlassTheme) previewAccent.copy(alpha = 0.22f) else null
-                            )
-                            .clickable {
-                                onIslandThemeChange(DynamicIslandTheme.LIQUID_GLASS)
-                            }
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp, horizontal = 10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(56.dp)
-                                    .height(22.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                Color.White.copy(alpha = 0.38f),
-                                                previewAccent.copy(alpha = 0.35f),
-                                                Color.White.copy(alpha = 0.16f)
-                                            )
-                                        )
-                                    )
-                                    .border(
-                                        1.2.dp,
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                Color.White.copy(alpha = 0.85f),
-                                                previewAccent.copy(alpha = 0.7f)
-                                            )
-                                        ),
-                                        RoundedCornerShape(50)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(24.dp)
-                                        .height(4.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(Color.White)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Liquid Glass",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Kaca transparan 3D",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
                         }
                     }
                 }
@@ -3346,8 +2602,8 @@ fun DynamicIslandSettingsDialog(
                         Spacer(modifier = Modifier.height(10.dp))
                         val blurOptions = listOf(
                             "Halus" to 12,
-                            "Sedang" to 22,
-                            "Kuat" to 34
+                            "Sedang" to 20,
+                            "Kuat" to 32
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -3372,8 +2628,7 @@ fun DynamicIslandSettingsDialog(
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                         color = Color.White,
-                                        maxLines = 1,
-                                        softWrap = false
+                                        maxLines = 1
                                     )
                                 }
                             }
@@ -3382,10 +2637,8 @@ fun DynamicIslandSettingsDialog(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = Color.White.copy(alpha = 0.14f))
-                Spacer(modifier = Modifier.height(14.dp))
 
-                // 4, 5, 6. Color Customization & Border Glow inside a unified Liquid Glass panel
+                // Color Customization Panel
                 val colorPanelShape = RoundedCornerShape(18.dp)
                 Box(
                     modifier = Modifier
@@ -3400,9 +2653,8 @@ fun DynamicIslandSettingsDialog(
                         .padding(14.dp)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        // 4. Accent Color
                         Text(
-                            text = "Warna Aksen (Waveform & Progress)",
+                            text = "Warna Aksen & Latar Sampul",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = previewAccent
@@ -3418,7 +2670,7 @@ fun DynamicIslandSettingsDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Otomatis ikuti warna sampul album",
+                                text = "Aksen otomatis ikuti sampul lagu",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White.copy(alpha = 0.9f),
                                 modifier = Modifier.weight(1f)
@@ -3427,6 +2679,26 @@ fun DynamicIslandSettingsDialog(
                             Switch(
                                 checked = useDynamicAccent,
                                 onCheckedChange = onUseDynamicAccentChange
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onUseDynamicBgChange(!useDynamicBg) }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Latar kaca ikuti warna sampul lagu",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.9f),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Switch(
+                                checked = useDynamicBg,
+                                onCheckedChange = onUseDynamicBgChange
                             )
                         }
 
@@ -3449,7 +2721,7 @@ fun DynamicIslandSettingsDialog(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
+                                            .size(36.dp)
                                             .clip(CircleShape)
                                             .background(Color(preset.colorInt))
                                             .border(
@@ -3464,7 +2736,7 @@ fun DynamicIslandSettingsDialog(
                                                 painter = painterResource(R.drawable.check),
                                                 contentDescription = null,
                                                 tint = Color.Black,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         }
                                     }
@@ -3473,102 +2745,16 @@ fun DynamicIslandSettingsDialog(
                                         text = preset.name.substringBefore(" "),
                                         fontSize = 10.sp,
                                         color = Color.White.copy(alpha = 0.72f),
-                                        maxLines = 1,
-                                        softWrap = false
+                                        maxLines = 1
                                     )
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // 5. Island Background Color
-                        Text(
-                            text = "Warna Latar Kapsul",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = previewAccent
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onUseDynamicBgChange(!useDynamicBg) }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Nuansa gelap sampul album otomatis",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Switch(
-                                checked = useDynamicBg,
-                                onCheckedChange = onUseDynamicBgChange
-                            )
-                        }
-
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            DynamicIslandBgPresets.forEach { preset ->
-                                val isSelected = !useDynamicBg && bgColorInt == preset.colorInt
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.clickable {
-                                        onUseDynamicBgChange(false)
-                                        onBgColorChange(preset.colorInt)
-                                    }
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(preset.colorInt))
-                                            .border(
-                                                width = if (isSelected) 2.5.dp else 1.dp,
-                                                color = if (isSelected) previewAccent else Color.White.copy(alpha = 0.25f),
-                                                shape = CircleShape
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (isSelected) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.check),
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = preset.name.substringAfter(" "),
-                                        fontSize = 10.sp,
-                                        color = Color.White.copy(alpha = 0.72f),
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // 6. Border Glow Toggle
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -3582,11 +2768,6 @@ fun DynamicIslandSettingsDialog(
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                     color = Color.White
-                                )
-                                Text(
-                                    text = "Tampilkan aksen garis tepi halus di sekeliling Dynamic Island",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.72f)
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -3604,23 +2785,17 @@ fun DynamicIslandSettingsDialog(
                     onClick = onDismiss,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
-                        .frostedGlassSurface(
-                            shape = RoundedCornerShape(16.dp),
-                            isHighlighted = true,
-                            baseTint = previewAccent.copy(alpha = 0.35f)
-                        ),
+                        .height(48.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = previewAccent.copy(alpha = 0.88f),
+                        containerColor = previewAccent,
                         contentColor = Color.Black
                     )
                 ) {
                     Text(
                         text = "Selesai",
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        softWrap = false
+                        maxLines = 1
                     )
                 }
             }

@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.lyrics
@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.math.abs
 
 private const val MAX_LYRICS_FETCH_MS = 30_000L
 private const val PER_PROVIDER_TIMEOUT_MS = 6_000L
@@ -42,25 +43,12 @@ constructor(
     private val allLyricsCache = LruCache<String, List<LyricsResult>>(MAX_CACHE_SIZE)
     private var currentLyricsJob: Job? = null
 
-    /**
-     * Fetch lyrics for [mediaMetadata], strictly honouring the user's preferred
-     * provider order at the moment of the call.
-     *
-     * The previous implementation collected the preference flow asynchronously
-     * into a member field, which meant that the very first call (and any call
-     * made just after the user changed the priority) could iterate over a stale
-     * list and return lyrics from the wrong provider.  We now resolve the
-     * ordered, enabled provider list synchronously per call.
-     */
     suspend fun getLyrics(mediaMetadata: MediaMetadata): LyricsWithProvider {
         currentLyricsJob?.cancel()
 
         val orderedProviders = resolveOrderedProviders()
         val preferredProviderName = orderedProviders.firstOrNull()?.name ?: PROVIDER_NONE
 
-        // Only honour the in-memory cache when it actually matches the
-        // currently-preferred provider, otherwise the user thinks they changed
-        // priority but keeps seeing the old result.
         cache.get(mediaMetadata.id)?.let { cached ->
             if (cached.lyrics != LYRICS_NOT_FOUND && cached.provider == preferredProviderName) {
                 Timber.tag(TAG).d("Returning cached lyrics from preferred provider ${cached.provider}")
@@ -83,10 +71,12 @@ constructor(
         val durationSeconds = if (mediaMetadata.duration > 0) mediaMetadata.duration / 1000 else mediaMetadata.duration
         val enabledProviders = orderedProviders.filter { it.isEnabled(context) }
 
-        Timber.tag(TAG).d("Searching lyrics for: '$cleanedTitle' by '$artistString'")
+        Timber.tag(TAG).d("Searching lyrics for: '$cleanedTitle' by '$artistString' (${durationSeconds}s)")
         Timber.tag(TAG).d("Enabled providers in order: ${enabledProviders.joinToString { it.name }}")
 
         val result = withTimeoutOrNull(MAX_LYRICS_FETCH_MS) {
+            var fallbackCandidate: LyricsWithProvider? = null
+
             for (provider in enabledProviders) {
                 Timber.tag(TAG).d("Trying provider: ${provider.name}")
                 val providerResult = try {
@@ -110,15 +100,29 @@ constructor(
                 if (providerResult != null && providerResult.isSuccess) {
                     val lyrics = providerResult.getOrNull()
                     if (isValidLyricsContent(lyrics)) {
-                        Timber.tag(TAG).i("Got lyrics from ${provider.name}")
-                        return@withTimeoutOrNull LyricsWithProvider(lyrics!!, provider.name)
+                        if (isLyricsCompatibleWithTrack(lyrics!!, artistString, durationSeconds)) {
+                            Timber.tag(TAG).i("Got duration-matched lyrics from ${provider.name}")
+                            return@withTimeoutOrNull LyricsWithProvider(lyrics, provider.name)
+                        } else {
+                            Timber.tag(TAG).w("${provider.name} lyrics rejected due to duration/artist mismatch, trying next provider")
+                            if (fallbackCandidate == null) {
+                                fallbackCandidate = LyricsWithProvider(lyrics, provider.name)
+                            }
+                        }
+                    } else {
+                        Timber.tag(TAG).w("${provider.name} returned success with empty/NOT_FOUND body")
                     }
-                    Timber.tag(TAG).w("${provider.name} returned success with empty/NOT_FOUND body")
                 } else {
                     val errorMsg = providerResult?.exceptionOrNull()?.message ?: "timeout or no result"
                     Timber.tag(TAG).w("${provider.name} failed: $errorMsg")
                 }
             }
+
+            if (fallbackCandidate != null) {
+                Timber.tag(TAG).w("Using fallback lyrics from ${fallbackCandidate.provider}")
+                return@withTimeoutOrNull fallbackCandidate
+            }
+
             Timber.tag(TAG).w("All providers failed for '${mediaMetadata.title}'")
             LyricsWithProvider(LYRICS_NOT_FOUND, PROVIDER_NONE)
         } ?: LyricsWithProvider(LYRICS_NOT_FOUND, PROVIDER_NONE)
@@ -160,9 +164,11 @@ constructor(
                 if (provider.isEnabled(context)) {
                     try {
                         provider.getAllLyrics(mediaId, cleanedTitle, songArtists, duration, album) { lyrics ->
-                            val result = LyricsResult(provider.name, lyrics)
-                            allResult += result
-                            callback(result)
+                            if (isValidLyricsContent(lyrics)) {
+                                val result = LyricsResult(provider.name, lyrics)
+                                allResult += result
+                                callback(result)
+                            }
                         }
                     } catch (e: CancellationException) {
                         throw e
@@ -176,11 +182,6 @@ constructor(
         currentLyricsJob?.join()
     }
 
-    /**
-     * Drop any cached lyrics for [mediaId] so the next [getLyrics] call goes
-     * back to the network. Called by the refetch / retry path so the user's
-     * action actually triggers a fresh request.
-     */
     fun invalidateCache(mediaId: String?) {
         if (mediaId == null) {
             cache.evictAll()
@@ -195,11 +196,6 @@ constructor(
         currentLyricsJob = null
     }
 
-    /**
-     * Immediately fetches lyrics prioritizing [preferred] without requiring the user
-     * to clear cache. Always attempts [preferred] first, then falls back to SimpMusic
-     * and the remaining enabled providers if [preferred] has no lyrics for this track.
-     */
     suspend fun getLyricsFromProvider(
         mediaMetadata: MediaMetadata,
         preferred: PreferredLyricsProvider,
@@ -223,9 +219,9 @@ constructor(
         val primaryProvider = providerInstanceOf(preferred)
         val fallbackOrder = listOf(
             primaryProvider,
+            LrcLibLyricsProvider,
             SimpMusicLyricsProvider,
             BetterLyricsProvider,
-            LrcLibLyricsProvider,
             RushLyricsProvider,
             PaxsenixLyricsProvider,
             MusixmatchLyricsProvider,
@@ -272,11 +268,6 @@ constructor(
         return result
     }
 
-    /**
-     * Build the ordered, user-preferred provider list straight from DataStore
-     * at call time, so changes to "preferred provider" or to the drag-and-drop
-     * order take effect immediately on the next fetch.
-     */
     private suspend fun resolveOrderedProviders(): List<LyricsProvider> {
         val preferences = context.dataStore.data
             .map { it }
@@ -290,54 +281,49 @@ constructor(
         )
         val providerOrder = preferences[LyricsProviderOrderKey] ?: defaultOrder
         val preferredProvider = preferences[PreferredLyricsProviderKey]
-            .toEnum(PreferredLyricsProvider.SIMPMUSIC)
+            .toEnum(PreferredLyricsProvider.LRCLIB)
 
         val preferredInstance = providerInstanceOf(preferredProvider)
 
         return if (providerOrder != defaultOrder) {
-            // The user has reordered the list explicitly — keep their order
-            // but always promote their preferred provider to the front so the
-            // "first lyrics provider" setting is never overruled.
             val customOrder = LyricsProviderRegistry.getOrderedProviders(providerOrder)
             val rest = customOrder.filter { it.name != preferredInstance.name }
             listOf(preferredInstance) + rest
         } else {
-            // No custom order — derive the order from the preferred provider,
-            // keeping SimpMusic as the primary provider / first fallback.
             when (preferredProvider) {
-                PreferredLyricsProvider.SIMPMUSIC -> listOf(
-                    SimpMusicLyricsProvider, BetterLyricsProvider, LrcLibLyricsProvider,
-                    RushLyricsProvider, PaxsenixLyricsProvider, MusixmatchLyricsProvider,
-                    KuGouLyricsProvider,
-                )
                 PreferredLyricsProvider.LRCLIB -> listOf(
                     LrcLibLyricsProvider, SimpMusicLyricsProvider, BetterLyricsProvider,
                     RushLyricsProvider, PaxsenixLyricsProvider, MusixmatchLyricsProvider,
                     KuGouLyricsProvider,
                 )
-                PreferredLyricsProvider.KUGOU -> listOf(
-                    KuGouLyricsProvider, SimpMusicLyricsProvider, BetterLyricsProvider,
+                PreferredLyricsProvider.SIMPMUSIC -> listOf(
+                    SimpMusicLyricsProvider, LrcLibLyricsProvider, BetterLyricsProvider,
                     RushLyricsProvider, PaxsenixLyricsProvider, MusixmatchLyricsProvider,
-                    LrcLibLyricsProvider,
+                    KuGouLyricsProvider,
+                )
+                PreferredLyricsProvider.KUGOU -> listOf(
+                    KuGouLyricsProvider, LrcLibLyricsProvider, SimpMusicLyricsProvider,
+                    BetterLyricsProvider, RushLyricsProvider, PaxsenixLyricsProvider,
+                    MusixmatchLyricsProvider,
                 )
                 PreferredLyricsProvider.BETTER_LYRICS -> listOf(
-                    BetterLyricsProvider, SimpMusicLyricsProvider, RushLyricsProvider,
-                    PaxsenixLyricsProvider, MusixmatchLyricsProvider, LrcLibLyricsProvider,
+                    BetterLyricsProvider, LrcLibLyricsProvider, SimpMusicLyricsProvider,
+                    RushLyricsProvider, PaxsenixLyricsProvider, MusixmatchLyricsProvider,
                     KuGouLyricsProvider,
                 )
                 PreferredLyricsProvider.RUSH_LYRICS -> listOf(
-                    RushLyricsProvider, SimpMusicLyricsProvider, BetterLyricsProvider,
-                    PaxsenixLyricsProvider, MusixmatchLyricsProvider, LrcLibLyricsProvider,
+                    RushLyricsProvider, LrcLibLyricsProvider, SimpMusicLyricsProvider,
+                    BetterLyricsProvider, PaxsenixLyricsProvider, MusixmatchLyricsProvider,
                     KuGouLyricsProvider,
                 )
                 PreferredLyricsProvider.PAXSENIX -> listOf(
-                    PaxsenixLyricsProvider, SimpMusicLyricsProvider, BetterLyricsProvider,
-                    RushLyricsProvider, MusixmatchLyricsProvider, LrcLibLyricsProvider,
+                    PaxsenixLyricsProvider, LrcLibLyricsProvider, SimpMusicLyricsProvider,
+                    BetterLyricsProvider, RushLyricsProvider, MusixmatchLyricsProvider,
                     KuGouLyricsProvider,
                 )
                 PreferredLyricsProvider.MUSIXMATCH -> listOf(
-                    MusixmatchLyricsProvider, SimpMusicLyricsProvider, BetterLyricsProvider,
-                    RushLyricsProvider, PaxsenixLyricsProvider, LrcLibLyricsProvider,
+                    MusixmatchLyricsProvider, LrcLibLyricsProvider, SimpMusicLyricsProvider,
+                    BetterLyricsProvider, RushLyricsProvider, PaxsenixLyricsProvider,
                     KuGouLyricsProvider,
                 )
             }
@@ -397,6 +383,51 @@ constructor(
             MusixmatchLyricsProvider.name, "Musixmatch" -> PreferredLyricsProvider.MUSIXMATCH
             KuGouLyricsProvider.name, "KuGou" -> PreferredLyricsProvider.KUGOU
             else -> null
+        }
+
+        /**
+         * Validates that LRC lyrics match the track's artist metadata (if [ar:] tag is present)
+         * and that the final lyric timestamp does not exceed or fall short of the song duration
+         * by an unreasonable margin (prevents wrong-song collisions like Gamma1 vs Javanese covers).
+         */
+        fun isLyricsCompatibleWithTrack(
+            lyrics: String,
+            expectedArtist: String,
+            expectedDurationSec: Int,
+        ): Boolean {
+            val lines = lyrics.lines()
+            val arTag = lines.firstOrNull { it.trim().startsWith("[ar:", ignoreCase = true) }
+                ?.substringAfter(":")?.substringBefore("]")?.trim()
+
+            if (!arTag.isNullOrBlank() && expectedArtist.isNotBlank()) {
+                val normExpected = expectedArtist.lowercase().replace(Regex("[^a-z0-9]"), "")
+                val normTag = arTag.lowercase().replace(Regex("[^a-z0-9]"), "")
+                if (normExpected.length >= 3 && normTag.length >= 3 &&
+                    !normExpected.contains(normTag) && !normTag.contains(normExpected)
+                ) {
+                    return false
+                }
+            }
+
+            if (expectedDurationSec > 20) {
+                val timeRegex = Regex("\\[(\\d{1,3}):(\\d{2})(?:\\.(\\d{1,3}))?\\]")
+                var maxLyricSec = 0
+                for (line in lines) {
+                    val match = timeRegex.find(line) ?: continue
+                    val min = match.groupValues[1].toIntOrNull() ?: 0
+                    val sec = match.groupValues[2].toIntOrNull() ?: 0
+                    val totalSec = min * 60 + sec
+                    if (totalSec > maxLyricSec) {
+                        maxLyricSec = totalSec
+                    }
+                }
+                if (maxLyricSec > 0) {
+                    // Reject if lyrics end > 18s after the song ends, or end more than 55% too early
+                    if (maxLyricSec > expectedDurationSec + 18) return false
+                    if (maxLyricSec < (expectedDurationSec * 0.45).toInt()) return false
+                }
+            }
+            return true
         }
 
         fun isValidLyricsContent(lyrics: String?): Boolean {

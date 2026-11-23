@@ -1,20 +1,36 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.component
 
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.os.Build
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,10 +43,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -50,8 +75,8 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import com.nanzbeatles.nanas.MainActivity
 import com.nanzbeatles.nanas.constants.DynamicIslandAccentColorKey
+import com.nanzbeatles.nanas.constants.DynamicIslandAutoEnableOnStartKey
 import com.nanzbeatles.nanas.constants.DynamicIslandBgColorKey
-import com.nanzbeatles.nanas.constants.DynamicIslandBlurEnabledKey
 import com.nanzbeatles.nanas.constants.DynamicIslandBlurRadiusKey
 import com.nanzbeatles.nanas.constants.DynamicIslandBorderGlowKey
 import com.nanzbeatles.nanas.constants.DynamicIslandDismissedKey
@@ -62,8 +87,10 @@ import com.nanzbeatles.nanas.constants.DynamicIslandTheme
 import com.nanzbeatles.nanas.constants.DynamicIslandThemeKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicAccentKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicBgKey
+import com.nanzbeatles.nanas.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.nanzbeatles.nanas.extensions.togglePlayPause
 import com.nanzbeatles.nanas.extensions.toggleRepeatMode
+import com.nanzbeatles.nanas.lyrics.LyricsUtils
 import com.nanzbeatles.nanas.playback.MusicService
 import com.nanzbeatles.nanas.ui.theme.NanzBeatlesTheme
 import com.nanzbeatles.nanas.utils.dataStore
@@ -75,30 +102,21 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-import androidx.datastore.preferences.core.edit
-import com.nanzbeatles.nanas.constants.DynamicIslandAutoEnableOnStartKey
-import kotlinx.coroutines.flow.MutableStateFlow
-
-/**
- * Manages the system-wide floating Spotify Dynamic Island overlay (`TYPE_APPLICATION_OVERLAY`)
- * when the user is outside the app (e.g., on the Home screen or using another app) while
- * `MusicService` is running.
- *
- * Automatically hides the system window while `MainActivity` is in the foreground so the in-app
- * Compose `DynamicIslandOverlay` handles rendering without duplication.
- */
 class DynamicIslandSystemOverlayManager(
     private val service: MusicService,
 ) {
     private val windowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    private val keyguardManager = service.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var monitorJob: Job? = null
 
@@ -107,17 +125,34 @@ class DynamicIslandSystemOverlayManager(
     private var isWindowAttached = false
 
     private val isPlayerPlayingFlow = MutableStateFlow(false)
+    private val isScreenLockedFlow = MutableStateFlow(false)
     private var playerListener: Player.Listener? = null
+    private var lockStateReceiver: BroadcastReceiver? = null
 
     fun start() {
         if (monitorJob != null) return
 
         isPlayerPlayingFlow.value = service.player.isPlaying
+        isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
+
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
+            }
+        }
+        lockStateReceiver = receiver
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        runCatching { service.registerReceiver(receiver, filter) }
+
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 isPlayerPlayingFlow.value = isPlaying
+                isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
                 if (isPlaying) {
-                    // When music starts playing, reset dismissed state if Auto Mode is active
                     scope.launch(Dispatchers.IO) {
                         runCatching {
                             service.dataStore.edit { prefs ->
@@ -153,19 +188,20 @@ class DynamicIslandSystemOverlayManager(
                 prefsFlow,
                 isPlayerPlayingFlow,
                 service.currentMediaMetadata,
-                DynamicIslandOverlayState.isAppInForeground
-            ) { (enabled, _, dismissed), _, _, inForeground ->
-                val shouldShow = enabled && !dismissed
-                shouldShow to inForeground
-            }.collect { (shouldShow, inForeground) ->
-                updateOverlayVisibility(shouldShow = shouldShow, inForeground = inForeground)
+                DynamicIslandOverlayState.isAppInForeground,
+                isScreenLockedFlow
+            ) { (enabled, _, dismissed), isPlaying, _, inForeground, isLocked ->
+                val shouldShow = (enabled && !dismissed) || (isLocked && isPlaying)
+                shouldShow to (inForeground && !isLocked)
+            }.collect { (shouldShow, inForegroundUnlocked) ->
+                updateOverlayVisibility(shouldShow = shouldShow, inForeground = inForegroundUnlocked)
             }
         }
 
-        // Also periodically check overlay permission when user is outside app
         scope.launch {
             while (isActive) {
-                delay(1500L)
+                delay(800L)
+                isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
                 val inForeground = DynamicIslandOverlayState.isAppInForeground.value
                 if (!inForeground && isWindowAttached && !canDrawOverlays()) {
                     hideOverlayWindow()
@@ -204,7 +240,6 @@ class DynamicIslandSystemOverlayManager(
 
             val view = ComposeView(service).apply {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    // Prevent MIUI / Poco / Android system Force-Dark from dimming white overlay text
                     isForceDarkAllowed = false
                 }
                 setViewTreeLifecycleOwner(lifecycleOwner)
@@ -217,6 +252,7 @@ class DynamicIslandSystemOverlayManager(
                     ) {
                         SystemDynamicIslandContent(
                             service = service,
+                            isScreenLockedFlow = isScreenLockedFlow,
                             onOpenApp = { openMainActivity() }
                         )
                     }
@@ -237,6 +273,7 @@ class DynamicIslandSystemOverlayManager(
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                     WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
                 PixelFormat.RGBA_8888
             ).apply {
@@ -249,7 +286,7 @@ class DynamicIslandSystemOverlayManager(
             composeView = view
             isWindowAttached = true
         } catch (e: Exception) {
-            Timber.e(e, "Failed to attach Dynamic Island system overlay")
+            Timber.e(e, "Failed to attach Dynamic Island / Lockscreen Lyrics overlay")
         }
     }
 
@@ -283,6 +320,8 @@ class DynamicIslandSystemOverlayManager(
     }
 
     fun release() {
+        lockStateReceiver?.let { runCatching { service.unregisterReceiver(it) } }
+        lockStateReceiver = null
         playerListener?.let { service.player.removeListener(it) }
         playerListener = null
         monitorJob?.cancel()
@@ -295,10 +334,10 @@ class DynamicIslandSystemOverlayManager(
 @Composable
 private fun SystemDynamicIslandContent(
     service: MusicService,
+    isScreenLockedFlow: MutableStateFlow<Boolean>,
     onOpenApp: () -> Unit,
 ) {
     val (enabled, _) = rememberPreference(DynamicIslandEnabledKey, defaultValue = false)
-    val (autoMode, _) = rememberPreference(DynamicIslandAutoEnableOnStartKey, defaultValue = false)
     val (isDismissed, onDismissedChange) = rememberPreference(
         DynamicIslandDismissedKey,
         defaultValue = false
@@ -313,19 +352,19 @@ private fun SystemDynamicIslandContent(
     )
     val (accentColorInt, _) = rememberPreference(
         DynamicIslandAccentColorKey,
-        defaultValue = 0xFF1DB954.toInt()
+        defaultValue = 0xFF38BDF8.toInt()
     )
     val (useDynamicAccent, _) = rememberPreference(
         DynamicIslandUseDynamicAccentKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (bgColorInt, _) = rememberPreference(
         DynamicIslandBgColorKey,
-        defaultValue = 0xFF000000.toInt()
+        defaultValue = 0xFF161D2C.toInt()
     )
     val (useDynamicBg, _) = rememberPreference(
         DynamicIslandUseDynamicBgKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (borderGlow, _) = rememberPreference(
         DynamicIslandBorderGlowKey,
@@ -333,11 +372,12 @@ private fun SystemDynamicIslandContent(
     )
     val (blurRadius, _) = rememberPreference(
         DynamicIslandBlurRadiusKey,
-        defaultValue = 22
+        defaultValue = 20
     )
 
     val metadata by service.currentMediaMetadata.collectAsState()
     val currentSong by service.currentSong.collectAsState()
+    val isScreenLocked by isScreenLockedFlow.collectAsState()
 
     var isPlaying by remember { mutableStateOf(service.player.isPlaying) }
     var playbackState by remember { mutableIntStateOf(service.player.playbackState) }
@@ -379,13 +419,14 @@ private fun SystemDynamicIslandContent(
         }
     }
 
-    val shouldShow = enabled && !isDismissed
-    if (!shouldShow) return
+    val shouldShowIsland = enabled && !isDismissed
+    val shouldShowLockscreenLyrics = isScreenLocked && isPlaying && metadata != null
+
+    if (!shouldShowIsland && !shouldShowLockscreenLyrics) return
 
     var extractedArtworkColor by remember { mutableStateOf<Color?>(null) }
 
     LaunchedEffect(metadata?.thumbnailUrl, useDynamicAccent, useDynamicBg) {
-        if (!useDynamicAccent && !useDynamicBg) return@LaunchedEffect
         val thumb = metadata?.thumbnailUrl
         if (thumb.isNullOrBlank()) {
             extractedArtworkColor = null
@@ -416,7 +457,7 @@ private fun SystemDynamicIslandContent(
 
     val effectiveBgColor = remember(bgColorInt, useDynamicBg, extractedArtworkColor) {
         if (useDynamicBg && extractedArtworkColor != null) {
-            lerp(Color.Black, extractedArtworkColor!!, 0.20f).copy(alpha = 1f)
+            lerp(Color(0xFF141A26), extractedArtworkColor!!, 0.34f).copy(alpha = 1f)
         } else {
             Color(bgColorInt).copy(alpha = 1f)
         }
@@ -430,7 +471,7 @@ private fun SystemDynamicIslandContent(
             while (isActive) {
                 position = service.player.currentPosition.coerceAtLeast(0L)
                 duration = service.player.duration.coerceAtLeast(0L)
-                delay(250L)
+                delay(200L)
             }
         } else {
             position = service.player.currentPosition.coerceAtLeast(0L)
@@ -438,8 +479,37 @@ private fun SystemDynamicIslandContent(
         }
     }
 
+    // Load synced lyrics from database for Lockscreen Lyrics display
+    var parsedLyricsLines by remember { mutableStateOf<List<Pair<Long, String>>>(emptyList()) }
+    LaunchedEffect(metadata?.id) {
+        val songId = metadata?.id ?: return@LaunchedEffect
+        parsedLyricsLines = withContext(Dispatchers.IO) {
+            runCatching {
+                val entity = service.database.lyrics(songId).firstOrNull()
+                val raw = entity?.lyrics
+                if (!raw.isNullOrBlank() && raw != LYRICS_NOT_FOUND) {
+                    LyricsUtils.parseLyrics(raw)
+                        .map { entry ->
+                            val primary = entry.text.lineSequence().firstOrNull()?.trim().orEmpty()
+                            entry.time to primary
+                        }
+                        .filter { it.second.isNotBlank() }
+                } else {
+                    emptyList()
+                }
+            }.getOrDefault(emptyList())
+        }
+    }
+
+    val lyricsOffsetMs = (currentSong?.song?.lyricsOffset ?: 0).toLong()
+    val effectivePosMs = (position + lyricsOffsetMs).coerceAtLeast(0L)
+    val activeLyricIndex = remember(parsedLyricsLines, effectivePosMs) {
+        if (parsedLyricsLines.isEmpty()) -1
+        else parsedLyricsLines.indexOfLast { it.first <= effectivePosMs }
+    }
+
     val isLiked = currentSong?.song?.liked == true
-    val displayTitle = metadata?.title ?: "Dynamic Island Aktif"
+    val displayTitle = metadata?.title ?: "Vortex Music"
     val displayArtist = metadata?.artists?.joinToString(", ") { it.name } ?: "Ketuk untuk kembali ke aplikasi"
     val displayDuration = if (metadata != null) {
         duration.takeIf { it > 0L } ?: ((metadata!!.duration.toLong()) * 1000L)
@@ -456,57 +526,158 @@ private fun SystemDynamicIslandContent(
         ).show()
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .wrapContentSize()
             .padding(top = 4.dp, bottom = 4.dp),
-        contentAlignment = Alignment.TopCenter
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        DynamicIslandCapsuleSurface(
-            mode = mode,
-            islandTheme = islandTheme,
-            effectiveBgColor = effectiveBgColor,
-            effectiveAccentColor = effectiveAccentColor,
-            borderGlow = borderGlow,
-            blurRadius = blurRadius,
-            isSystemOverlay = true,
-            displayTitle = displayTitle,
-            displayArtist = displayArtist,
-            thumbnailUrl = metadata?.thumbnailUrl,
-            isPlaying = isPlaying,
-            isLiked = isLiked,
-            shuffleModeEnabled = shuffleModeEnabled,
-            repeatMode = repeatMode,
-            position = if (metadata != null) position else 0L,
-            duration = displayDuration,
-            canSkipPrevious = canSkipPrevious && metadata != null,
-            canSkipNext = canSkipNext && metadata != null,
-            onModeChange = onModeChange,
-            onDismissIsland = handleDismissWithoutStoppingMusic,
-            onTogglePlayPause = {
-                if (metadata != null) {
-                    service.player.togglePlayPause()
-                } else {
-                    onOpenApp()
+        if (shouldShowIsland) {
+            DynamicIslandCapsuleSurface(
+                mode = mode,
+                islandTheme = islandTheme,
+                effectiveBgColor = effectiveBgColor,
+                effectiveAccentColor = effectiveAccentColor,
+                borderGlow = borderGlow,
+                blurRadius = blurRadius,
+                isSystemOverlay = true,
+                displayTitle = displayTitle,
+                displayArtist = displayArtist,
+                thumbnailUrl = metadata?.thumbnailUrl,
+                isPlaying = isPlaying,
+                isLiked = isLiked,
+                shuffleModeEnabled = shuffleModeEnabled,
+                repeatMode = repeatMode,
+                position = if (metadata != null) position else 0L,
+                duration = displayDuration,
+                canSkipPrevious = canSkipPrevious && metadata != null,
+                canSkipNext = canSkipNext && metadata != null,
+                onModeChange = onModeChange,
+                onDismissIsland = handleDismissWithoutStoppingMusic,
+                onTogglePlayPause = {
+                    if (metadata != null) {
+                        service.player.togglePlayPause()
+                    } else {
+                        onOpenApp()
+                    }
+                },
+                onSeekTo = { newPos ->
+                    if (metadata != null) {
+                        service.player.seekTo(newPos)
+                    }
+                },
+                onPrevious = { service.player.seekToPrevious() },
+                onNext = { service.player.seekToNext() },
+                onToggleLike = { service.toggleLike() },
+                onToggleShuffle = {
+                    service.player.shuffleModeEnabled = !service.player.shuffleModeEnabled
+                },
+                onToggleRepeat = {
+                    service.player.toggleRepeatMode()
+                },
+                onOpenFullPlayer = { onOpenApp() },
+                onOpenCustomizeOrApp = { onOpenApp() }
+            )
+        }
+
+        // Lockscreen Live Synced Lyrics (positioned below lockscreen clock, above media widget)
+        if (shouldShowLockscreenLyrics && parsedLyricsLines.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(175.dp))
+
+            val prevLine = parsedLyricsLines.getOrNull(activeLyricIndex - 1)?.second
+            val currentLine = parsedLyricsLines.getOrNull(activeLyricIndex)?.second
+                ?: parsedLyricsLines.firstOrNull()?.second.orEmpty()
+            val nextLine = parsedLyricsLines.getOrNull(activeLyricIndex + 1)?.second
+
+            val textShadow = Shadow(
+                color = Color.Black.copy(alpha = 0.85f),
+                offset = Offset(0f, 3f),
+                blurRadius = 12f
+            )
+
+            AnimatedContent(
+                targetState = activeLyricIndex,
+                transitionSpec = {
+                    (fadeIn(tween(220)) + slideInVertically(tween(240)) { it / 3 })
+                        .togetherWith(fadeOut(tween(180)) + slideOutVertically(tween(200)) { -it / 3 })
+                },
+                label = "LockscreenLyricsAnim"
+            ) { idx ->
+                val activeText = parsedLyricsLines.getOrNull(idx)?.second ?: currentLine
+                val upcomingText = parsedLyricsLines.getOrNull(idx + 1)?.second ?: nextLine
+                val followingText = parsedLyricsLines.getOrNull(idx + 2)?.second
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (!prevLine.isNullOrBlank() && idx > 0) {
+                        Text(
+                            text = prevLine,
+                            style = TextStyle(
+                                fontFamily = FontFamily.SansSerif,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.45f),
+                                shadow = textShadow
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Start
+                        )
+                    }
+
+                    Text(
+                        text = activeText,
+                        style = TextStyle(
+                            fontFamily = FontFamily.SansSerif,
+                            fontSize = 23.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            shadow = textShadow
+                        ),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Start
+                    )
+
+                    if (!upcomingText.isNullOrBlank()) {
+                        Text(
+                            text = upcomingText,
+                            style = TextStyle(
+                                fontFamily = FontFamily.SansSerif,
+                                fontSize = 19.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.65f),
+                                shadow = textShadow
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Start
+                        )
+                    }
+
+                    if (!followingText.isNullOrBlank()) {
+                        Text(
+                            text = followingText,
+                            style = TextStyle(
+                                fontFamily = FontFamily.SansSerif,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.42f),
+                                shadow = textShadow
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Start
+                        )
+                    }
                 }
-            },
-            onSeekTo = { newPos ->
-                if (metadata != null) {
-                    service.player.seekTo(newPos)
-                }
-            },
-            onPrevious = { service.player.seekToPrevious() },
-            onNext = { service.player.seekToNext() },
-            onToggleLike = { service.toggleLike() },
-            onToggleShuffle = {
-                service.player.shuffleModeEnabled = !service.player.shuffleModeEnabled
-            },
-            onToggleRepeat = {
-                service.player.toggleRepeatMode()
-            },
-            onOpenFullPlayer = { onOpenApp() },
-            onOpenCustomizeOrApp = { onOpenApp() }
-        )
+            }
+        }
     }
 }
 

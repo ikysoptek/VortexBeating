@@ -154,9 +154,9 @@
                 android:layout_height="54dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:background="@drawable/widget_play_button_bg"
+                android:background="@drawable/widget_liquid_glass_play_circle"
                 android:padding="13dp"
-                android:src="@drawable/ic_widget_play_dark"
+                android:src="@drawable/ic_widget_play_black"
                 android:contentDescription="@string/widget_play_pause" />
 
             <ImageView

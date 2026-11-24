@@ -87,6 +87,7 @@ import com.nanzbeatles.nanas.constants.UseLoginForBrowse
 import com.nanzbeatles.nanas.constants.VisitorDataKey
 import com.nanzbeatles.nanas.constants.YtmSyncKey
 import com.nanzbeatles.nanas.notifications.NewReleaseNotificationScheduler
+import com.nanzbeatles.nanas.service.LockscreenLyricsBridge
 import com.nanzbeatles.nanas.ui.component.IconButton
 import com.nanzbeatles.nanas.ui.component.InfoLabel
 import com.nanzbeatles.nanas.ui.component.Material3SettingsGroup
@@ -241,7 +242,6 @@ fun SettingsScreen(
             }
         )
 
-        // Horizontal navigation tabs
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -280,7 +280,6 @@ fun SettingsScreen(
             }
         }
 
-        // Scrollable settings items
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -385,17 +384,14 @@ private fun toggleLockscreenLyricsWithPermissionCheck(
     onLockscreenLyricsChange: (Boolean) -> Unit,
 ) {
     onLockscreenLyricsChange(enable)
-    if (enable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
+    if (enable && !LockscreenLyricsBridge.isAccessibilityServiceEnabled(context)) {
         Toast.makeText(
             context,
-            "Izinkan 'Tampilkan di atas aplikasi lain' agar lirik tampil di layar kunci",
+            "Aktifkan 'Vortex Music - Lirik Layar Kunci' di menu Aksesibilitas HP",
             Toast.LENGTH_LONG
         ).show()
         runCatching {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                "package:${context.packageName}".toUri()
-            ).apply {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
@@ -421,12 +417,10 @@ private fun GeneralSettingsContent(
     onShowTokenEditor: () -> Unit,
     onShowLogoutDialog: () -> Unit,
 ) {
-    // Side-by-side Row: Left = User Account Card | Right = Developer Profile Card
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Left Card: User Account
         Card(
             modifier = Modifier
                 .weight(1.35f)
@@ -498,7 +492,6 @@ private fun GeneralSettingsContent(
             }
         }
 
-        // Right Card: Developer Page Shortcut (ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者)
         Card(
             modifier = Modifier
                 .weight(1f)
@@ -582,7 +575,6 @@ private fun GeneralSettingsContent(
         )
     }
 
-    // Dynamic Island Quick Feature Card
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -658,7 +650,8 @@ private fun GeneralSettingsContent(
 
     Spacer(modifier = Modifier.height(10.dp))
 
-    // Lockscreen Lyrics On/Off Toggle (Same Switch style as other settings)
+    val isServiceActive = LockscreenLyricsBridge.isAccessibilityServiceEnabled(context)
+
     Material3SettingsGroup(
         title = "Layar Kunci",
         items = listOf(
@@ -667,10 +660,10 @@ private fun GeneralSettingsContent(
                 title = { Text("Lirik di Layar Kunci") },
                 description = {
                     Text(
-                        if (lockscreenLyricsEnabled) {
-                            "Aktif • Lirik berjalan otomatis tampil saat layar HP terkunci"
-                        } else {
-                            "Nonaktif • Tampilkan lirik bergerak mengikuti lagu di layar kunci"
+                        when {
+                            lockscreenLyricsEnabled && isServiceActive -> "Aktif • Lirik berjalan otomatis tampil saat layar HP terkunci"
+                            lockscreenLyricsEnabled && !isServiceActive -> "Izin Aksesibilitas belum aktif • Ketuk untuk buka setelan"
+                            else -> "Nonaktif • Tampilkan lirik bergerak mengikuti lagu di layar kunci"
                         }
                     )
                 },
@@ -687,11 +680,19 @@ private fun GeneralSettingsContent(
                     )
                 },
                 onClick = {
-                    toggleLockscreenLyricsWithPermissionCheck(
-                        context = context,
-                        enable = !lockscreenLyricsEnabled,
-                        onLockscreenLyricsChange = onLockscreenLyricsChange
-                    )
+                    if (lockscreenLyricsEnabled && !isServiceActive) {
+                        toggleLockscreenLyricsWithPermissionCheck(
+                            context = context,
+                            enable = true,
+                            onLockscreenLyricsChange = onLockscreenLyricsChange
+                        )
+                    } else {
+                        toggleLockscreenLyricsWithPermissionCheck(
+                            context = context,
+                            enable = !lockscreenLyricsEnabled,
+                            onLockscreenLyricsChange = onLockscreenLyricsChange
+                        )
+                    }
                 }
             )
         )
@@ -699,7 +700,6 @@ private fun GeneralSettingsContent(
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    // Account Options
     Material3SettingsGroup(
         title = stringResource(R.string.account),
         items = buildList {
@@ -784,7 +784,6 @@ private fun GeneralSettingsContent(
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    // Integrations
     Material3SettingsGroup(
         title = stringResource(R.string.integrations),
         items = listOf(

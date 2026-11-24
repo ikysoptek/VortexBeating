@@ -7,12 +7,15 @@ package com.nanzbeatles.nanas.service
 import android.accessibilityservice.AccessibilityService
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -61,11 +64,18 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
+import com.nanzbeatles.nanas.constants.PreferredLyricsProvider
+import com.nanzbeatles.nanas.constants.PreferredLyricsProviderKey
 import com.nanzbeatles.nanas.db.MusicDatabase
+import com.nanzbeatles.nanas.db.entities.LyricsEntity
 import com.nanzbeatles.nanas.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
+import com.nanzbeatles.nanas.extensions.toEnum
+import com.nanzbeatles.nanas.lyrics.LyricsHelper
 import com.nanzbeatles.nanas.lyrics.LyricsUtils
+import com.nanzbeatles.nanas.models.MediaMetadata
 import com.nanzbeatles.nanas.ui.theme.NanzBeatlesTheme
 import com.nanzbeatles.nanas.utils.dataStore
+import com.nanzbeatles.nanas.utils.get
 import com.nanzbeatles.nanas.utils.rememberPreference
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -84,10 +94,6 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
-/**
- * Jembatan data pemutaran musik real-time dari MusicService ke LockscreenLyricsAccessibilityService
- * agar lirik tampil di atas lapisan Keyguard (layar kunci) Android 12+ / MIUI / HyperOS.
- */
 object LockscreenLyricsBridge {
     data class PlaybackSnapshot(
         val mediaId: String? = null,
@@ -114,6 +120,25 @@ object LockscreenLyricsBridge {
             lyricsOffsetMs = lyricsOffsetMs,
         )
     }
+
+    fun isAccessibilityServiceEnabled(context: Context): Boolean {
+        val expectedComponent = ComponentName(context, LockscreenLyricsAccessibilityService::class.java)
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        val splitter = TextUtils.SimpleStringSplitter(':')
+        splitter.setString(enabledServices)
+        while (splitter.hasNext()) {
+            val componentString = splitter.next()
+            val enabledComponent = ComponentName.unflattenFromString(componentString)
+            if (enabledComponent != null && enabledComponent == expectedComponent) {
+                return true
+            }
+        }
+        return false
+    }
 }
 
 @AndroidEntryPoint
@@ -121,6 +146,9 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
 
     @Inject
     lateinit var database: MusicDatabase
+
+    @Inject
+    lateinit var lyricsHelper: LyricsHelper
 
     private lateinit var windowManager: WindowManager
     private var keyguardManager: KeyguardManager? = null
@@ -165,7 +193,7 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
                 } else {
                     detachWindowIfNeeded()
                 }
-                delay(280L)
+                delay(250L)
             }
         }
     }
@@ -195,14 +223,15 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
                 setContent {
                     NanzBeatlesTheme(darkTheme = true, pureBlack = true) {
                         LockscreenLyricsOverlayContent(
+                            context = this@LockscreenLyricsAccessibilityService,
                             database = database,
+                            lyricsHelper = lyricsHelper,
                             isLockedFlow = isLockedFlow
                         )
                     }
                 }
             }
 
-            // TYPE_ACCESSIBILITY_OVERLAY tampil langsung DI ATAS layar kunci Android / MIUI / HyperOS
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -214,7 +243,7 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
                 PixelFormat.TRANSLUCENT
             ).apply {
                 gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                y = (290 * resources.displayMetrics.density).toInt()
+                y = (285 * resources.displayMetrics.density).toInt()
             }
 
             windowManager.addView(view, params)
@@ -258,7 +287,9 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
 
 @Composable
 private fun LockscreenLyricsOverlayContent(
+    context: Context,
     database: MusicDatabase,
+    lyricsHelper: LyricsHelper,
     isLockedFlow: StateFlow<Boolean>,
 ) {
     val (enabled, _) = rememberPreference(LockscreenLyricsEnabledKey, defaultValue = false)
@@ -272,8 +303,35 @@ private fun LockscreenLyricsOverlayContent(
         val songId = snap.mediaId ?: return@LaunchedEffect
         parsedLines = withContext(Dispatchers.IO) {
             runCatching {
-                val entity = database.lyrics(songId).firstOrNull()
-                val raw = entity?.lyrics
+                var raw = database.lyrics(songId).firstOrNull()?.lyrics
+                if (raw.isNullOrBlank()) {
+                    val songWithArtists = database.song(songId).firstOrNull()
+                    if (songWithArtists != null) {
+                        val metadata = MediaMetadata(
+                            id = songWithArtists.song.id,
+                            title = songWithArtists.song.title,
+                            artists = songWithArtists.artists.map {
+                                MediaMetadata.Artist(id = it.id, name = it.name)
+                            },
+                            duration = songWithArtists.song.duration,
+                            thumbnailUrl = songWithArtists.song.thumbnailUrl,
+                        )
+                        val preferredProvider = context.dataStore
+                            .get(PreferredLyricsProviderKey)
+                            .toEnum(PreferredLyricsProvider.SIMPMUSIC)
+                        val fetched = lyricsHelper.getLyricsFromProvider(metadata, preferredProvider)
+                        raw = fetched.lyrics
+                        database.query {
+                            upsert(
+                                LyricsEntity(
+                                    id = songId,
+                                    lyrics = fetched.lyrics,
+                                    provider = fetched.provider,
+                                )
+                            )
+                        }
+                    }
+                }
                 if (!raw.isNullOrBlank() && raw != LYRICS_NOT_FOUND) {
                     LyricsUtils.parseLyrics(raw)
                         .map { entry ->

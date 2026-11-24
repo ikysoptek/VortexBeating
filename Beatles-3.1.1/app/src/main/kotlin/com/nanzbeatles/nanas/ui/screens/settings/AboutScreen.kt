@@ -139,8 +139,9 @@ fun AboutScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(R.mipmap.ic_launcher),
+                        painter = painterResource(R.drawable.vortex_icon),
                         contentDescription = "Vortex Music Logo",
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(if (isTablet) 76.dp else 60.dp)
                             .clip(CircleShape)
@@ -446,8 +447,8 @@ private fun DeveloperHeroVideoCard(
                     model = avatarUrl,
                     contentDescription = developerName,
                     contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.mipmap.ic_launcher),
-                    error = painterResource(R.mipmap.ic_launcher),
+                    placeholder = painterResource(R.drawable.account),
+                    error = painterResource(R.drawable.account),
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)

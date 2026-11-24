@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.wrapped
@@ -28,6 +28,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Calendar
 import java.util.UUID
@@ -47,6 +48,42 @@ class WrappedManager(
     private val _state = MutableStateFlow(WrappedState())
     val state = _state.asStateFlow()
 
+    private var activeFromTimestamp: Long = 0L
+    private var activeToTimestamp: Long = System.currentTimeMillis()
+
+    private fun monthRange(date: LocalDate): Pair<Long, Long> {
+        val year = date.year
+        val month = date.monthValue - 1
+        val from = Calendar.getInstance().apply {
+            set(year, month, 1, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val to = Calendar.getInstance().apply {
+            set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
+            set(Calendar.MILLISECOND, 999)
+        }.timeInMillis
+        return from to to
+    }
+
+    private suspend fun resolveActiveDateRange(): Pair<Long, Long> {
+        val now = LocalDate.now()
+        val (curFrom, curTo) = monthRange(now)
+        val currentPlayTime = databaseDao.getTotalPlayTimeInRange(curFrom, curTo).first() ?: 0L
+        val currentSongCount = databaseDao.getUniqueSongCountInRange(curFrom, curTo).first()
+
+        if (currentPlayTime > 0L || currentSongCount > 0) {
+            return curFrom to curTo
+        }
+
+        val (prevFrom, prevTo) = monthRange(now.minusMonths(1))
+        val prevPlayTime = databaseDao.getTotalPlayTimeInRange(prevFrom, prevTo).first() ?: 0L
+        if (prevPlayTime > 0L) {
+            return prevFrom to prevTo
+        }
+
+        return curFrom to curTo
+    }
+
     fun createPlaylist(imageResName: String) {
         if (_state.value.playlistCreationState != PlaylistCreationState.Idle) return
 
@@ -54,17 +91,11 @@ class WrappedManager(
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    // Use the same date range as prepare() - previous month
-                    val previousMonth = java.time.LocalDate.now().minusMonths(1)
-                    val year = previousMonth.year
-                    val month = previousMonth.monthValue - 1 // Calendar months are 0-based
-
-                    val fromTimestamp = Calendar.getInstance().apply {
-                        set(year, month, 1, 0, 0, 0)
-                    }.timeInMillis
-                    val toTimestamp = Calendar.getInstance().apply {
-                        set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
-                    }.timeInMillis
+                    val (fromTimestamp, toTimestamp) = if (activeFromTimestamp > 0L) {
+                        activeFromTimestamp to activeToTimestamp
+                    } else {
+                        resolveActiveDateRange()
+                    }
                     val allSongs = databaseDao.mostPlayedSongsStats(fromTimestamp, toTimeStamp = toTimestamp, limit = -1).first()
 
                     val playlistId = UUID.randomUUID().toString()
@@ -114,8 +145,8 @@ class WrappedManager(
         withContext(Dispatchers.IO) {
             val playlistMap = mutableMapOf<WrappedScreenType, String>()
 
-            // Intro Part: Random song from top 6-30
-            val introSongPool = topSongs.subList(5, topSongs.size)
+            // Intro Part: Safe pool even when fewer than 6 songs exist
+            val introSongPool = if (topSongs.size > 5) topSongs.subList(5, topSongs.size) else topSongs
             val introSong = introSongPool.randomOrNull()?.id ?: topSongs.last().id
             playlistMap[WrappedScreenType.Welcome] = introSong
             playlistMap[WrappedScreenType.MinutesTease] = introSong
@@ -132,24 +163,15 @@ class WrappedManager(
             val albumSong = topAlbum?.let { album ->
                 val albumSongs = databaseDao.albumSongs(album.id).first()
                 albumSongs.randomOrNull()?.id
-            } ?: topSong.id // Fallback to top song if no album songs
+            } ?: topSong.id
             playlistMap[WrappedScreenType.TotalAlbums] = albumSong
             playlistMap[WrappedScreenType.TopAlbumReveal] = albumSong
             playlistMap[WrappedScreenType.Top5Albums] = albumSong
 
-            // Artist Part: Top artist's song with specific rule
+            // Artist Part
             val topArtist = topArtists.firstOrNull()
-            // Use the same date range as prepare() - previous month
-            val previousMonth = java.time.LocalDate.now().minusMonths(1)
-            val year = previousMonth.year
-            val month = previousMonth.monthValue - 1 // Calendar months are 0-based
-
-            val fromTimestamp = Calendar.getInstance().apply {
-                set(year, month, 1, 0, 0, 0)
-            }.timeInMillis
-            val toTimestamp = Calendar.getInstance().apply {
-                set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
-            }.timeInMillis
+            val fromTimestamp = activeFromTimestamp
+            val toTimestamp = activeToTimestamp
 
             val artistSong = topArtist?.let { artist ->
                 val artistTopSongs = databaseDao.artistSongs(
@@ -162,31 +184,34 @@ class WrappedManager(
                 if (artistTopSongs.isNotEmpty()) {
                     val artistTopSong = artistTopSongs.first()
                     if (artistTopSong.id == topSong.id) {
-                        // Overlap: Use the artist's second song.
-                        // If a second song doesn't exist, use a random song from their list.
-                        artistTopSongs.getOrNull(1)?.id ?: artistTopSongs.filter { it.id != topSong.id }.randomOrNull()?.id ?: artistTopSong.id
+                        artistTopSongs.getOrNull(1)?.id
+                            ?: artistTopSongs.filter { it.id != topSong.id }.randomOrNull()?.id
+                            ?: artistTopSong.id
                     } else {
                         artistTopSong.id
                     }
                 } else {
-                    // Data anomaly: Fallback to the user's top song.
                     topSong.id
                 }
-            } ?: topSong.id // Fallback if no top artist.
+            } ?: topSong.id
             playlistMap[WrappedScreenType.TotalArtists] = artistSong
             playlistMap[WrappedScreenType.TopArtistReveal] = artistSong
             playlistMap[WrappedScreenType.Top5Artists] = artistSong
-            
-            // Top Artist Albums Part: Use a song from top artist albums
+
+            // Top Artist Albums Part
             val topArtistAlbumSong = _state.value.topArtistAlbums.firstOrNull()?.let { album ->
                 val albumSongs = databaseDao.albumSongs(album.id).first()
                 albumSongs.randomOrNull()?.id
-            } ?: artistSong // Fallback to artist song
+            } ?: artistSong
             playlistMap[WrappedScreenType.TopArtistAlbums] = topArtistAlbumSong
 
-            // End Part
-            val endSongPool = topSongs.subList(2, 5)
-            val endSong = endSongPool.randomOrNull()?.id ?: topSongs[2].id
+            // End Part: Safe bounds even when fewer than 5 songs exist
+            val endSongPool = when {
+                topSongs.size >= 5 -> topSongs.subList(2, 5)
+                topSongs.size > 2 -> topSongs.subList(1, topSongs.size)
+                else -> topSongs
+            }
+            val endSong = endSongPool.randomOrNull()?.id ?: topSongs.last().id
             playlistMap[WrappedScreenType.DayOfWeek] = endSong
             playlistMap[WrappedScreenType.TimeOfDay] = endSong
             playlistMap[WrappedScreenType.RepeatOffender] = topSong.id
@@ -194,7 +219,7 @@ class WrappedManager(
             playlistMap[WrappedScreenType.Comparison] = endSong
             playlistMap[WrappedScreenType.ShareCard] = endSong
             playlistMap[WrappedScreenType.Playlist] = endSong
-            playlistMap[WrappedScreenType.Conclusion] = "2-p9DM2Xvsc"
+            playlistMap[WrappedScreenType.Conclusion] = topSong.id
 
             Timber.tag("WrappedManager").d("Generated Playlist Map: $playlistMap")
             _state.update { it.copy(trackMap = playlistMap) }
@@ -202,23 +227,13 @@ class WrappedManager(
     }
 
     suspend fun prepare() {
-        if (_state.value.isDataReady) return
         Timber.tag("WrappedManager").d("Starting Wrapped data preparation")
 
-        // Get previous month for wrapped data
-        val previousMonth = java.time.LocalDate.now().minusMonths(1)
-        val year = previousMonth.year
-        val month = previousMonth.monthValue - 1 // Calendar months are 0-based
-
-        val fromTimestamp = Calendar.getInstance().apply {
-            set(year, month, 1, 0, 0, 0)
-        }.timeInMillis
-
-        val toTimestamp = Calendar.getInstance().apply {
-            set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
-        }.timeInMillis
-
         withContext(Dispatchers.IO) {
+            val (fromTimestamp, toTimestamp) = resolveActiveDateRange()
+            activeFromTimestamp = fromTimestamp
+            activeToTimestamp = toTimestamp
+
             val accountInfoDeferred = async { YouTube.accountInfo().getOrNull() }
             val topSongsDeferred = async { databaseDao.mostPlayedSongsStats(fromTimestamp, toTimeStamp = toTimestamp, limit = 30).first() }
             val topArtistsDeferred = async { databaseDao.mostPlayedArtists(fromTimestamp, toTimeStamp = toTimestamp, limit = 5).first() }
@@ -228,21 +243,16 @@ class WrappedManager(
             val uniqueAlbumCountDeferred = async { databaseDao.getUniqueAlbumCountInRange(fromTimestamp, toTimestamp).first() }
             val totalPlayTimeMsDeferred = async { databaseDao.getTotalPlayTimeInRange(fromTimestamp, toTimestamp).first() ?: 0L }
 
-            // New stats
             val eventsDeferred = async { databaseDao.getEventsInRange(fromTimestamp, toTimestamp).first() }
             val mostReplayedSongIdDeferred = async { databaseDao.getMostReplayedSongInRange(fromTimestamp, toTimestamp).first() }
             val newArtistCountDeferred = async { databaseDao.getNewArtistCountInRange(fromTimestamp, toTimestamp).first() }
 
-            // Previous month for comparison
-            val prevMonth = java.time.LocalDate.now().minusMonths(2)
-            val prevYear = prevMonth.year
-            val prevCalMonth = prevMonth.monthValue - 1
-            val prevFromTimestamp = Calendar.getInstance().apply {
-                set(prevYear, prevCalMonth, 1, 0, 0, 0)
-            }.timeInMillis
-            val prevToTimestamp = Calendar.getInstance().apply {
-                set(prevYear, prevCalMonth, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
-            }.timeInMillis
+            // Comparison against previous month relative to active window
+            val activeStartDate = LocalDate.ofInstant(
+                java.time.Instant.ofEpochMilli(fromTimestamp),
+                java.time.ZoneId.systemDefault()
+            )
+            val (prevFromTimestamp, prevToTimestamp) = monthRange(activeStartDate.minusMonths(1))
             val prevMonthMinutesDeferred = async {
                 (databaseDao.getTotalPlayTimeInRange(prevFromTimestamp, prevToTimestamp).first() ?: 0L) / 1000 / 60
             }
@@ -274,7 +284,6 @@ class WrappedManager(
             @Suppress("UNCHECKED_CAST")
             val topArtistsResult = results[2] as List<Artist>
 
-            // Calculate listening by day of week (1=Mon..7=Sun)
             val dayOfWeekMinutes = mutableMapOf<Int, Long>()
             events.forEach { event ->
                 val dayOfWeek = event.timestamp.dayOfWeek.value
@@ -282,7 +291,6 @@ class WrappedManager(
             }
             val listeningByDayOfWeek = dayOfWeekMinutes.mapValues { it.value / 1000 / 60 }
 
-            // Calculate listening by time of day
             val timeOfDayMinutes = mutableMapOf<String, Long>()
             events.forEach { event ->
                 val hour = event.timestamp.hour
@@ -296,20 +304,20 @@ class WrappedManager(
             }
             val listeningByTimeOfDay = timeOfDayMinutes.mapValues { it.value / 1000 / 60 }
 
-            // Find repeat offender song
             val repeatOffenderSong = mostReplayedSongId?.let { songId ->
                 topSongsResult.find { it.id == songId }
             } ?: topSongsResult.firstOrNull()
 
-            // Calculate month over month change
-            val currentMinutes = (results[7] as Long) / 1000 / 60
+            val rawPlayTimeMs = results[7] as Long
+            val currentMinutes = if (rawPlayTimeMs in 1..59_999L) 1L else (rawPlayTimeMs / 1000L / 60L)
             val monthOverMonthChange = if (prevMonthMinutes > 0) {
                 ((currentMinutes - prevMonthMinutes).toFloat() / prevMonthMinutes) * 100
+            } else if (currentMinutes > 0) {
+                100f
             } else {
                 0f
             }
 
-            // Get albums for top artist
             val topArtistId = topArtistsResult.firstOrNull()?.id
             val topArtistAlbumsDeferred = async {
                 if (topArtistId != null) {
@@ -319,7 +327,7 @@ class WrappedManager(
                 }
             }
             val topArtistAlbumsResult = topArtistAlbumsDeferred.await()
-            
+
             _state.update {
                 it.copy(
                     accountInfo = results[0] as AccountInfo?,

@@ -192,6 +192,7 @@ import com.nanzbeatles.nanas.playback.queues.filterExplicit
 import com.nanzbeatles.nanas.playback.queues.filterVideoSongs
 import com.nanzbeatles.nanas.service.LockscreenLyricsBridge
 import com.nanzbeatles.nanas.sponsorblock.SponsorBlockManager
+import com.nanzbeatles.nanas.streak.DeveloperRealtimeManager
 import com.nanzbeatles.nanas.streak.StreakManager
 import com.nanzbeatles.nanas.subtitles.SubtitleInfo
 import com.nanzbeatles.nanas.utils.AUDIOBOOK_MIN_DURATION_SECONDS
@@ -3392,8 +3393,15 @@ class MusicService :
                     val isLiked = songData?.song?.liked == true
 
                     val meta = currentMediaMetadata.value
+                    val resolvedMediaId = song?.id ?: player.currentMediaItem?.mediaId ?: meta?.id
+                    val resolvedTitle = song?.title ?: meta?.title ?: songTitle
+                    val resolvedArtist = songData?.artists?.joinToString(", ") { it.name }
+                        ?: meta?.artists?.joinToString(", ") { it.name }
+                        ?: artistName
+                    val resolvedThumb = song?.thumbnailUrl ?: meta?.thumbnailUrl
+
                     LockscreenLyricsBridge.update(
-                        mediaId = song?.id ?: player.currentMediaItem?.mediaId ?: meta?.id,
+                        mediaId = resolvedMediaId,
                         isPlaying = isPlaying,
                         positionMs = player.currentPosition,
                         lyricsOffsetMs = (song?.lyricsOffset ?: 0).toLong(),
@@ -3401,7 +3409,16 @@ class MusicService :
                         artist = songData?.artists?.joinToString(", ") { it.name }
                             ?: meta?.artists?.joinToString(", ") { it.name },
                         durationSec = song?.duration ?: meta?.duration ?: -1,
-                        thumbnailUrl = song?.thumbnailUrl ?: meta?.thumbnailUrl
+                        thumbnailUrl = resolvedThumb
+                    )
+
+                    DeveloperRealtimeManager.syncPlaybackIfDeveloper(
+                        context = applicationContext,
+                        songId = resolvedMediaId,
+                        title = resolvedTitle,
+                        artist = resolvedArtist,
+                        thumbnailUrl = resolvedThumb,
+                        isPlaying = isPlaying,
                     )
 
                     widgetManager.updateWidgets(

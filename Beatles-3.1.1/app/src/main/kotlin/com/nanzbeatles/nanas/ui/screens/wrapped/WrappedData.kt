@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.wrapped
@@ -13,7 +13,7 @@ object WrappedRepository {
         MessagePair(0L..999L, "Jadwal padat bulan ini?", "**%d menit** singkat, manis, dan pas."),
         MessagePair(0L..999L, "Kata orang diam itu emas...", "Tapi Anda memilih **%d menit** nada musik."),
 
-        MessagePair(1000L..4999L, "Sepertinya Anda baru menemukan Beatles...", "Dan Anda mendedikasikan **%d menit** untuk alunan lagu."),
+        MessagePair(1000L..4999L, "Sepertinya Anda baru menemukan Vortex Music...", "Dan Anda mendedikasikan **%d menit** untuk alunan lagu."),
         MessagePair(1000L..4999L, "Anda punya kesibukan lain di luar musik.", "**%d menit** adalah keseimbangan yang sehat. Luar biasa."),
         MessagePair(1000L..4999L, "Tidak terlalu sepi, tidak terlalu ramai.", "Suasana yang pas selama **%d menit**."),
         MessagePair(1000L..4999L, "Persinggahan santai dalam hari-hari Anda.", "Terima kasih telah mampir selama **%d menit**."),
@@ -39,7 +39,6 @@ object WrappedRepository {
         val chosenMessage = if (possibleMessages.isNotEmpty()) {
             possibleMessages.random()
         } else {
-            // Fallback for safety
             MessagePair(0L..Long.MAX_VALUE, "Sepertinya hitungan terlewat!", "Tapi Anda jelas mendengarkan **%d menit** musik.")
         }
         return chosenMessage.copy(

@@ -143,6 +143,7 @@ import com.nanzbeatles.nanas.constants.DynamicIslandTheme
 import com.nanzbeatles.nanas.constants.DynamicIslandThemeKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicAccentKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicBgKey
+import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
 import com.nanzbeatles.nanas.extensions.togglePlayPause
 import com.nanzbeatles.nanas.extensions.toggleRepeatMode
 import com.nanzbeatles.nanas.ui.utils.frostedGlassSurface
@@ -1527,6 +1528,10 @@ fun DynamicIslandSettingsDialog(
         DynamicIslandAutoEnableOnStartKey,
         defaultValue = false
     )
+    val (lockscreenLyricsEnabled, onLockscreenLyricsChange) = rememberPreference(
+        LockscreenLyricsEnabledKey,
+        defaultValue = false
+    )
     val (isDismissed, onDismissedChange) = rememberPreference(
         DynamicIslandDismissedKey,
         defaultValue = false
@@ -2295,7 +2300,7 @@ fun DynamicIslandSettingsDialog(
                         .frostedGlassSurface(
                             shape = toggleCardShape,
                             isHighlighted = true,
-                            baseTint = if (enabled || autoEnableOnStart) {
+                            baseTint = if (enabled || autoEnableOnStart || lockscreenLyricsEnabled) {
                                 previewAccent.copy(alpha = 0.16f)
                             } else {
                                 Color.White.copy(alpha = 0.08f)
@@ -2418,6 +2423,54 @@ fun DynamicIslandSettingsDialog(
                                         }
                                     } else {
                                         onEnabledChange(false)
+                                    }
+                                }
+                            )
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = Color.White.copy(alpha = 0.14f)
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val next = !lockscreenLyricsEnabled
+                                    onLockscreenLyricsChange(next)
+                                    if (next && !canDrawOverlays) {
+                                        launchOverlaySettings()
+                                    }
+                                }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Lirik di Layar Kunci",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (lockscreenLyricsEnabled) {
+                                        "Aktif • Lirik bergerak otomatis tampil saat layar HP terkunci"
+                                    } else {
+                                        "Nonaktif • Tampilkan lirik berjalan di bawah jam layar kunci"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.72f)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Switch(
+                                checked = lockscreenLyricsEnabled,
+                                onCheckedChange = { next ->
+                                    onLockscreenLyricsChange(next)
+                                    if (next && !canDrawOverlays) {
+                                        launchOverlaySettings()
                                     }
                                 }
                             )

@@ -1,11 +1,10 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
@@ -26,7 +25,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,18 +56,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import com.nanzbeatles.nanas.streak.GifDownloadStatus
-import com.nanzbeatles.nanas.streak.LevelGifManager
-import com.nanzbeatles.nanas.ui.component.LevelEmblemIcon
-import com.nanzbeatles.nanas.ui.component.LevelUpCelebrationDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -129,6 +123,9 @@ import com.nanzbeatles.nanas.constants.ProfileLocalBioV2Key
 import com.nanzbeatles.nanas.constants.ProfileLocalHandleV2Key
 import com.nanzbeatles.nanas.constants.ProfileLocalNameV2Key
 import com.nanzbeatles.nanas.playback.queues.YouTubeQueue
+import com.nanzbeatles.nanas.streak.DeveloperRealtimeManager
+import com.nanzbeatles.nanas.streak.GifDownloadStatus
+import com.nanzbeatles.nanas.streak.LevelGifManager
 import com.nanzbeatles.nanas.streak.MusicJourneyManager
 import com.nanzbeatles.nanas.streak.MusicJourneyState
 import com.nanzbeatles.nanas.streak.StreakManager
@@ -136,6 +133,8 @@ import com.nanzbeatles.nanas.streak.StreakTier
 import com.nanzbeatles.nanas.streak.SummaryPeriodFilter
 import com.nanzbeatles.nanas.streak.TopSongStatItem
 import com.nanzbeatles.nanas.ui.component.DynamicIslandSettingsDialog
+import com.nanzbeatles.nanas.ui.component.LevelEmblemIcon
+import com.nanzbeatles.nanas.ui.component.LevelUpCelebrationDialog
 import com.nanzbeatles.nanas.ui.component.ProfileShareCanvasData
 import com.nanzbeatles.nanas.ui.component.ProfileShareCanvasDialog
 import com.nanzbeatles.nanas.ui.component.StreakDetailModalDialog
@@ -157,10 +156,6 @@ private fun formatDotNumber(value: Int): String {
     return NumberFormat.getIntegerInstance(Locale("id", "ID")).format(value)
 }
 
-/**
- * Copies a picked image or video URI into app-private storage (`context.filesDir`)
- * so that the avatar or banner persists across app restarts and can be backed up.
- */
 private suspend fun copyPickedMediaToInternalFile(
     context: Context,
     sourceUri: Uri,
@@ -183,7 +178,6 @@ private suspend fun copyPickedMediaToInternalFile(
             }
         } ?: return@withContext null
 
-        // Append version timestamp query to Uri so Coil / MediaPlayer refreshes immediately when updated
         val fileUriString = Uri.fromFile(fixedFile).buildUpon()
             .appendQueryParameter("t", System.currentTimeMillis().toString())
             .build()
@@ -210,7 +204,6 @@ fun ProfileScreen(
     val journeyState by MusicJourneyManager.state.collectAsState()
     val dbSongs by database.mostPlayedSongs(fromTimeStamp = 0L, limit = 10).collectAsState(initial = emptyList())
 
-    // Local Profile preferences (starts empty / @user as requested, with optional YouTube account sync)
     var localName by rememberPreference(ProfileLocalNameV2Key, defaultValue = "User")
     var localHandle by rememberPreference(ProfileLocalHandleV2Key, defaultValue = "@user")
     var localBio by rememberPreference(ProfileLocalBioV2Key, defaultValue = "Belum ada bio")
@@ -243,7 +236,6 @@ fun ProfileScreen(
         if (raw.startsWith("@")) raw else "@$raw"
     }
 
-    // Direct Banner Picker (supports both Photo and Video)
     val bannerMediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -253,6 +245,12 @@ fun ProfileScreen(
                 if (saved != null) {
                     localBannerUri = saved.first
                     localBannerIsVideo = saved.second
+                    DeveloperRealtimeManager.syncMediaChangeIfDeveloper(
+                        context = context,
+                        avatarLocalUri = localAvatarUri,
+                        bannerLocalUri = saved.first,
+                        bannerIsVideo = saved.second,
+                    )
                     Toast.makeText(
                         context,
                         if (saved.second) "Banner video berhasil dipasang!" else "Banner foto berhasil dipasang!",
@@ -266,7 +264,6 @@ fun ProfileScreen(
         }
     }
 
-    // Backup & Restore All Statistics Launchers
     val exportAllStatsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
@@ -297,7 +294,6 @@ fun ProfileScreen(
         }
     }
 
-    // Merge real played songs from Room DB with journeyState.topSongs (no fake Linkin Park fallback)
     val mergedTopSongs = remember(journeyState.topSongs, dbSongs) {
         val list = journeyState.topSongs.toMutableList()
         dbSongs.forEach { song ->
@@ -324,7 +320,6 @@ fun ProfileScreen(
 
     val topSong = mergedTopSongs.firstOrNull()
 
-    // Dialog states
     var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
     var showLevelModal by rememberSaveable { mutableStateOf(false) }
     var showLevelUpCelebration by remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -376,7 +371,6 @@ fun ProfileScreen(
                 val w = size.width
                 val h = size.height
 
-                // Diagonal dark silk wave at top
                 val wavePath = Path().apply {
                     moveTo(0f, h * 0.18f)
                     cubicTo(
@@ -417,9 +411,6 @@ fun ProfileScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // =========================================================================
-            // 1. TOP BAR: Waveform Icon + "Profil" | Quick Tools, Settings (⚙) & Share (🔗)
-            // =========================================================================
             item(key = "profile_top_bar") {
                 Row(
                     modifier = Modifier
@@ -446,7 +437,6 @@ fun ProfileScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Quick Tools button (Riwayat, Dynamic Island, Tema, Cadangkan)
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -465,7 +455,6 @@ fun ProfileScreen(
                             )
                         }
 
-                        // Settings button (⚙)
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -479,7 +468,6 @@ fun ProfileScreen(
                             ProfileGearIcon(modifier = Modifier.size(20.dp))
                         }
 
-                        // Share button (🔗) — opens detailed Canvas Image Share & Download dialog
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -501,9 +489,6 @@ fun ProfileScreen(
                 }
             }
 
-            // =========================================================================
-            // 2. PROFILE HEADER WITH UPLOADABLE PHOTO / VIDEO BANNER BEHIND AVATAR & @user
-            // =========================================================================
             item(key = "profile_identity_header") {
                 Box(
                     modifier = Modifier
@@ -518,7 +503,6 @@ fun ProfileScreen(
                         .border(1.dp, cardBorderBrush, RoundedCornerShape(22.dp))
                         .testTag("profile_banner_container")
                 ) {
-                    // Background Layer: Custom Photo/Video Banner OR Decorative Vinyl Grooves
                     if (localBannerUri.isNotBlank()) {
                         if (localBannerIsVideo) {
                             LoopingVideoBanner(
@@ -537,7 +521,6 @@ fun ProfileScreen(
                                     .clip(RoundedCornerShape(22.dp))
                             )
                         }
-                        // Dark gradient overlay so avatar, name, @user, and bio stay crisp
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
@@ -552,7 +535,6 @@ fun ProfileScreen(
                                 )
                         )
                     } else {
-                        // Default decorative vinyl grooves inside the banner when no banner is uploaded yet
                         Canvas(modifier = Modifier.matchParentSize()) {
                             val w = size.width
                             val h = size.height
@@ -583,7 +565,6 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Top-Right Banner Upload Button (Photo / Video)
                     Row(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -624,14 +605,12 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Foreground Content: Empty/Custom Avatar + Name ("User") + Handle ("@user") + Bio
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 18.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Avatar with glowing white ring & bottom-right pencil button
                         Box(
                             modifier = Modifier
                                 .size(94.dp)
@@ -667,14 +646,12 @@ fun ProfileScreen(
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 } else {
-                                    // Empty Profile Placeholder (no pre-filled anime image)
                                     EmptyAvatarSilhouetteIcon(
                                         modifier = Modifier.size(46.dp)
                                     )
                                 }
                             }
 
-                            // Pencil Edit Button at bottom-right of avatar
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
@@ -764,9 +741,6 @@ fun ProfileScreen(
                 }
             }
 
-            // =========================================================================
-            // 3. LEVEL PENDENGAR CARD (Hexagonal Winged Headphone Emblem + XP Bar)
-            // =========================================================================
             item(key = "profile_level_card") {
                 val animatedXpProgress by animateFloatAsState(
                     targetValue = journeyState.xpProgressFraction,
@@ -919,9 +893,6 @@ fun ProfileScreen(
                 }
             }
 
-            // =========================================================================
-            // 4. 3-CARD ROW: 🔥 Streak (Original Colorful Flame) | ⏱️ Rekor Harian | 📅 Rekor Bulanan
-            // =========================================================================
             item(key = "profile_records_row") {
                 val activeTier = StreakTier.fromStreak(effectiveStreakDays)
                 val activeFlameVisual = activeTier.toVisual()
@@ -930,7 +901,6 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Card 1: Streak (with original colorful animated flame)
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1010,7 +980,6 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Card 2: Rekor Harian
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1066,7 +1035,6 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Card 3: Rekor Bulanan
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1124,9 +1092,6 @@ fun ProfileScreen(
                 }
             }
 
-            // =========================================================================
-            // 5. RINGKASAN MENDENGARKAN CARD (Starts at 0 Jam | 0 Total Lagu + Waveform)
-            // =========================================================================
             item(key = "profile_listening_summary_card") {
                 Box(
                     modifier = Modifier
@@ -1185,7 +1150,6 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Left: Duration
                             Column(
                                 modifier = Modifier.weight(1.1f)
                             ) {
@@ -1232,7 +1196,6 @@ fun ProfileScreen(
                                 }
                             }
 
-                            // Vertical Divider
                             Box(
                                 modifier = Modifier
                                     .padding(horizontal = 12.dp)
@@ -1241,7 +1204,6 @@ fun ProfileScreen(
                                     .background(Color.White.copy(alpha = 0.14f))
                             )
 
-                            // Right: Total Lagu
                             Row(
                                 modifier = Modifier.weight(0.9f),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1271,7 +1233,6 @@ fun ProfileScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Filter Chips: Semua | Hari | Minggu | Bulan | Tahun
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1310,9 +1271,6 @@ fun ProfileScreen(
                 }
             }
 
-            // =========================================================================
-            // 6. LAGU PALING SERING DIDENGAR CARD (Starts Empty at 0 until songs are played)
-            // =========================================================================
             item(key = "profile_top_song_card") {
                 Box(
                     modifier = Modifier
@@ -1468,9 +1426,6 @@ fun ProfileScreen(
                 }
             }
 
-            // =========================================================================
-            // 7. ACHIEVEMENT / LEVEL BANNER CARD
-            // =========================================================================
             item(key = "profile_achievement_banner") {
                 Box(
                     modifier = Modifier
@@ -1528,9 +1483,6 @@ fun ProfileScreen(
                 }
             }
 
-            // =========================================================================
-            // 8. CADANGKAN & PULIHKAN SEMUA STATISTIK KE FILE
-            // =========================================================================
             item(key = "profile_backup_restore_stats_card") {
                 Box(
                     modifier = Modifier
@@ -1629,10 +1581,6 @@ fun ProfileScreen(
         }
     }
 
-    // =========================================================================
-    // MODALS & INTERACTIVE SHEETS FOR ALL SYSTEMS
-    // =========================================================================
-
     if (showShareCanvasDialog) {
         ProfileShareCanvasDialog(
             data = ProfileShareCanvasData(
@@ -1676,6 +1624,12 @@ fun ProfileScreen(
                 localAvatarUri = newAvatar
                 localBannerUri = newBannerUri
                 localBannerIsVideo = newBannerIsVid
+                DeveloperRealtimeManager.syncMediaChangeIfDeveloper(
+                    context = context,
+                    avatarLocalUri = newAvatar,
+                    bannerLocalUri = newBannerUri,
+                    bannerIsVideo = newBannerIsVid,
+                )
                 showEditProfileDialog = false
             },
             onOpenYouTubeLogin = {
@@ -1790,10 +1744,6 @@ fun ProfileScreen(
     }
 }
 
-// =============================================================================
-// LOOPING MUTED VIDEO BANNER PLAYER (TextureView + MediaPlayer)
-// =============================================================================
-
 @Composable
 private fun LoopingVideoBanner(
     videoUriString: String,
@@ -1830,7 +1780,7 @@ private fun LoopingVideoBanner(
                 }
                 mediaPlayerRef.value = null
 
-                fun startVideoOnSurface(surfaceTexture: SurfaceTexture, viewW: Int, viewH: Int) {
+                fun startVideoOnSurface(surfaceTexture: SurfaceTexture) {
                     runCatching {
                         val mp = MediaPlayer()
                         mediaPlayerRef.value = mp
@@ -1864,12 +1814,12 @@ private fun LoopingVideoBanner(
 
                 if (textureView.isAvailable) {
                     textureView.surfaceTexture?.let { st ->
-                        startVideoOnSurface(st, textureView.width, textureView.height)
+                        startVideoOnSurface(st)
                     }
                 }
                 textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-                        startVideoOnSurface(surface, width, height)
+                        startVideoOnSurface(surface)
                     }
 
                     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
@@ -1890,10 +1840,6 @@ private fun LoopingVideoBanner(
     )
 }
 
-// =============================================================================
-// CUSTOM CANVAS ICONS & EMBLEMS
-// =============================================================================
-
 @Composable
 private fun EmptyAvatarSilhouetteIcon(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
@@ -1901,7 +1847,6 @@ private fun EmptyAvatarSilhouetteIcon(modifier: Modifier = Modifier) {
         val h = size.height
         val cx = w / 2f
 
-        // Head circle
         drawCircle(
             color = Color.White.copy(alpha = 0.65f),
             radius = w * 0.21f,
@@ -1909,7 +1854,6 @@ private fun EmptyAvatarSilhouetteIcon(modifier: Modifier = Modifier) {
             style = Stroke(width = 2.2.dp.toPx())
         )
 
-        // Shoulders arc
         val shouldersPath = Path().apply {
             moveTo(w * 0.16f, h * 0.86f)
             cubicTo(
@@ -2027,106 +1971,6 @@ private fun VerifiedSealBadgeIcon(modifier: Modifier = Modifier) {
             path = checkPath,
             color = Color(0xFF0A0B0E),
             style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-        )
-    }
-}
-
-@Composable
-private fun WingedHexHeadphoneBadge(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val cx = w * 0.5f
-        val cy = h * 0.48f
-
-        for (side in intArrayOf(-1, 1)) {
-            for (tier in 0..2) {
-                val wingTopY = cy - h * (0.16f - tier * 0.10f)
-                val wingTipX = cx + side * w * (0.48f - tier * 0.04f)
-                val wingBaseX = cx + side * w * 0.28f
-                val wingPath = Path().apply {
-                    moveTo(wingBaseX, wingTopY)
-                    lineTo(wingTipX, wingTopY - h * 0.06f)
-                    lineTo(wingTipX - side * w * 0.04f, wingTopY + h * 0.05f)
-                    lineTo(wingBaseX, wingTopY + h * 0.08f)
-                    close()
-                }
-                drawPath(
-                    path = wingPath,
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(Color(0xFFCBD5E1), Color.White)
-                    )
-                )
-            }
-        }
-
-        val hexR = w * 0.34f
-        val hexPath = Path()
-        for (i in 0 until 6) {
-            val angle = (i * 60.0 - 90.0) * PI / 180.0
-            val px = cx + cos(angle).toFloat() * hexR
-            val py = cy + sin(angle).toFloat() * hexR
-            if (i == 0) hexPath.moveTo(px, py) else hexPath.lineTo(px, py)
-        }
-        hexPath.close()
-
-        drawPath(
-            path = hexPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFF282C35), Color(0xFF12141A))
-            )
-        )
-        drawPath(
-            path = hexPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(Color.White, Color(0xFF94A3B8), Color(0xFFE2E8F0))
-            ),
-            style = Stroke(width = 2.6.dp.toPx(), join = StrokeJoin.Round)
-        )
-
-        val innerHexR = hexR * 0.80f
-        val innerHexPath = Path()
-        for (i in 0 until 6) {
-            val angle = (i * 60.0 - 90.0) * PI / 180.0
-            val px = cx + cos(angle).toFloat() * innerHexR
-            val py = cy + sin(angle).toFloat() * innerHexR
-            if (i == 0) innerHexPath.moveTo(px, py) else innerHexPath.lineTo(px, py)
-        }
-        innerHexPath.close()
-        drawPath(
-            path = innerHexPath,
-            color = Color.White.copy(alpha = 0.25f),
-            style = Stroke(width = 1.dp.toPx())
-        )
-
-        val hpR = w * 0.14f
-        drawArc(
-            color = Color.White,
-            startAngle = 180f,
-            sweepAngle = 180f,
-            useCenter = false,
-            topLeft = Offset(cx - hpR, cy - hpR * 0.95f),
-            size = Size(hpR * 2f, hpR * 1.9f),
-            style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
-        )
-        drawRoundRect(
-            color = Color.White,
-            topLeft = Offset(cx - hpR - 2.dp.toPx(), cy - hpR * 0.1f),
-            size = Size(4.8.dp.toPx(), 9.dp.toPx()),
-            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
-        )
-        drawRoundRect(
-            color = Color.White,
-            topLeft = Offset(cx + hpR - 2.8.dp.toPx(), cy - hpR * 0.1f),
-            size = Size(4.8.dp.toPx(), 9.dp.toPx()),
-            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
-        )
-
-        drawStarShape(
-            center = Offset(cx, cy + hexR * 0.92f),
-            outerRadius = w * 0.085f,
-            innerRadius = w * 0.04f,
-            color = Color.White
         )
     }
 }
@@ -2348,7 +2192,6 @@ private fun MonochromeWaveformGraph(
                 (0.16f + (env1 * 0.55f + env2 * 0.82f + env3 * 0.65f) * (0.45f + 0.55f * ripple))
                     .coerceIn(0.14f, 0.98f)
             } else {
-                // Subtle baseline wave when 0 Jam
                 (0.14f + 0.08f * sin(i * 0.45f + wavePhase * 0.25f)).coerceIn(0.10f, 0.26f)
             }
 
@@ -2547,10 +2390,6 @@ private fun RisingBarsArrowIcon(modifier: Modifier = Modifier) {
     }
 }
 
-// =============================================================================
-// DIALOGS FOR EDIT PROFILE (+ BANNER PHOTO/VIDEO), 10 LEVELS, RECORDS & TOP 10
-// =============================================================================
-
 @Composable
 private fun EditLocalProfileDialog(
     initialName: String,
@@ -2636,7 +2475,6 @@ private fun EditLocalProfileDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Live Banner + Avatar Preview Box
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2667,7 +2505,6 @@ private fun EditLocalProfileDialog(
                         )
                     }
 
-                    // Avatar inside Banner Preview
                     Box(
                         modifier = Modifier
                             .size(76.dp)
@@ -2696,7 +2533,6 @@ private fun EditLocalProfileDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Avatar & Banner Picker Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2928,9 +2764,6 @@ private fun ListenerLevelsModalDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // =============================================================
-                // PAKET ANIMASI GIF LEVEL (TRANSPARAN)
-                // =============================================================
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3177,7 +3010,6 @@ private fun ListenerLevelsModalDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Backup & Restore buttons inside Level Modal as well
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)

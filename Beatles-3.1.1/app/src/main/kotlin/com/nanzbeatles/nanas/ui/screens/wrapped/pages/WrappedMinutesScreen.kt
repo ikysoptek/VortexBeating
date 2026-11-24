@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.wrapped.pages
@@ -29,15 +29,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nanzbeatles.nanas.ui.screens.wrapped.components.AnimatedBackground
 import com.nanzbeatles.nanas.ui.screens.wrapped.components.ShapeType
 import com.nanzbeatles.nanas.ui.theme.bbh_bartle
 import java.util.Locale
+
+private fun parseBoldMarkdown(raw: String): AnnotatedString = buildAnnotatedString {
+    val parts = raw.split("**")
+    parts.forEachIndexed { index, part ->
+        if (index % 2 == 1) {
+            withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color.White)) {
+                append(part)
+            }
+        } else {
+            append(part)
+        }
+    }
+}
 
 @Composable
 fun WrappedMinutesScreen(
@@ -62,6 +79,9 @@ fun WrappedMinutesScreen(
     }
     val approxSongs = remember(totalMinutes) {
         (totalMinutes / 3.5).toLong().coerceAtLeast(1L)
+    }
+    val formattedRevealText = remember(range?.second) {
+        parseBoldMarkdown(range?.second ?: "Cukup banyak waktu mendengarkan!")
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -128,10 +148,10 @@ fun WrappedMinutesScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = range?.second ?: "Cukup banyak waktu mendengarkan!",
+                text = formattedRevealText,
                 modifier = Modifier.padding(horizontal = 24.dp),
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = Color.White.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center
                 )
             )

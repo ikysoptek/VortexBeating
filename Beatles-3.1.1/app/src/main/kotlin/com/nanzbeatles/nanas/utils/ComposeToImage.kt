@@ -297,17 +297,9 @@ object ComposeToImage {
             }
         canvas.drawCircle(padding + logoSize / 2f, imageHeight - padding - logoSize / 2f, logoSize / 2.2f, logoPaint)
 
-        val rawLogo = context.getDrawable(R.drawable.small_icon)?.toBitmap(logoSize.toInt(), logoSize.toInt())
+        val rawLogo = context.getDrawable(R.drawable.vortex_icon)?.toBitmap(logoSize.toInt(), logoSize.toInt())
         rawLogo?.let { logo ->
-            val tintedLogo = createBitmap(logo.width, logo.height)
-            val logoCanvas = Canvas(tintedLogo)
-            val tintPaint =
-                Paint().apply {
-                    colorFilter = PorterDuffColorFilter(bgColor, PorterDuff.Mode.SRC_IN)
-                    isAntiAlias = true
-                }
-            logoCanvas.drawBitmap(logo, 0f, 0f, tintPaint)
-            canvas.drawBitmap(tintedLogo, logoX, logoY, null)
+            canvas.drawBitmap(circleCropLogo(logo), logoX, logoY, null)
         }
 
         val appName = context.getString(R.string.music_player)
@@ -338,17 +330,8 @@ object ComposeToImage {
     ) {
         val logoSize = (cardSize * 0.05f).toInt()
 
-        val rawLogo = context.getDrawable(R.drawable.small_icon)?.toBitmap(logoSize, logoSize)
-        val logo = rawLogo?.let { source ->
-            val colored = createBitmap(source.width, source.height)
-            val canvasLogo = Canvas(colored)
-            val paint = Paint().apply {
-                colorFilter = PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.SRC_IN)
-                isAntiAlias = true
-            }
-            canvasLogo.drawBitmap(source, 0f, 0f, paint)
-            colored
-        }
+        val rawLogo = context.getDrawable(R.drawable.vortex_icon)?.toBitmap(logoSize, logoSize)
+        val logo = rawLogo?.let { circleCropLogo(it) }
 
         val appName = context.getString(R.string.music_player)
         val appNamePaint = TextPaint().apply {
@@ -379,6 +362,23 @@ object ComposeToImage {
         }
 
         canvas.drawText(appName, textX, textY, appNamePaint)
+    }
+
+    /** Memotong logo Vortex menjadi bulat (logo asli berupa JPG persegi). */
+    private fun circleCropLogo(source: Bitmap): Bitmap {
+        val out = createBitmap(source.width, source.height)
+        val c = Canvas(out)
+        val paint = Paint().apply {
+            isAntiAlias = true
+            shader = android.graphics.BitmapShader(
+                source,
+                Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP
+            )
+        }
+        val r = minOf(source.width, source.height) / 2f
+        c.drawCircle(source.width / 2f, source.height / 2f, r, paint)
+        return out
     }
 
     private fun fastBlur(

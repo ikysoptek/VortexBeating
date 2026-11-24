@@ -93,6 +93,10 @@ import com.nanzbeatles.nanas.streak.MusicJourneyManager
 import com.nanzbeatles.nanas.streak.StreakTier
 import com.nanzbeatles.nanas.ui.component.LevelEmblemIcon
 import com.nanzbeatles.nanas.ui.component.StreakFlameIcon
+import androidx.compose.runtime.LaunchedEffect
+import com.nanzbeatles.nanas.utils.DeveloperProfile
+import com.nanzbeatles.nanas.utils.DeveloperProfileRepository
+import androidx.compose.runtime.collectAsState
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -219,12 +223,16 @@ fun AboutScreen(
         }
 
         // 3. Hero Developer Video Card: centang biru + Level 10 + Streak/Rekor 999
-        DeveloperHeroVideoCard(
-            developerName = "ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者",
-            developerRole = "Developer",
-            videoUrl = "https://files.catbox.moe/1dntyj.mp4",
-            avatarUrl = "https://files.catbox.moe/21bgwe.jpg"
-        )
+        val devProfile by DeveloperProfileRepository.state.collectAsState()
+        LaunchedEffect(Unit) { DeveloperProfileRepository.pollWhileActive() }
+
+        DeveloperHeroVideoCard(profile = devProfile)
+        Spacer(Modifier.height(12.dp))
+        DeveloperLevelCard(devProfile)
+        Spacer(Modifier.height(10.dp))
+        DeveloperRecordsRow(devProfile)
+        Spacer(Modifier.height(12.dp))
+        DeveloperActivityCard(profile = devProfile)
 
         // 4. Social Section (WhatsApp Only)
         Text(
@@ -309,16 +317,16 @@ fun AboutScreen(
 
 @OptIn(UnstableApi::class)
 @Composable
-private fun DeveloperHeroVideoCard(
-    developerName: String,
-    developerRole: String,
-    videoUrl: String,
-    avatarUrl: String,
-) {
+private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
+    val developerName = profile.name
+    val developerRole = profile.role
+    val avatarUrl = profile.avatarUrl
+    val useVideo = profile.backgroundIsVideo && profile.backgroundUrl.isNotBlank()
     val context = LocalContext.current
-    val videoUri = remember(videoUrl) { Uri.parse(videoUrl) }
+    val videoUri = remember(profile.backgroundUrl) { Uri.parse(profile.backgroundUrl) }
 
-    val exoPlayer = remember(videoUri) {
+    val exoPlayer = remember(videoUri, useVideo) {
+        if (!useVideo) return@remember null
         val httpFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
             .setAllowCrossProtocolRedirects(true)
@@ -340,16 +348,16 @@ private fun DeveloperHeroVideoCard(
 
     DisposableEffect(exoPlayer) {
         onDispose {
-            exoPlayer.stop()
-            exoPlayer.clearVideoSurface()
-            exoPlayer.release()
+            exoPlayer?.stop()
+            exoPlayer?.clearVideoSurface()
+            exoPlayer?.release()
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(500.dp)
+            .height(210.dp)
             .clip(RoundedCornerShape(26.dp))
             .background(Color(0xFF141820))
             .border(
@@ -358,31 +366,34 @@ private fun DeveloperHeroVideoCard(
                 shape = RoundedCornerShape(26.dp)
             )
     ) {
+        // Latar: gambar (atau pp sebagai placeholder sebelum video siap)
         AsyncImage(
-            model = avatarUrl,
+            model = if (useVideo) avatarUrl else profile.backgroundUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
 
-        AndroidView(
-            factory = { ctx ->
-                TextureView(ctx).apply {
-                    layoutParams = FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    exoPlayer.setVideoTextureView(this)
-                }
-            },
-            update = { textureView ->
-                exoPlayer.setVideoTextureView(textureView)
-                if (!exoPlayer.isPlaying) {
-                    exoPlayer.playWhenReady = true
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        if (exoPlayer != null) {
+            AndroidView(
+                factory = { ctx ->
+                    TextureView(ctx).apply {
+                        layoutParams = FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        exoPlayer.setVideoTextureView(this)
+                    }
+                },
+                update = { textureView ->
+                    exoPlayer.setVideoTextureView(textureView)
+                    if (!exoPlayer.isPlaying) {
+                        exoPlayer.playWhenReady = true
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -394,64 +405,55 @@ private fun DeveloperHeroVideoCard(
                             Color.Black.copy(alpha = 0.22f),
                             Color.Black.copy(alpha = 0.88f)
                         ),
-                        startY = 300f
+                        startY = 60f
                     )
                 )
         )
 
-        Column(
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = developerName,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        // Hanya centang biru
-                        VerifiedCheckBadge(modifier = Modifier.size(19.dp))
-                    }
+            MinimalAnimatedAvatarRing(
+                avatarUrl = avatarUrl,
+                contentDescription = developerName
+            )
 
+            Spacer(Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
-                        text = developerRole,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.85f),
+                        text = developerName,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
+                    // Hanya centang biru
+                    VerifiedCheckBadge(modifier = Modifier.size(19.dp))
                 }
 
-                MinimalAnimatedAvatarRing(
-                    avatarUrl = avatarUrl,
-                    contentDescription = developerName
+                Text(
+                    text = developerRole,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-
-            DeveloperLevelCard()
-            DeveloperRecordsRow()
         }
     }
 }
@@ -533,10 +535,10 @@ private fun formatDot(value: Int): String =
 
 /** Kartu "Level 10 • Ikon Musik" - tampilan sama seperti di Profil. */
 @Composable
-private fun DeveloperLevelCard() {
-    val spec = MusicJourneyManager.allLevels[9] // Level 10 - Ikon Musik
-    val xp = 100_080
-    val xpTarget = 105_000
+private fun DeveloperLevelCard(profile: DeveloperProfile) {
+    val spec = MusicJourneyManager.allLevels[(profile.level - 1).coerceIn(0, 9)]
+    val xp = profile.xp
+    val xpTarget = profile.xpTarget
     val progress = (xp.toFloat() / xpTarget.toFloat()).coerceIn(0f, 1f)
 
     Row(
@@ -611,10 +613,89 @@ private fun DeveloperLevelCard() {
     }
 }
 
+/** Sedang didengarkan + lagu paling sering didengar (hanya tampil bila datanya ada). */
+@Composable
+private fun DeveloperActivityCard(profile: DeveloperProfile) {
+    val now = profile.nowPlaying
+    if (now == null && profile.topSongs.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(DevCardBg, RoundedCornerShape(20.dp))
+            .border(1.dp, DevCardBorder, RoundedCornerShape(20.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (now != null) {
+            Text(
+                text = "Sedang didengarkan",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF7DD3FC)
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = now.artworkUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.08f))
+                )
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(now.title, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold,
+                        color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(now.artist, fontSize = 12.sp, color = Color(0xFFB0B6C2),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+
+        if (profile.topSongs.isNotEmpty()) {
+            Text(
+                text = "Lagu paling sering didengar",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFD0D5E0)
+            )
+            profile.topSongs.take(3).forEachIndexed { index, song ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("${index + 1}", fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF989EA9), modifier = Modifier.width(18.dp))
+                    AsyncImage(
+                        model = song.artworkUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.08f))
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(song.title, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                            color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(song.artist, fontSize = 11.sp, color = Color(0xFFB0B6C2),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (song.plays > 0) {
+                        Text("${song.plays}x", fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                            color = Color(0xFFA0A6B4))
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** 3 kartu: Streak 999 Hari | Rekor Harian 999 Jam | Rekor Bulanan 999 Jam. */
 @Composable
-private fun DeveloperRecordsRow() {
-    val streakDays = 999
+private fun DeveloperRecordsRow(profile: DeveloperProfile) {
+    val streakDays = profile.streakDays
     val flame = StreakTier.fromStreak(streakDays).toVisual()
 
     Row(
@@ -634,7 +715,7 @@ private fun DeveloperRecordsRow() {
         DevRecordCard(
             modifier = Modifier.weight(1f),
             label = "Rekor Harian",
-            value = "999 Jam",
+            value = "${profile.dailyRecordHours} Jam",
             footer = "Hari terbaik!",
             leading = {
                 Icon(
@@ -648,7 +729,7 @@ private fun DeveloperRecordsRow() {
         DevRecordCard(
             modifier = Modifier.weight(1f),
             label = "Rekor Bulanan",
-            value = "999 Jam",
+            value = "${profile.monthlyRecordHours} Jam",
             footer = "Bulan terbaik!",
             leading = {
                 Icon(

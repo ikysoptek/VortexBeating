@@ -43,6 +43,7 @@
             <action android:name="android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL" />
         </intent>
     </queries>
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -277,6 +278,20 @@
             android:exported="false"
             android:foregroundServiceType="microphone"
             android:stopWithTask="false" />
+
+        <!-- Lockscreen Lyrics Accessibility Overlay Service -->
+        <service
+            android:name=".service.LockscreenLyricsAccessibilityService"
+            android:exported="true"
+            android:label="Vortex Music - Lirik Layar Kunci"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/lockscreen_lyrics_accessibility" />
+        </service>
 
         <!-- Receiver for Listen Together notification actions (Approve/Reject) -->
         <receiver

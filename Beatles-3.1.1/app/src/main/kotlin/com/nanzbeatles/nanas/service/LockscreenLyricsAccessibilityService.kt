@@ -114,6 +114,10 @@ object LockscreenLyricsBridge {
         val positionMs: Long = 0L,
         val updatedAtElapsedMs: Long = 0L,
         val lyricsOffsetMs: Long = 0L,
+        val title: String? = null,
+        val artist: String? = null,
+        val durationSec: Int = -1,
+        val thumbnailUrl: String? = null,
     )
 
     private val _snapshot = MutableStateFlow(PlaybackSnapshot())
@@ -144,6 +148,10 @@ object LockscreenLyricsBridge {
         isPlaying: Boolean,
         positionMs: Long,
         lyricsOffsetMs: Long = 0L,
+        title: String? = null,
+        artist: String? = null,
+        durationSec: Int = -1,
+        thumbnailUrl: String? = null,
     ) {
         _snapshot.value = PlaybackSnapshot(
             mediaId = mediaId,
@@ -151,6 +159,10 @@ object LockscreenLyricsBridge {
             positionMs = positionMs,
             updatedAtElapsedMs = SystemClock.elapsedRealtime(),
             lyricsOffsetMs = lyricsOffsetMs,
+            title = title,
+            artist = artist,
+            durationSec = durationSec,
+            thumbnailUrl = thumbnailUrl,
         )
     }
 
@@ -350,15 +362,17 @@ private fun LockscreenLyricsOverlayContent(
     if (!enabled || !isLocked || !snap.isPlaying || snap.mediaId.isNullOrBlank()) return
 
     var parsedLines by remember { mutableStateOf<List<Pair<Long, String>>>(emptyList()) }
+    var lyricsLoading by remember { mutableStateOf(true) }
     LaunchedEffect(snap.mediaId) {
         val songId = snap.mediaId ?: return@LaunchedEffect
+        lyricsLoading = true
         parsedLines = withContext(Dispatchers.IO) {
             runCatching {
                 var raw = database.lyrics(songId).firstOrNull()?.lyrics
                 if (raw.isNullOrBlank()) {
                     val songWithArtists = database.song(songId).firstOrNull()
-                    if (songWithArtists != null) {
-                        val metadata = MediaMetadata(
+                    val metadata = if (songWithArtists != null) {
+                        MediaMetadata(
                             id = songWithArtists.song.id,
                             title = songWithArtists.song.title,
                             artists = songWithArtists.artists.map {
@@ -367,6 +381,17 @@ private fun LockscreenLyricsOverlayContent(
                             duration = songWithArtists.song.duration,
                             thumbnailUrl = songWithArtists.song.thumbnailUrl,
                         )
+                    } else if (!snap.title.isNullOrBlank()) {
+                        // Lagu belum ada di database: pakai metadata dari player
+                        MediaMetadata(
+                            id = songId,
+                            title = snap.title.orEmpty(),
+                            artists = listOf(MediaMetadata.Artist(id = null, name = snap.artist.orEmpty())),
+                            duration = snap.durationSec,
+                            thumbnailUrl = snap.thumbnailUrl,
+                        )
+                    } else null
+                    if (metadata != null) {
                         val preferredProvider = context.dataStore
                             .get(PreferredLyricsProviderKey)
                             .toEnum(PreferredLyricsProvider.SIMPMUSIC)
@@ -394,6 +419,7 @@ private fun LockscreenLyricsOverlayContent(
                 }
             }.getOrDefault(emptyList())
         }
+        lyricsLoading = false
     }
 
     var livePosMs by remember { mutableLongStateOf(snap.positionMs) }
@@ -447,6 +473,22 @@ private fun LockscreenLyricsOverlayContent(
         // ===== MODE BIASA: hanya teks lirik =====
         if (parsedLines.isNotEmpty()) {
             LockscreenLyricsLines(parsedLines = parsedLines, livePosMs = livePosMs)
+        } else {
+            // Penanda: kalau teks ini muncul, overlay SUDAH jalan, hanya liriknya yang belum ada
+            Text(
+                text = if (lyricsLoading) "Memuat lirik…" else "Lirik tidak ditemukan",
+                modifier = Modifier.padding(horizontal = 24.dp),
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.7f),
+                    shadow = Shadow(
+                        color = Color.Black.copy(alpha = 0.9f),
+                        offset = Offset(0f, 3f),
+                        blurRadius = 12f
+                    )
+                )
+            )
         }
     }
 }

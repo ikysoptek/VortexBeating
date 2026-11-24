@@ -93,6 +93,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -203,6 +206,8 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
     private var composeView: ComposeView? = null
     private var lifecycleOwner: LockscreenOverlayLifecycleOwner? = null
     private var isAttached = false
+    private val lyricsState = MutableStateFlow(LockLyricsState())
+    private var lyricsJob: Job? = null
     private var attachedFullScreen = false
     private val isLockedFlow = MutableStateFlow(false)
     private var lockReceiver: BroadcastReceiver? = null
@@ -225,6 +230,32 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
             addAction(Intent.ACTION_USER_PRESENT)
         }
         runCatching { registerReceiver(receiver, filter) }
+
+        // Muat lirik begitu lagu berganti, supaya langsung ada saat layar dikunci
+        lyricsJob = scope.launch {
+            LockscreenLyricsBridge.snapshot
+                .map { it.mediaId }
+                .distinctUntilChanged()
+                .collectLatest { id ->
+                    if (id.isNullOrBlank()) {
+                        lyricsState.value = LockLyricsState()
+                        return@collectLatest
+                    }
+                    val prefs = runCatching { dataStore.data.firstOrNull() }.getOrNull()
+                    if (prefs?.get(LockscreenLyricsEnabledKey) != true) {
+                        lyricsState.value = LockLyricsState(mediaId = id)
+                        return@collectLatest
+                    }
+                    lyricsState.value = LockLyricsState(mediaId = id, loading = true)
+                    val lines = loadLockscreenLyrics(
+                        context = this@LockscreenLyricsAccessibilityService,
+                        database = database,
+                        lyricsHelper = lyricsHelper,
+                        snap = LockscreenLyricsBridge.snapshot.value,
+                    )
+                    lyricsState.value = LockLyricsState(mediaId = id, lines = lines, loading = false)
+                }
+        }
 
         monitorJob = scope.launch {
             while (isActive) {
@@ -278,7 +309,7 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
                             context = this@LockscreenLyricsAccessibilityService,
                             database = database,
                             lyricsHelper = lyricsHelper,
-                            isLockedFlow = isLockedFlow
+                            lyricsFlow = lyricsState
                         )
                     }
                 }
@@ -342,32 +373,28 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
         lockReceiver?.let { runCatching { unregisterReceiver(it) } }
         lockReceiver = null
         monitorJob?.cancel()
+        lyricsJob?.cancel()
         detachWindowIfNeeded()
         scope.cancel()
         super.onDestroy()
     }
 }
 
-@Composable
-private fun LockscreenLyricsOverlayContent(
+/** Satu keadaan lirik untuk overlay (dimuat di service, jadi sudah siap saat layar dikunci). */
+private data class LockLyricsState(
+    val mediaId: String? = null,
+    val lines: List<Pair<Long, String>> = emptyList(),
+    val loading: Boolean = false,
+)
+
+private suspend fun loadLockscreenLyrics(
     context: Context,
     database: MusicDatabase,
     lyricsHelper: LyricsHelper,
-    isLockedFlow: StateFlow<Boolean>,
-) {
-    val (enabled, _) = rememberPreference(LockscreenLyricsEnabledKey, defaultValue = false)
-    val isLocked by isLockedFlow.collectAsState()
-    val snap by LockscreenLyricsBridge.snapshot.collectAsState()
-
-    if (!enabled || !isLocked || !snap.isPlaying || snap.mediaId.isNullOrBlank()) return
-
-    var parsedLines by remember { mutableStateOf<List<Pair<Long, String>>>(emptyList()) }
-    var lyricsLoading by remember { mutableStateOf(true) }
-    LaunchedEffect(snap.mediaId) {
-        val songId = snap.mediaId ?: return@LaunchedEffect
-        lyricsLoading = true
-        parsedLines = withContext(Dispatchers.IO) {
-            runCatching {
+    snap: LockscreenLyricsBridge.PlaybackSnapshot,
+): List<Pair<Long, String>> = withContext(Dispatchers.IO) {
+    val songId = snap.mediaId ?: return@withContext emptyList()
+    runCatching {
                 var raw = database.lyrics(songId).firstOrNull()?.lyrics
                 if (raw.isNullOrBlank()) {
                     val songWithArtists = database.song(songId).firstOrNull()
@@ -417,10 +444,23 @@ private fun LockscreenLyricsOverlayContent(
                 } else {
                     emptyList()
                 }
-            }.getOrDefault(emptyList())
-        }
-        lyricsLoading = false
-    }
+            }.onFailure { Timber.e(it, "Lockscreen lyrics load failed") }
+        .getOrDefault(emptyList())
+}
+
+@Composable
+private fun LockscreenLyricsOverlayContent(
+    context: Context,
+    database: MusicDatabase,
+    lyricsHelper: LyricsHelper,
+    lyricsFlow: StateFlow<LockLyricsState>,
+) {
+    // Service sudah memutuskan kapan overlay tampil (aktif + terkunci + sedang main).
+    val snap by LockscreenLyricsBridge.snapshot.collectAsState()
+
+    val lyr by lyricsFlow.collectAsState()
+    val parsedLines = if (lyr.mediaId == snap.mediaId) lyr.lines else emptyList()
+    val lyricsLoading = lyr.loading || lyr.mediaId != snap.mediaId
 
     var livePosMs by remember { mutableLongStateOf(snap.positionMs) }
     LaunchedEffect(snap) {
@@ -429,7 +469,7 @@ private fun LockscreenLyricsOverlayContent(
                 (SystemClock.elapsedRealtime() - snap.updatedAtElapsedMs).coerceAtLeast(0L)
             } else 0L
             livePosMs = (snap.positionMs + elapsed + snap.lyricsOffsetMs).coerceAtLeast(0L)
-            delay(180L)
+            delay(60L)
         }
     }
 
@@ -593,6 +633,17 @@ private fun LockscreenLyricsLines(
     ) { idx ->
         val prevLine = parsedLines.getOrNull(idx - 1)?.second
         val currentLine = parsedLines.getOrNull(idx)?.second ?: parsedLines.first().second
+        // Efek karaoke: warna putih "mengisi" baris sesuai posisi lagu
+        val lineStart = parsedLines.getOrNull(idx)?.first ?: 0L
+        val lineEnd = parsedLines.getOrNull(idx + 1)?.first ?: (lineStart + 4000L)
+        val span = (lineEnd - lineStart).coerceIn(1L, 7000L)
+        val fill = if (idx < 0) 0f else ((livePosMs - lineStart).toFloat() / span.toFloat()).coerceIn(0f, 1f)
+        val karaokeBrush = Brush.horizontalGradient(
+            0f to Color.White,
+            fill to Color.White,
+            (fill + 0.001f).coerceAtMost(1f) to Color.White.copy(alpha = 0.42f),
+            1f to Color.White.copy(alpha = 0.42f),
+        )
         val nextLine = parsedLines.getOrNull(idx + 1)?.second
         val afterNextLine = parsedLines.getOrNull(idx + 2)?.second
 
@@ -623,9 +674,9 @@ private fun LockscreenLyricsLines(
                 text = currentLine,
                 style = TextStyle(
                     fontFamily = FontFamily.SansSerif,
-                    fontSize = 23.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    brush = karaokeBrush,
                     shadow = textShadow
                 ),
                 maxLines = 2,

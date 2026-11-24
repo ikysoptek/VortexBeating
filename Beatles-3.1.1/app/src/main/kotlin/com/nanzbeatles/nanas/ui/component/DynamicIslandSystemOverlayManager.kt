@@ -15,21 +15,9 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -42,18 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -86,11 +66,8 @@ import com.nanzbeatles.nanas.constants.DynamicIslandTheme
 import com.nanzbeatles.nanas.constants.DynamicIslandThemeKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicAccentKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicBgKey
-import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
-import com.nanzbeatles.nanas.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.nanzbeatles.nanas.extensions.togglePlayPause
 import com.nanzbeatles.nanas.extensions.toggleRepeatMode
-import com.nanzbeatles.nanas.lyrics.LyricsUtils
 import com.nanzbeatles.nanas.playback.MusicService
 import com.nanzbeatles.nanas.ui.theme.NanzBeatlesTheme
 import com.nanzbeatles.nanas.utils.dataStore
@@ -105,7 +82,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -129,15 +105,20 @@ class DynamicIslandSystemOverlayManager(
     private var playerListener: Player.Listener? = null
     private var lockStateReceiver: BroadcastReceiver? = null
 
+    private fun checkIsLocked(): Boolean {
+        val km = keyguardManager ?: return false
+        return km.isKeyguardLocked || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && km.isDeviceLocked)
+    }
+
     fun start() {
         if (monitorJob != null) return
 
         isPlayerPlayingFlow.value = service.player.isPlaying
-        isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
+        isScreenLockedFlow.value = checkIsLocked()
 
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
+                isScreenLockedFlow.value = checkIsLocked()
             }
         }
         lockStateReceiver = receiver
@@ -151,7 +132,7 @@ class DynamicIslandSystemOverlayManager(
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 isPlayerPlayingFlow.value = isPlaying
-                isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
+                isScreenLockedFlow.value = checkIsLocked()
                 if (isPlaying) {
                     scope.launch(Dispatchers.IO) {
                         runCatching {
@@ -169,6 +150,7 @@ class DynamicIslandSystemOverlayManager(
 
             override fun onEvents(player: Player, events: Player.Events) {
                 isPlayerPlayingFlow.value = player.isPlaying
+                isScreenLockedFlow.value = checkIsLocked()
             }
         }
         playerListener = listener
@@ -179,8 +161,7 @@ class DynamicIslandSystemOverlayManager(
                 .map { prefs ->
                     val enabled = prefs[DynamicIslandEnabledKey] ?: false
                     val dismissed = prefs[DynamicIslandDismissedKey] ?: false
-                    val lockLyricsEnabled = prefs[LockscreenLyricsEnabledKey] ?: false
-                    Triple(enabled, dismissed, lockLyricsEnabled)
+                    enabled to dismissed
                 }
                 .distinctUntilChanged()
 
@@ -190,19 +171,18 @@ class DynamicIslandSystemOverlayManager(
                 service.currentMediaMetadata,
                 DynamicIslandOverlayState.isAppInForeground,
                 isScreenLockedFlow
-            ) { (enabled, dismissed, lockLyricsEnabled), isPlaying, _, inForeground, isLocked ->
-                val showIsland = enabled && !dismissed
-                val showLockLyrics = lockLyricsEnabled && isLocked && isPlaying
-                (showIsland || showLockLyrics) to (inForeground && !isLocked)
-            }.collect { (shouldShow, inForegroundUnlocked) ->
-                updateOverlayVisibility(shouldShow = shouldShow, inForeground = inForegroundUnlocked)
+            ) { (enabled, dismissed), _, _, inForeground, isLocked ->
+                val shouldShow = enabled && !dismissed && !isLocked
+                shouldShow to inForeground
+            }.collect { (shouldShow, inForeground) ->
+                updateOverlayVisibility(shouldShow = shouldShow, inForeground = inForeground)
             }
         }
 
         scope.launch {
             while (isActive) {
-                delay(800L)
-                isScreenLockedFlow.value = keyguardManager?.isKeyguardLocked == true
+                delay(500L)
+                isScreenLockedFlow.value = checkIsLocked()
                 val inForeground = DynamicIslandOverlayState.isAppInForeground.value
                 if (!inForeground && isWindowAttached && !canDrawOverlays()) {
                     hideOverlayWindow()
@@ -253,7 +233,6 @@ class DynamicIslandSystemOverlayManager(
                     ) {
                         SystemDynamicIslandContent(
                             service = service,
-                            isScreenLockedFlow = isScreenLockedFlow,
                             onOpenApp = { openMainActivity() }
                         )
                     }
@@ -274,7 +253,6 @@ class DynamicIslandSystemOverlayManager(
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                     WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
                 PixelFormat.RGBA_8888
             ).apply {
@@ -287,7 +265,7 @@ class DynamicIslandSystemOverlayManager(
             composeView = view
             isWindowAttached = true
         } catch (e: Exception) {
-            Timber.e(e, "Failed to attach Dynamic Island / Lockscreen Lyrics overlay")
+            Timber.e(e, "Failed to attach Dynamic Island system overlay")
         }
     }
 
@@ -335,11 +313,9 @@ class DynamicIslandSystemOverlayManager(
 @Composable
 private fun SystemDynamicIslandContent(
     service: MusicService,
-    isScreenLockedFlow: MutableStateFlow<Boolean>,
     onOpenApp: () -> Unit,
 ) {
     val (enabled, _) = rememberPreference(DynamicIslandEnabledKey, defaultValue = false)
-    val (lockscreenLyricsEnabled, _) = rememberPreference(LockscreenLyricsEnabledKey, defaultValue = false)
     val (isDismissed, onDismissedChange) = rememberPreference(
         DynamicIslandDismissedKey,
         defaultValue = false
@@ -379,7 +355,6 @@ private fun SystemDynamicIslandContent(
 
     val metadata by service.currentMediaMetadata.collectAsState()
     val currentSong by service.currentSong.collectAsState()
-    val isScreenLocked by isScreenLockedFlow.collectAsState()
 
     var isPlaying by remember { mutableStateOf(service.player.isPlaying) }
     var playbackState by remember { mutableIntStateOf(service.player.playbackState) }
@@ -421,10 +396,8 @@ private fun SystemDynamicIslandContent(
         }
     }
 
-    val shouldShowIsland = enabled && !isDismissed
-    val shouldShowLockscreenLyrics = lockscreenLyricsEnabled && isScreenLocked && isPlaying && metadata != null
-
-    if (!shouldShowIsland && !shouldShowLockscreenLyrics) return
+    val shouldShow = enabled && !isDismissed
+    if (!shouldShow) return
 
     var extractedArtworkColor by remember { mutableStateOf<Color?>(null) }
 
@@ -469,255 +442,4 @@ private fun SystemDynamicIslandContent(
     var duration by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(playbackState, isPlaying, metadata?.id) {
-        if (playbackState == Player.STATE_READY || isPlaying) {
-            while (isActive) {
-                position = service.player.currentPosition.coerceAtLeast(0L)
-                duration = service.player.duration.coerceAtLeast(0L)
-                delay(200L)
-            }
-        } else {
-            position = service.player.currentPosition.coerceAtLeast(0L)
-            duration = service.player.duration.coerceAtLeast(0L)
-        }
-    }
-
-    var parsedLyricsLines by remember { mutableStateOf<List<Pair<Long, String>>>(emptyList()) }
-    LaunchedEffect(metadata?.id, lockscreenLyricsEnabled) {
-        if (!lockscreenLyricsEnabled) {
-            parsedLyricsLines = emptyList()
-            return@LaunchedEffect
-        }
-        val songId = metadata?.id ?: return@LaunchedEffect
-        parsedLyricsLines = withContext(Dispatchers.IO) {
-            runCatching {
-                val entity = service.database.lyrics(songId).firstOrNull()
-                val raw = entity?.lyrics
-                if (!raw.isNullOrBlank() && raw != LYRICS_NOT_FOUND) {
-                    LyricsUtils.parseLyrics(raw)
-                        .map { entry ->
-                            val primary = entry.text.lineSequence().firstOrNull()?.trim().orEmpty()
-                            entry.time to primary
-                        }
-                        .filter { it.second.isNotBlank() }
-                } else {
-                    emptyList()
-                }
-            }.getOrDefault(emptyList())
-        }
-    }
-
-    val lyricsOffsetMs = (currentSong?.song?.lyricsOffset ?: 0).toLong()
-    val effectivePosMs = (position + lyricsOffsetMs).coerceAtLeast(0L)
-    val activeLyricIndex = remember(parsedLyricsLines, effectivePosMs) {
-        if (parsedLyricsLines.isEmpty()) -1
-        else parsedLyricsLines.indexOfLast { it.first <= effectivePosMs }
-    }
-
-    val isLiked = currentSong?.song?.liked == true
-    val displayTitle = metadata?.title ?: "Vortex Music"
-    val displayArtist = metadata?.artists?.joinToString(", ") { it.name } ?: "Ketuk untuk kembali ke aplikasi"
-    val displayDuration = if (metadata != null) {
-        duration.takeIf { it > 0L } ?: ((metadata!!.duration.toLong()) * 1000L)
-    } else {
-        0L
-    }
-
-    val handleDismissWithoutStoppingMusic = {
-        onDismissedChange(true)
-        Toast.makeText(
-            service,
-            "Dynamic Island disembunyikan (musik tetap berputar)",
-            Toast.LENGTH_SHORT
-        ).show()
-    }
-
-    Column(
-        modifier = Modifier
-            .wrapContentSize()
-            .padding(top = 4.dp, bottom = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (shouldShowIsland) {
-            DynamicIslandCapsuleSurface(
-                mode = mode,
-                islandTheme = islandTheme,
-                effectiveBgColor = effectiveBgColor,
-                effectiveAccentColor = effectiveAccentColor,
-                borderGlow = borderGlow,
-                blurRadius = blurRadius,
-                isSystemOverlay = true,
-                displayTitle = displayTitle,
-                displayArtist = displayArtist,
-                thumbnailUrl = metadata?.thumbnailUrl,
-                isPlaying = isPlaying,
-                isLiked = isLiked,
-                shuffleModeEnabled = shuffleModeEnabled,
-                repeatMode = repeatMode,
-                position = if (metadata != null) position else 0L,
-                duration = displayDuration,
-                canSkipPrevious = canSkipPrevious && metadata != null,
-                canSkipNext = canSkipNext && metadata != null,
-                onModeChange = onModeChange,
-                onDismissIsland = handleDismissWithoutStoppingMusic,
-                onTogglePlayPause = {
-                    if (metadata != null) {
-                        service.player.togglePlayPause()
-                    } else {
-                        onOpenApp()
-                    }
-                },
-                onSeekTo = { newPos ->
-                    if (metadata != null) {
-                        service.player.seekTo(newPos)
-                    }
-                },
-                onPrevious = { service.player.seekToPrevious() },
-                onNext = { service.player.seekToNext() },
-                onToggleLike = { service.toggleLike() },
-                onToggleShuffle = {
-                    service.player.shuffleModeEnabled = !service.player.shuffleModeEnabled
-                },
-                onToggleRepeat = {
-                    service.player.toggleRepeatMode()
-                },
-                onOpenFullPlayer = { onOpenApp() },
-                onOpenCustomizeOrApp = { onOpenApp() }
-            )
-        }
-
-        if (shouldShowLockscreenLyrics && parsedLyricsLines.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(175.dp))
-
-            val prevLine = parsedLyricsLines.getOrNull(activeLyricIndex - 1)?.second
-            val currentLine = parsedLyricsLines.getOrNull(activeLyricIndex)?.second
-                ?: parsedLyricsLines.firstOrNull()?.second.orEmpty()
-            val nextLine = parsedLyricsLines.getOrNull(activeLyricIndex + 1)?.second
-
-            val textShadow = Shadow(
-                color = Color.Black.copy(alpha = 0.85f),
-                offset = Offset(0f, 3f),
-                blurRadius = 12f
-            )
-
-            AnimatedContent(
-                targetState = activeLyricIndex,
-                transitionSpec = {
-                    (fadeIn(tween(220)) + slideInVertically(tween(240)) { it / 3 })
-                        .togetherWith(fadeOut(tween(180)) + slideOutVertically(tween(200)) { -it / 3 })
-                },
-                label = "LockscreenLyricsAnim"
-            ) { idx ->
-                val activeText = parsedLyricsLines.getOrNull(idx)?.second ?: currentLine
-                val upcomingText = parsedLyricsLines.getOrNull(idx + 1)?.second ?: nextLine
-                val followingText = parsedLyricsLines.getOrNull(idx + 2)?.second
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (!prevLine.isNullOrBlank() && idx > 0) {
-                        Text(
-                            text = prevLine,
-                            style = TextStyle(
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.45f),
-                                shadow = textShadow
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Start
-                        )
-                    }
-
-                    Text(
-                        text = activeText,
-                        style = TextStyle(
-                            fontFamily = FontFamily.SansSerif,
-                            fontSize = 23.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
-                            shadow = textShadow
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Start
-                    )
-
-                    if (!upcomingText.isNullOrBlank()) {
-                        Text(
-                            text = upcomingText,
-                            style = TextStyle(
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 19.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.65f),
-                                shadow = textShadow
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Start
-                        )
-                    }
-
-                    if (!followingText.isNullOrBlank()) {
-                        Text(
-                            text = followingText,
-                            style = TextStyle(
-                                fontFamily = FontFamily.SansSerif,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.42f),
-                                shadow = textShadow
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Start
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-private class OverlayWindowLifecycleOwner :
-    LifecycleOwner,
-    ViewModelStoreOwner,
-    SavedStateRegistryOwner {
-
-    private val lifecycleRegistry = LifecycleRegistry(this)
-    private val store = ViewModelStore()
-    private val savedStateRegistryController = SavedStateRegistryController.create(this)
-
-    override val lifecycle: Lifecycle
-        get() = lifecycleRegistry
-
-    override val viewModelStore: ViewModelStore
-        get() = store
-
-    override val savedStateRegistry: SavedStateRegistry
-        get() = savedStateRegistryController.savedStateRegistry
-
-    fun onCreate() {
-        savedStateRegistryController.performRestore(null)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-    }
-
-    fun onStart() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-    }
-
-    fun onResume() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    }
-
-    fun onDestroy() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        store.clear()
-    }
-}
+        if

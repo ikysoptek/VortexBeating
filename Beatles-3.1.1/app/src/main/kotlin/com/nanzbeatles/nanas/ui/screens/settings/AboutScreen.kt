@@ -5,6 +5,7 @@
 package com.nanzbeatles.nanas.ui.screens.settings
 
 import android.net.Uri
+import android.view.TextureView
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
@@ -21,7 +22,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,17 +61,17 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.nanzbeatles.nanas.BuildConfig
@@ -89,231 +89,189 @@ fun AboutScreen(
     val uriHandler = LocalUriHandler.current
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp >= 600
-    val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() > 0.5f
 
-    val gradientColors = listOf(
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (isDarkTheme) 0.3f else 0.5f),
-        MaterialTheme.colorScheme.surface
-    )
-
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = if (isTablet) 48.dp else 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
+        Spacer(Modifier.height(92.dp))
+
+        // 1. App Header (Logo + Vortex Music + Version) — Compact & Clean like Reference
+        val infiniteTransition = rememberInfiniteTransition(label = "icon_anim")
+        val scale by infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.04f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1500, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "icon_pulse"
+        )
+
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Brush.verticalGradient(gradientColors))
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = if (isTablet) 48.dp else 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
         ) {
-            Spacer(Modifier.height(104.dp))
-
-            // App Header (Logo + Name + Version)
-            val infiniteTransition = rememberInfiniteTransition(label = "icon_anim")
-            val scale by infiniteTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = 1.05f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1400, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "icon_pulse"
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(if (isTablet) 84.dp else 68.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        }
-                        .clip(CircleShape)
-                        .background(Color.Black),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.vortex_icon),
-                        contentDescription = "Vortex Music Logo",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(if (isTablet) 76.dp else 60.dp)
-                            .clip(CircleShape)
-                    )
-                }
-
-                Spacer(Modifier.width(16.dp))
-
-                Column {
-                    Text(
-                        text = "Vortex Music",
-                        style = if (isTablet) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "${BuildConfig.VERSION_NAME} • ${BuildConfig.ARCHITECTURE}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Version Badges
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Text(
-                        text = "v${BuildConfig.VERSION_NAME}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer
-                ) {
-                    Text(
-                        text = buildString {
-                            append(BuildConfig.ARCHITECTURE.uppercase())
-                            append(" • ")
-                            append(
-                                when {
-                                    BuildConfig.CAST_AVAILABLE -> "GMS"
-                                    BuildConfig.ARCHITECTURE != "universal" -> "STANDALONE"
-                                    else -> "PRO"
-                                }
-                            )
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (BuildConfig.DEBUG) MaterialTheme.colorScheme.errorContainer
-                    else MaterialTheme.colorScheme.tertiaryContainer
-                ) {
-                    Text(
-                        text = if (BuildConfig.DEBUG) "DEBUG" else "RELEASE",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (BuildConfig.DEBUG) MaterialTheme.colorScheme.onErrorContainer
-                        else MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                    )
-                }
-            }
-
-            // ==================== Developer Profile Video Card (Catbox URLs) ====================
-            DeveloperHeroVideoCard(
-                developerName = "ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者",
-                developerRole = "Developer",
-                videoUrl = "https://files.catbox.moe/1dntyj.mp4",
-                avatarUrl = "https://files.catbox.moe/21bgwe.jpg"
-            )
-
-            // ==================== Social Section (WhatsApp Only) ====================
-            Text(
-                text = "Social",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+            Box(
                 modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(top = 4.dp)
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                ),
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .clickable {
-                            uriHandler.openUri("https://wa.me/6285835356933")
-                        }
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFF25D366).copy(alpha = 0.16f),
-                        modifier = Modifier.size(42.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(
-                                painter = painterResource(R.drawable.whatsapp),
-                                contentDescription = "WhatsApp",
-                                tint = Color(0xFF25D366),
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
+                    .size(if (isTablet) 76.dp else 64.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
                     }
-
-                    Spacer(Modifier.width(14.dp))
-
-                    Text(
-                        text = "WhatsApp",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    Text(
-                        text = "085835356933",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Description Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                ),
-                shape = RoundedCornerShape(18.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Vortex Music adalah pemutar musik kaya fitur untuk Android yang menghadirkan pengalaman musik terbaik dengan dukungan streaming, pemutaran lokal, integrasi YouTube, dan banyak lagi.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp)
+                Image(
+                    painter = painterResource(R.drawable.vortex_icon),
+                    contentDescription = "Vortex Music Logo",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(if (isTablet) 68.dp else 56.dp)
+                        .clip(CircleShape)
                 )
             }
 
-            // Extra bottom padding to avoid mini player blocking content
-            Spacer(Modifier.height(MiniPlayerHeight + NavigationBarHeight + 24.dp))
+            Spacer(Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = "Vortex Music",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.3.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "${BuildConfig.VERSION_NAME} • ${BuildConfig.ARCHITECTURE}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
+
+        // 2. Check for updates row (matching reference layout)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .clickable { navController.navigate("settings/updater") },
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+            ),
+            shape = RoundedCornerShape(18.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.update),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(14.dp))
+                Text(
+                    text = stringResource(R.string.check_for_updates),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    painter = painterResource(R.drawable.arrow_forward),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        // 3. Large Hero Developer Video Card (Tall portrait ratio matching reference)
+        DeveloperHeroVideoCard(
+            developerName = "ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者",
+            developerRole = "Developer",
+            videoUrl = "https://files.catbox.moe/1dntyj.mp4",
+            avatarUrl = "https://files.catbox.moe/21bgwe.jpg"
+        )
+
+        // 4. Social Section (WhatsApp Only — Bottom description text removed)
+        Text(
+            text = "Social",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = 4.dp)
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+            ),
+            shape = RoundedCornerShape(18.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable {
+                        uriHandler.openUri("https://wa.me/6285835356933")
+                    }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF25D366).copy(alpha = 0.16f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            painter = painterResource(R.drawable.whatsapp),
+                            contentDescription = "WhatsApp",
+                            tint = Color(0xFF25D366),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(14.dp))
+
+                Text(
+                    text = "WhatsApp",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    text = "085835356933",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(Modifier.height(MiniPlayerHeight + NavigationBarHeight + 24.dp))
     }
 
     TopAppBar(
@@ -344,9 +302,19 @@ private fun DeveloperHeroVideoCard(
     val videoUri = remember(videoUrl) { Uri.parse(videoUrl) }
 
     val exoPlayer = remember(videoUri) {
+        val httpFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
+            .setAllowCrossProtocolRedirects(true)
+            .setConnectTimeoutMs(15_000)
+            .setReadTimeoutMs(15_000)
+
+        val mediaSource = ProgressiveMediaSource.Factory(httpFactory)
+            .createMediaSource(MediaItem.fromUri(videoUri))
+
         ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(videoUri))
+            setMediaSource(mediaSource)
             repeatMode = Player.REPEAT_MODE_ALL
+            videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
             volume = 0f
             playWhenReady = true
             prepare()
@@ -355,6 +323,8 @@ private fun DeveloperHeroVideoCard(
 
     DisposableEffect(exoPlayer) {
         onDispose {
+            exoPlayer.stop()
+            exoPlayer.clearVideoSurface()
             exoPlayer.release()
         }
     }
@@ -362,32 +332,44 @@ private fun DeveloperHeroVideoCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(275.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF0E1015))
+            .height(370.dp)
+            .clip(RoundedCornerShape(26.dp))
+            .background(Color(0xFF141820))
             .border(
                 width = 1.dp,
                 color = Color.White.copy(alpha = 0.16f),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(26.dp)
             )
     ) {
-        // Full-card Looping Video Background from Catbox URL
+        // Fallback background image while Catbox video buffers
+        AsyncImage(
+            model = avatarUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // TextureView renders reliably inside scrollable Compose containers (unlike SurfaceView)
         AndroidView(
             factory = { ctx ->
-                PlayerView(ctx).apply {
-                    player = exoPlayer
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                TextureView(ctx).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
+                    exoPlayer.setVideoTextureView(this)
+                }
+            },
+            update = { textureView ->
+                exoPlayer.setVideoTextureView(textureView)
+                if (!exoPlayer.isPlaying) {
+                    exoPlayer.playWhenReady = true
                 }
             },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Bottom dark scrim so white name & role text are crystal clear
+        // Bottom dark gradient scrim for crisp white typography
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -395,32 +377,32 @@ private fun DeveloperHeroVideoCard(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.25f),
-                            Color.Black.copy(alpha = 0.82f)
+                            Color.Black.copy(alpha = 0.18f),
+                            Color.Black.copy(alpha = 0.85f)
                         ),
-                        startY = 120f
+                        startY = 260f
                     )
                 )
         )
 
-        // Bottom Overlay: Left (Name + Developer) | Right (Circular Profile Picture)
+        // Bottom Overlay: Left (Developer Name + Role) | Right (Large Circular Profile Avatar)
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 16.dp),
+                .padding(horizontal = 20.dp, vertical = 20.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 12.dp, bottom = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                    .padding(end = 14.dp, bottom = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(
                     text = developerName,
-                    fontSize = 20.sp,
+                    fontSize = 23.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     maxLines = 1,
@@ -428,20 +410,19 @@ private fun DeveloperHeroVideoCard(
                 )
                 Text(
                     text = developerRole,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.80f),
+                    color = Color.White.copy(alpha = 0.82f),
                     maxLines = 1
                 )
             }
 
-            // Circular Profile Avatar from Catbox URL on Bottom-Right
             Surface(
-                modifier = Modifier.size(68.dp),
+                modifier = Modifier.size(76.dp),
                 shape = CircleShape,
                 color = Color(0xFF161922),
-                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.85f)),
-                shadowElevation = 6.dp
+                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.88f)),
+                shadowElevation = 8.dp
             ) {
                 AsyncImage(
                     model = avatarUrl,
@@ -456,11 +437,4 @@ private fun DeveloperHeroVideoCard(
             }
         }
     }
-}
-
-private fun Color.luminance(): Float {
-    val r = red
-    val g = green
-    val b = blue
-    return 0.299f * r + 0.587f * g + 0.114f * b
 }

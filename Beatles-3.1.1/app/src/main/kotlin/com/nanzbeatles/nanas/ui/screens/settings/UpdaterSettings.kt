@@ -30,6 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -56,16 +57,24 @@ fun UpdaterScreen(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
+    val uriHandler = LocalUriHandler.current
     val (checkForUpdates, onCheckForUpdatesChange) = rememberPreference(CheckForUpdatesKey, true)
     val (updateNotifications, onUpdateNotificationsChange) = rememberPreference(UpdateNotificationsEnabledKey, true)
     val (updateArchitecture, onUpdateArchitectureChange) = rememberPreference(UpdateArchitectureKey, "automatic")
-    
+
     var isChecking by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
     var latestVersion by remember { mutableStateOf<String?>(null) }
     var checkError by remember { mutableStateOf<String?>(null) }
-    
+
     val coroutineScope = rememberCoroutineScope()
+
+    fun sanitizeReleaseName(rawName: String): String {
+        return rawName
+            .replace("NanzBeatles", "Vortex Music", ignoreCase = true)
+            .replace("Beatles", "Vortex Music", ignoreCase = true)
+            .trim()
+    }
 
     fun performManualCheck() {
         coroutineScope.launch {
@@ -74,8 +83,11 @@ fun UpdaterScreen(
             withContext(Dispatchers.IO) {
                 Updater.checkForUpdate(forceRefresh = true).onSuccess { (releaseInfo, hasUpdate) ->
                     if (releaseInfo != null) {
-                        latestVersion = releaseInfo.versionName
+                        latestVersion = sanitizeReleaseName(releaseInfo.versionName)
                         updateAvailable = hasUpdate
+                    } else {
+                        latestVersion = "Vortex Music v${BuildConfig.VERSION_NAME}"
+                        updateAvailable = false
                     }
                 }.onFailure {
                     checkError = "Gagal memeriksa pembaruan: ${it.message}"
@@ -113,7 +125,7 @@ fun UpdaterScreen(
             items = listOf(
                 Material3SettingsItem(
                     title = {
-                        Text("Versi: ${BuildConfig.VERSION_NAME}")
+                        Text("Vortex Music v${BuildConfig.VERSION_NAME}")
                     },
                     description = {
                         Text(BuildConfig.ARCHITECTURE)
@@ -121,7 +133,7 @@ fun UpdaterScreen(
                 )
             )
         )
-        
+
         Spacer(Modifier.height(16.dp))
 
         // Auto Update Settings
@@ -196,7 +208,7 @@ fun UpdaterScreen(
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.refresh),
-                    title = { 
+                    title = {
                         if (isChecking) {
                             Text("Memeriksa pembaruan...")
                         } else if (latestVersion != null) {
@@ -205,6 +217,9 @@ fun UpdaterScreen(
                             Text("Periksa Pembaruan")
                         }
                     },
+                    description = if (updateAvailable) {
+                        { Text("Ketuk untuk mengunduh versi terbaru dari GitHub Vortex Music") }
+                    } else null,
                     trailingContent = {
                         if (isChecking) {
                             CircularProgressIndicator(
@@ -219,7 +234,13 @@ fun UpdaterScreen(
                             )
                         }
                     },
-                    onClick = { if (!isChecking) performManualCheck() }
+                    onClick = {
+                        if (updateAvailable) {
+                            uriHandler.openUri("https://github.com/ikysoptek/VortexBeating/releases")
+                        } else if (!isChecking) {
+                            performManualCheck()
+                        }
+                    }
                 )
             )
         )

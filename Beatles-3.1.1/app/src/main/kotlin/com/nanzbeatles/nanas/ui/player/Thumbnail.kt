@@ -691,10 +691,12 @@ private fun HiddenThumbnailPlaceholder(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            painter = painterResource(R.drawable.small_icon),
+            painter = painterResource(R.drawable.vortex_icon),
             contentDescription = stringResource(R.string.hide_player_thumbnail),
-            tint = textBackgroundColor.copy(alpha = 0.7f),
-            modifier = Modifier.size(120.dp)
+            tint = Color.Unspecified,
+            modifier = Modifier
+                .size(120.dp)
+                .clip(RoundedCornerShape(50))
         )
     }
 }
@@ -784,6 +786,9 @@ private fun ThumbnailImage(
             .background(if (videoModeEnabled) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (videoModeEnabled && !isVideoSwitching) {
+            val videoReattachToken by com.nanzbeatles.nanas.service.LockscreenLyricsBridge
+                .videoReleaseToken.collectAsState()
+            androidx.compose.runtime.key(videoReattachToken) {
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
@@ -807,6 +812,7 @@ private fun ThumbnailImage(
                     playerView.requestLayout()
                 }
             )
+            }
 
             // [4] Tap to show/hide controls + [8] Brightness/Volume swipe gestures
             Box(

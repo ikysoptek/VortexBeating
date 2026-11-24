@@ -87,6 +87,12 @@ import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.MiniPlayerHeight
 import com.nanzbeatles.nanas.constants.NavigationBarHeight
 import com.nanzbeatles.nanas.ui.utils.backToMain
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.drawBehind
+import com.nanzbeatles.nanas.streak.MusicJourneyManager
+import com.nanzbeatles.nanas.streak.StreakTier
+import com.nanzbeatles.nanas.ui.component.LevelEmblemIcon
+import com.nanzbeatles.nanas.ui.component.StreakFlameIcon
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -212,10 +218,10 @@ fun AboutScreen(
             }
         }
 
-        // 3. Large Hero Developer Video Card with Badges (Check + Fire + Wings) & Fire Animated Avatar Border
+        // 3. Hero Developer Video Card: centang biru + Level 10 + Streak/Rekor 999
         DeveloperHeroVideoCard(
             developerName = "ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者",
-            developerRole = "Developer • Founder Of Vortex CORPORATION",
+            developerRole = "Developer",
             videoUrl = "https://files.catbox.moe/1dntyj.mp4",
             avatarUrl = "https://files.catbox.moe/21bgwe.jpg"
         )
@@ -343,7 +349,7 @@ private fun DeveloperHeroVideoCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(370.dp)
+            .height(500.dp)
             .clip(RoundedCornerShape(26.dp))
             .background(Color(0xFF141820))
             .border(
@@ -388,155 +394,112 @@ private fun DeveloperHeroVideoCard(
                             Color.Black.copy(alpha = 0.22f),
                             Color.Black.copy(alpha = 0.88f)
                         ),
-                        startY = 250f
+                        startY = 300f
                     )
                 )
         )
 
-        Row(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 14.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 10.dp, bottom = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = developerName,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        // Hanya centang biru
+                        VerifiedCheckBadge(modifier = Modifier.size(19.dp))
+                    }
+
                     Text(
-                        text = developerName,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        text = developerRole,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.85f),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        overflow = TextOverflow.Ellipsis
                     )
-
-                    // Verified Checkmark Badge
-                    VerifiedCheckBadge(modifier = Modifier.size(19.dp))
-
-                    // Animated Flame Badge
-                    AnimatedFlameBadge(modifier = Modifier.size(20.dp))
-
-                    // Glowing Wings / Phoenix Crest Badge
-                    AnimatedWingsBadge(modifier = Modifier.size(23.dp))
                 }
 
-                Text(
-                    text = developerRole,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.85f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                MinimalAnimatedAvatarRing(
+                    avatarUrl = avatarUrl,
+                    contentDescription = developerName
                 )
             }
 
-            // Circular Profile Picture with Animated Burning Fire Aura Ring
-            FireAnimatedAvatarRing(
-                avatarUrl = avatarUrl,
-                contentDescription = developerName
-            )
+            DeveloperLevelCard()
+            DeveloperRecordsRow()
         }
     }
 }
 
 @Composable
-private fun FireAnimatedAvatarRing(
+private fun MinimalAnimatedAvatarRing(
     avatarUrl: String,
     contentDescription: String,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "fire_avatar_ring")
+    // Border tipis & halus: satu garis gradasi perak-biru yang berputar pelan
+    val infiniteTransition = rememberInfiniteTransition(label = "avatar_ring")
     val rotationAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2800, easing = LinearEasing),
+            animation = tween(durationMillis = 6000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "fire_spin"
-    )
-    val flickerPulse by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 750, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "fire_flicker"
+        label = "avatar_ring_spin"
     )
 
     Box(
-        modifier = Modifier.size(88.dp),
+        modifier = Modifier.size(76.dp),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val outerRadius = size.minDimension / 2f
-
-            // Outer ambient fire glow
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFFFF6D00).copy(alpha = 0.55f * flickerPulse.coerceAtMost(1f)),
-                        Color(0xFFFF1744).copy(alpha = 0.25f),
-                        Color.Transparent
-                    ),
-                    center = center,
-                    radius = outerRadius
-                ),
-                radius = outerRadius,
-                center = center
-            )
-
-            // Rotating multi-layered burning flame ring + ember sparks
+            val radius = size.minDimension / 2f - 1.5.dp.toPx()
             rotate(degrees = rotationAngle, pivot = center) {
-                val ringRadius = outerRadius - 5.dp.toPx()
                 drawCircle(
                     brush = Brush.sweepGradient(
                         colors = listOf(
-                            Color(0xFFFFEA00),
-                            Color(0xFFFF9100),
-                            Color(0xFFFF1744),
-                            Color(0xFFD500F9),
-                            Color(0xFF00E5FF),
-                            Color(0xFFFF9100),
-                            Color(0xFFFFEA00)
+                            Color.White.copy(alpha = 0.0f),
+                            Color.White.copy(alpha = 0.95f),
+                            Color(0xFF7DD3FC),
+                            Color.White.copy(alpha = 0.0f),
                         ),
                         center = center
                     ),
-                    radius = ringRadius,
+                    radius = radius,
                     center = center,
-                    style = Stroke(width = 3.6.dp.toPx(), cap = StrokeCap.Round)
+                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                 )
-
-                // Orbiting flame sparks around the border
-                for (i in 0 until 6) {
-                    val angleRad = Math.toRadians((i * 60.0))
-                    val sparkDist = ringRadius + (if (i % 2 == 0) 2.5.dp.toPx() else -1.dp.toPx())
-                    val sx = center.x + (cos(angleRad) * sparkDist).toFloat()
-                    val sy = center.y + (sin(angleRad) * sparkDist).toFloat()
-                    drawCircle(
-                        color = if (i % 2 == 0) Color(0xFFFFEA00) else Color(0xFFFF5252),
-                        radius = (if (i % 2 == 0) 2.3.dp.toPx() else 1.7.dp.toPx()) * flickerPulse,
-                        center = Offset(sx, sy)
-                    )
-                }
             }
         }
 
-        // Inner circular profile image
         Surface(
-            modifier = Modifier.size(72.dp),
+            modifier = Modifier.size(64.dp),
             shape = CircleShape,
             color = Color(0xFF161922)
         ) {
@@ -549,6 +512,217 @@ private fun FireAnimatedAvatarRing(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
+            )
+        }
+    }
+}
+
+private val DevCardBg = Brush.verticalGradient(
+    colors = listOf(Color(0xFF141519).copy(alpha = 0.92f), Color(0xFF0C0D10).copy(alpha = 0.92f))
+)
+private val DevCardBorder = Brush.linearGradient(
+    colors = listOf(
+        Color.White.copy(alpha = 0.16f),
+        Color.White.copy(alpha = 0.05f),
+        Color.White.copy(alpha = 0.12f),
+    )
+)
+
+private fun formatDot(value: Int): String =
+    java.text.NumberFormat.getIntegerInstance(java.util.Locale("id", "ID")).format(value)
+
+/** Kartu "Level 10 • Ikon Musik" - tampilan sama seperti di Profil. */
+@Composable
+private fun DeveloperLevelCard() {
+    val spec = MusicJourneyManager.allLevels[9] // Level 10 - Ikon Musik
+    val xp = 100_080
+    val xpTarget = 105_000
+    val progress = (xp.toFloat() / xpTarget.toFloat()).coerceIn(0f, 1f)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(DevCardBg, RoundedCornerShape(20.dp))
+            .border(1.dp, DevCardBorder, RoundedCornerShape(20.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        LevelEmblemIcon(
+            level = spec.level,
+            staticResId = spec.drawableResId,
+            contentDescription = "Level ${spec.level}",
+            modifier = Modifier.size(56.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Level ${spec.level}",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFD0D5E0),
+                maxLines = 1
+            )
+            Text(
+                text = spec.title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(8.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.10f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .clip(CircleShape)
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFFD8DEE9), Color.White)
+                                )
+                            )
+                    )
+                }
+                Text(
+                    text = "${formatDot(xp)} / ${formatDot(xpTarget)} XP",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFB0B6C2),
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
+    }
+}
+
+/** 3 kartu: Streak 999 Hari | Rekor Harian 999 Jam | Rekor Bulanan 999 Jam. */
+@Composable
+private fun DeveloperRecordsRow() {
+    val streakDays = 999
+    val flame = StreakTier.fromStreak(streakDays).toVisual()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        DevRecordCard(
+            modifier = Modifier.weight(1f),
+            label = "Streak",
+            value = "$streakDays Hari",
+            footer = "Terus dengar!",
+            glowColor = flame.glowColor,
+            leading = {
+                StreakFlameIcon(flame = flame, size = 28.dp, animated = true)
+            }
+        )
+        DevRecordCard(
+            modifier = Modifier.weight(1f),
+            label = "Rekor Harian",
+            value = "999 Jam",
+            footer = "Hari terbaik!",
+            leading = {
+                Icon(
+                    painter = painterResource(R.drawable.timer),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        )
+        DevRecordCard(
+            modifier = Modifier.weight(1f),
+            label = "Rekor Bulanan",
+            value = "999 Jam",
+            footer = "Bulan terbaik!",
+            leading = {
+                Icon(
+                    painter = painterResource(R.drawable.baseline_event_repeat_24),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        )
+    }
+}
+
+@Composable
+private fun DevRecordCard(
+    modifier: Modifier,
+    label: String,
+    value: String,
+    footer: String,
+    glowColor: Color? = null,
+    leading: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(DevCardBg, RoundedCornerShape(18.dp))
+            .drawBehind {
+                if (glowColor != null) {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(glowColor.copy(alpha = 0.22f), Color.Transparent),
+                            center = Offset(size.width * 0.28f, size.height * 0.35f),
+                            radius = size.width * 0.72f
+                        ),
+                        radius = size.width * 0.72f,
+                        center = Offset(size.width * 0.28f, size.height * 0.35f)
+                    )
+                }
+            }
+            .border(1.dp, DevCardBorder, RoundedCornerShape(18.dp))
+            .padding(horizontal = 9.dp, vertical = 10.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                leading()
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = label,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFB0B6C2),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = value,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Text(
+                text = footer,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFA0A6B4),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -591,109 +765,6 @@ private fun VerifiedCheckBadge(modifier: Modifier = Modifier) {
             path = checkPath,
             color = Color.White,
             style = Stroke(width = w * 0.12f, cap = StrokeCap.Round)
-        )
-    }
-}
-
-@Composable
-private fun AnimatedFlameBadge(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "flame_badge")
-    val scalePulse by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.12f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(550, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "flame_scale"
-    )
-
-    Canvas(
-        modifier = modifier.graphicsLayer {
-            scaleX = scalePulse
-            scaleY = scalePulse
-        }
-    ) {
-        val w = size.width
-        val h = size.height
-
-        val outerFlame = Path().apply {
-            moveTo(w * 0.50f, h * 0.04f)
-            cubicTo(w * 0.82f, h * 0.30f, w * 0.92f, h * 0.64f, w * 0.72f, h * 0.88f)
-            cubicTo(w * 0.60f, h * 0.98f, w * 0.40f, h * 0.98f, w * 0.28f, h * 0.88f)
-            cubicTo(w * 0.08f, h * 0.64f, w * 0.18f, h * 0.32f, w * 0.42f, h * 0.16f)
-            cubicTo(w * 0.40f, h * 0.28f, w * 0.48f, h * 0.26f, w * 0.50f, h * 0.04f)
-            close()
-        }
-        drawPath(
-            path = outerFlame,
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFF1744))
-            )
-        )
-
-        val innerCore = Path().apply {
-            moveTo(w * 0.50f, h * 0.38f)
-            cubicTo(w * 0.68f, h * 0.54f, w * 0.68f, h * 0.82f, w * 0.50f, h * 0.90f)
-            cubicTo(w * 0.32f, h * 0.82f, w * 0.32f, h * 0.54f, w * 0.50f, h * 0.38f)
-            close()
-        }
-        drawPath(
-            path = innerCore,
-            color = Color(0xFFFFF9C4)
-        )
-    }
-}
-
-@Composable
-private fun AnimatedWingsBadge(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "wings_badge")
-    val wingFlap by infiniteTransition.animateFloat(
-        initialValue = -5f,
-        targetValue = 6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "wing_flap"
-    )
-
-    Canvas(
-        modifier = modifier.graphicsLayer {
-            rotationZ = wingFlap
-        }
-    ) {
-        val w = size.width
-        val h = size.height
-        val wingBrush = Brush.linearGradient(
-            colors = listOf(Color(0xFFFFF59D), Color(0xFFFFB300), Color(0xFFFF6F00))
-        )
-
-        // Left wing
-        val leftWing = Path().apply {
-            moveTo(w * 0.46f, h * 0.56f)
-            cubicTo(w * 0.28f, h * 0.22f, w * 0.06f, h * 0.16f, w * 0.02f, h * 0.32f)
-            cubicTo(w * 0.12f, h * 0.42f, w * 0.08f, h * 0.54f, w * 0.16f, h * 0.64f)
-            cubicTo(w * 0.24f, h * 0.72f, w * 0.36f, h * 0.74f, w * 0.46f, h * 0.66f)
-            close()
-        }
-        drawPath(path = leftWing, brush = wingBrush)
-
-        // Right wing
-        val rightWing = Path().apply {
-            moveTo(w * 0.54f, h * 0.56f)
-            cubicTo(w * 0.72f, h * 0.22f, w * 0.94f, h * 0.16f, w * 0.98f, h * 0.32f)
-            cubicTo(w * 0.88f, h * 0.42f, w * 0.92f, h * 0.54f, w * 0.84f, h * 0.64f)
-            cubicTo(w * 0.76f, h * 0.72f, w * 0.64f, h * 0.74f, w * 0.54f, h * 0.66f)
-            close()
-        }
-        drawPath(path = rightWing, brush = wingBrush)
-
-        // Center crest gem
-        drawCircle(
-            color = Color(0xFFFFFDE7),
-            radius = w * 0.09f,
-            center = Offset(w * 0.50f, h * 0.60f)
         )
     }
 }

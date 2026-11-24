@@ -23,7 +23,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -87,6 +86,7 @@ import com.nanzbeatles.nanas.constants.DynamicIslandTheme
 import com.nanzbeatles.nanas.constants.DynamicIslandThemeKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicAccentKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicBgKey
+import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
 import com.nanzbeatles.nanas.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.nanzbeatles.nanas.extensions.togglePlayPause
 import com.nanzbeatles.nanas.extensions.toggleRepeatMode
@@ -178,9 +178,9 @@ class DynamicIslandSystemOverlayManager(
             val prefsFlow = service.dataStore.data
                 .map { prefs ->
                     val enabled = prefs[DynamicIslandEnabledKey] ?: false
-                    val autoMode = prefs[DynamicIslandAutoEnableOnStartKey] ?: false
                     val dismissed = prefs[DynamicIslandDismissedKey] ?: false
-                    Triple(enabled, autoMode, dismissed)
+                    val lockLyricsEnabled = prefs[LockscreenLyricsEnabledKey] ?: false
+                    Triple(enabled, dismissed, lockLyricsEnabled)
                 }
                 .distinctUntilChanged()
 
@@ -190,9 +190,10 @@ class DynamicIslandSystemOverlayManager(
                 service.currentMediaMetadata,
                 DynamicIslandOverlayState.isAppInForeground,
                 isScreenLockedFlow
-            ) { (enabled, _, dismissed), isPlaying, _, inForeground, isLocked ->
-                val shouldShow = (enabled && !dismissed) || (isLocked && isPlaying)
-                shouldShow to (inForeground && !isLocked)
+            ) { (enabled, dismissed, lockLyricsEnabled), isPlaying, _, inForeground, isLocked ->
+                val showIsland = enabled && !dismissed
+                val showLockLyrics = lockLyricsEnabled && isLocked && isPlaying
+                (showIsland || showLockLyrics) to (inForeground && !isLocked)
             }.collect { (shouldShow, inForegroundUnlocked) ->
                 updateOverlayVisibility(shouldShow = shouldShow, inForeground = inForegroundUnlocked)
             }
@@ -338,6 +339,7 @@ private fun SystemDynamicIslandContent(
     onOpenApp: () -> Unit,
 ) {
     val (enabled, _) = rememberPreference(DynamicIslandEnabledKey, defaultValue = false)
+    val (lockscreenLyricsEnabled, _) = rememberPreference(LockscreenLyricsEnabledKey, defaultValue = false)
     val (isDismissed, onDismissedChange) = rememberPreference(
         DynamicIslandDismissedKey,
         defaultValue = false
@@ -420,7 +422,7 @@ private fun SystemDynamicIslandContent(
     }
 
     val shouldShowIsland = enabled && !isDismissed
-    val shouldShowLockscreenLyrics = isScreenLocked && isPlaying && metadata != null
+    val shouldShowLockscreenLyrics = lockscreenLyricsEnabled && isScreenLocked && isPlaying && metadata != null
 
     if (!shouldShowIsland && !shouldShowLockscreenLyrics) return
 
@@ -479,9 +481,12 @@ private fun SystemDynamicIslandContent(
         }
     }
 
-    // Load synced lyrics from database for Lockscreen Lyrics display
     var parsedLyricsLines by remember { mutableStateOf<List<Pair<Long, String>>>(emptyList()) }
-    LaunchedEffect(metadata?.id) {
+    LaunchedEffect(metadata?.id, lockscreenLyricsEnabled) {
+        if (!lockscreenLyricsEnabled) {
+            parsedLyricsLines = emptyList()
+            return@LaunchedEffect
+        }
         val songId = metadata?.id ?: return@LaunchedEffect
         parsedLyricsLines = withContext(Dispatchers.IO) {
             runCatching {
@@ -580,7 +585,6 @@ private fun SystemDynamicIslandContent(
             )
         }
 
-        // Lockscreen Live Synced Lyrics (positioned below lockscreen clock, above media widget)
         if (shouldShowLockscreenLyrics && parsedLyricsLines.isNotEmpty()) {
             Spacer(modifier = Modifier.height(175.dp))
 

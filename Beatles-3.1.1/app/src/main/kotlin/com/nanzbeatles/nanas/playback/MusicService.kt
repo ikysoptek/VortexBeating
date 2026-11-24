@@ -574,6 +574,14 @@ class MusicService :
         super.onCreate()
         isRunning = true
 
+        // Kirim player + status mode video ke overlay layar kunci (video lirik)
+        scope.launch {
+            combine(videoModeEnabled, playerFlow) { videoOn, exo -> videoOn to exo }
+                .collect { (videoOn, exo) ->
+                    LockscreenLyricsBridge.setVideoOutput(exo, videoOn)
+                }
+        }
+
         setListener(
             object : MediaSessionService.Listener {
                 override fun onForegroundServiceStartNotAllowedException() {

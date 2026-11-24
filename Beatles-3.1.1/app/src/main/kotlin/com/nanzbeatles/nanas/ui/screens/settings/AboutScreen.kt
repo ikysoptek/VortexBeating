@@ -9,13 +9,14 @@ import android.view.TextureView
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,8 +52,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -60,6 +66,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,6 +87,8 @@ import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.MiniPlayerHeight
 import com.nanzbeatles.nanas.constants.NavigationBarHeight
 import com.nanzbeatles.nanas.ui.utils.backToMain
+import kotlin.math.cos
+import kotlin.math.sin
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,7 +111,7 @@ fun AboutScreen(
     ) {
         Spacer(Modifier.height(92.dp))
 
-        // 1. App Header (Logo + Vortex Music + Version) — Compact & Clean like Reference
+        // 1. App Header (Logo + Styled Title "Vortex Music" + Version)
         val infiniteTransition = rememberInfiniteTransition(label = "icon_anim")
         val scale by infiniteTransition.animateFloat(
             initialValue = 1f,
@@ -146,10 +156,11 @@ fun AboutScreen(
             Column {
                 Text(
                     text = "Vortex Music",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.3.sp
-                    ),
+                    fontFamily = FontFamily.Serif,
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 27.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(2.dp))
@@ -161,7 +172,7 @@ fun AboutScreen(
             }
         }
 
-        // 2. Check for updates row (matching reference layout)
+        // 2. Check for updates row
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -201,15 +212,15 @@ fun AboutScreen(
             }
         }
 
-        // 3. Large Hero Developer Video Card (Tall portrait ratio matching reference)
+        // 3. Large Hero Developer Video Card with Badges (Check + Fire + Wings) & Fire Animated Avatar Border
         DeveloperHeroVideoCard(
             developerName = "ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者",
-            developerRole = "Developer",
+            developerRole = "Developer • Founder Of Vortex CORPORATION",
             videoUrl = "https://files.catbox.moe/1dntyj.mp4",
             avatarUrl = "https://files.catbox.moe/21bgwe.jpg"
         )
 
-        // 4. Social Section (WhatsApp Only — Bottom description text removed)
+        // 4. Social Section (WhatsApp Only)
         Text(
             text = "Social",
             style = MaterialTheme.typography.titleMedium,
@@ -341,7 +352,6 @@ private fun DeveloperHeroVideoCard(
                 shape = RoundedCornerShape(26.dp)
             )
     ) {
-        // Fallback background image while Catbox video buffers
         AsyncImage(
             model = avatarUrl,
             contentDescription = null,
@@ -349,7 +359,6 @@ private fun DeveloperHeroVideoCard(
             modifier = Modifier.fillMaxSize()
         )
 
-        // TextureView renders reliably inside scrollable Compose containers (unlike SurfaceView)
         AndroidView(
             factory = { ctx ->
                 TextureView(ctx).apply {
@@ -369,7 +378,6 @@ private fun DeveloperHeroVideoCard(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Bottom dark gradient scrim for crisp white typography
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -377,64 +385,315 @@ private fun DeveloperHeroVideoCard(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.18f),
-                            Color.Black.copy(alpha = 0.85f)
+                            Color.Black.copy(alpha = 0.22f),
+                            Color.Black.copy(alpha = 0.88f)
                         ),
-                        startY = 260f
+                        startY = 250f
                     )
                 )
         )
 
-        // Bottom Overlay: Left (Developer Name + Role) | Right (Large Circular Profile Avatar)
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 20.dp),
+                .padding(horizontal = 18.dp, vertical = 18.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 14.dp, bottom = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                    .padding(end = 10.dp, bottom = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Text(
+                        text = developerName,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+
+                    // Verified Checkmark Badge
+                    VerifiedCheckBadge(modifier = Modifier.size(19.dp))
+
+                    // Animated Flame Badge
+                    AnimatedFlameBadge(modifier = Modifier.size(20.dp))
+
+                    // Glowing Wings / Phoenix Crest Badge
+                    AnimatedWingsBadge(modifier = Modifier.size(23.dp))
+                }
+
                 Text(
-                    text = developerName,
-                    fontSize = 23.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    text = developerRole,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.85f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = developerRole,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.82f),
-                    maxLines = 1
-                )
             }
 
-            Surface(
-                modifier = Modifier.size(76.dp),
-                shape = CircleShape,
-                color = Color(0xFF161922),
-                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.88f)),
-                shadowElevation = 8.dp
-            ) {
-                AsyncImage(
-                    model = avatarUrl,
-                    contentDescription = developerName,
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.account),
-                    error = painterResource(R.drawable.account),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
+            // Circular Profile Picture with Animated Burning Fire Aura Ring
+            FireAnimatedAvatarRing(
+                avatarUrl = avatarUrl,
+                contentDescription = developerName
+            )
+        }
+    }
+}
+
+@Composable
+private fun FireAnimatedAvatarRing(
+    avatarUrl: String,
+    contentDescription: String,
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "fire_avatar_ring")
+    val rotationAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "fire_spin"
+    )
+    val flickerPulse by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 750, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "fire_flicker"
+    )
+
+    Box(
+        modifier = Modifier.size(88.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val outerRadius = size.minDimension / 2f
+
+            // Outer ambient fire glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFFFF6D00).copy(alpha = 0.55f * flickerPulse.coerceAtMost(1f)),
+                        Color(0xFFFF1744).copy(alpha = 0.25f),
+                        Color.Transparent
+                    ),
+                    center = center,
+                    radius = outerRadius
+                ),
+                radius = outerRadius,
+                center = center
+            )
+
+            // Rotating multi-layered burning flame ring + ember sparks
+            rotate(degrees = rotationAngle, pivot = center) {
+                val ringRadius = outerRadius - 5.dp.toPx()
+                drawCircle(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(
+                            Color(0xFFFFEA00),
+                            Color(0xFFFF9100),
+                            Color(0xFFFF1744),
+                            Color(0xFFD500F9),
+                            Color(0xFF00E5FF),
+                            Color(0xFFFF9100),
+                            Color(0xFFFFEA00)
+                        ),
+                        center = center
+                    ),
+                    radius = ringRadius,
+                    center = center,
+                    style = Stroke(width = 3.6.dp.toPx(), cap = StrokeCap.Round)
                 )
+
+                // Orbiting flame sparks around the border
+                for (i in 0 until 6) {
+                    val angleRad = Math.toRadians((i * 60.0))
+                    val sparkDist = ringRadius + (if (i % 2 == 0) 2.5.dp.toPx() else -1.dp.toPx())
+                    val sx = center.x + (cos(angleRad) * sparkDist).toFloat()
+                    val sy = center.y + (sin(angleRad) * sparkDist).toFloat()
+                    drawCircle(
+                        color = if (i % 2 == 0) Color(0xFFFFEA00) else Color(0xFFFF5252),
+                        radius = (if (i % 2 == 0) 2.3.dp.toPx() else 1.7.dp.toPx()) * flickerPulse,
+                        center = Offset(sx, sy)
+                    )
+                }
             }
         }
+
+        // Inner circular profile image
+        Surface(
+            modifier = Modifier.size(72.dp),
+            shape = CircleShape,
+            color = Color(0xFF161922)
+        ) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(R.drawable.account),
+                error = painterResource(R.drawable.account),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            )
+        }
+    }
+}
+
+@Composable
+private fun VerifiedCheckBadge(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val cx = w / 2f
+        val cy = h / 2f
+        val points = 16
+        val outerR = w * 0.48f
+        val innerR = w * 0.39f
+        val starPath = Path()
+
+        for (i in 0 until points) {
+            val r = if (i % 2 == 0) outerR else innerR
+            val angle = Math.toRadians((i * 360.0 / points) - 90.0)
+            val x = cx + (cos(angle) * r).toFloat()
+            val y = cy + (sin(angle) * r).toFloat()
+            if (i == 0) starPath.moveTo(x, y) else starPath.lineTo(x, y)
+        }
+        starPath.close()
+
+        drawPath(
+            path = starPath,
+            brush = Brush.linearGradient(
+                colors = listOf(Color(0xFF38BDF8), Color(0xFF2563EB))
+            )
+        )
+
+        val checkPath = Path().apply {
+            moveTo(w * 0.30f, h * 0.52f)
+            lineTo(w * 0.44f, h * 0.66f)
+            lineTo(w * 0.71f, h * 0.36f)
+        }
+        drawPath(
+            path = checkPath,
+            color = Color.White,
+            style = Stroke(width = w * 0.12f, cap = StrokeCap.Round)
+        )
+    }
+}
+
+@Composable
+private fun AnimatedFlameBadge(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "flame_badge")
+    val scalePulse by infiniteTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(550, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "flame_scale"
+    )
+
+    Canvas(
+        modifier = modifier.graphicsLayer {
+            scaleX = scalePulse
+            scaleY = scalePulse
+        }
+    ) {
+        val w = size.width
+        val h = size.height
+
+        val outerFlame = Path().apply {
+            moveTo(w * 0.50f, h * 0.04f)
+            cubicTo(w * 0.82f, h * 0.30f, w * 0.92f, h * 0.64f, w * 0.72f, h * 0.88f)
+            cubicTo(w * 0.60f, h * 0.98f, w * 0.40f, h * 0.98f, w * 0.28f, h * 0.88f)
+            cubicTo(w * 0.08f, h * 0.64f, w * 0.18f, h * 0.32f, w * 0.42f, h * 0.16f)
+            cubicTo(w * 0.40f, h * 0.28f, w * 0.48f, h * 0.26f, w * 0.50f, h * 0.04f)
+            close()
+        }
+        drawPath(
+            path = outerFlame,
+            brush = Brush.verticalGradient(
+                colors = listOf(Color(0xFFFFEA00), Color(0xFFFF6D00), Color(0xFFFF1744))
+            )
+        )
+
+        val innerCore = Path().apply {
+            moveTo(w * 0.50f, h * 0.38f)
+            cubicTo(w * 0.68f, h * 0.54f, w * 0.68f, h * 0.82f, w * 0.50f, h * 0.90f)
+            cubicTo(w * 0.32f, h * 0.82f, w * 0.32f, h * 0.54f, w * 0.50f, h * 0.38f)
+            close()
+        }
+        drawPath(
+            path = innerCore,
+            color = Color(0xFFFFF9C4)
+        )
+    }
+}
+
+@Composable
+private fun AnimatedWingsBadge(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "wings_badge")
+    val wingFlap by infiniteTransition.animateFloat(
+        initialValue = -5f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "wing_flap"
+    )
+
+    Canvas(
+        modifier = modifier.graphicsLayer {
+            rotationZ = wingFlap
+        }
+    ) {
+        val w = size.width
+        val h = size.height
+        val wingBrush = Brush.linearGradient(
+            colors = listOf(Color(0xFFFFF59D), Color(0xFFFFB300), Color(0xFFFF6F00))
+        )
+
+        // Left wing
+        val leftWing = Path().apply {
+            moveTo(w * 0.46f, h * 0.56f)
+            cubicTo(w * 0.28f, h * 0.22f, w * 0.06f, h * 0.16f, w * 0.02f, h * 0.32f)
+            cubicTo(w * 0.12f, h * 0.42f, w * 0.08f, h * 0.54f, w * 0.16f, h * 0.64f)
+            cubicTo(w * 0.24f, h * 0.72f, w * 0.36f, h * 0.74f, w * 0.46f, h * 0.66f)
+            close()
+        }
+        drawPath(path = leftWing, brush = wingBrush)
+
+        // Right wing
+        val rightWing = Path().apply {
+            moveTo(w * 0.54f, h * 0.56f)
+            cubicTo(w * 0.72f, h * 0.22f, w * 0.94f, h * 0.16f, w * 0.98f, h * 0.32f)
+            cubicTo(w * 0.88f, h * 0.42f, w * 0.92f, h * 0.54f, w * 0.84f, h * 0.64f)
+            cubicTo(w * 0.76f, h * 0.72f, w * 0.64f, h * 0.74f, w * 0.54f, h * 0.66f)
+            close()
+        }
+        drawPath(path = rightWing, brush = wingBrush)
+
+        // Center crest gem
+        drawCircle(
+            color = Color(0xFFFFFDE7),
+            radius = w * 0.09f,
+            center = Offset(w * 0.50f, h * 0.60f)
+        )
     }
 }

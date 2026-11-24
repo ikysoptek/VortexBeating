@@ -492,8 +492,8 @@ private fun GeneralSettingsContent(
                     model = "https://files.catbox.moe/21bgwe.jpg",
                     contentDescription = "Developer",
                     contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.mipmap.ic_launcher),
-                    error = painterResource(R.mipmap.ic_launcher),
+                    placeholder = painterResource(R.drawable.account),
+                    error = painterResource(R.drawable.account),
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)

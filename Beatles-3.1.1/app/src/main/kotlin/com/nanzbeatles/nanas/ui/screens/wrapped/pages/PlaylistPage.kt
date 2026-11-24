@@ -51,8 +51,8 @@ fun PlaylistPage() {
     val state by manager.state.collectAsState()
     val playlistCreationState = state.playlistCreationState
 
-    val playlistImageRes = R.drawable.wrapped_playlist
-    val playlistImageName = "wrapped_playlist"
+    val playlistImageRes = R.drawable.vortex_icon
+    val playlistImageName = "vortex_icon"
 
     var startAnimation by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {

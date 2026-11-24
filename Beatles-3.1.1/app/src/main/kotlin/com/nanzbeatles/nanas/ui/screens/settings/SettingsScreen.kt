@@ -81,6 +81,7 @@ import com.nanzbeatles.nanas.constants.AccountEmailKey
 import com.nanzbeatles.nanas.constants.AccountNameKey
 import com.nanzbeatles.nanas.constants.DataSyncIdKey
 import com.nanzbeatles.nanas.constants.InnerTubeCookieKey
+import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
 import com.nanzbeatles.nanas.constants.NewReleaseNotificationsEnabledKey
 import com.nanzbeatles.nanas.constants.UseLoginForBrowse
 import com.nanzbeatles.nanas.constants.VisitorDataKey
@@ -378,6 +379,30 @@ fun SettingsScreen(
     }
 }
 
+private fun toggleLockscreenLyricsWithPermissionCheck(
+    context: android.content.Context,
+    enable: Boolean,
+    onLockscreenLyricsChange: (Boolean) -> Unit,
+) {
+    onLockscreenLyricsChange(enable)
+    if (enable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
+        Toast.makeText(
+            context,
+            "Izinkan 'Tampilkan di atas aplikasi lain' agar lirik tampil di layar kunci",
+            Toast.LENGTH_LONG
+        ).show()
+        runCatching {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                "package:${context.packageName}".toUri()
+            ).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        }
+    }
+}
+
 @Composable
 private fun GeneralSettingsContent(
     navController: NavController,
@@ -546,6 +571,10 @@ private fun GeneralSettingsContent(
         com.nanzbeatles.nanas.constants.DynamicIslandModeKey,
         defaultValue = com.nanzbeatles.nanas.constants.DynamicIslandMode.KECIL
     )
+    val (lockscreenLyricsEnabled, onLockscreenLyricsChange) = rememberPreference(
+        LockscreenLyricsEnabledKey,
+        defaultValue = false
+    )
 
     if (showDynamicIslandDialog) {
         com.nanzbeatles.nanas.ui.component.DynamicIslandSettingsDialog(
@@ -591,7 +620,7 @@ private fun GeneralSettingsContent(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Dynamic Island & Lirik Layar Kunci",
+                    text = "Dynamic Island",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -603,9 +632,9 @@ private fun GeneralSettingsContent(
                 }
                 Text(
                     text = if (dynamicIslandEnabled) {
-                        "Aktif • Mode $modeName + Lirik Layar Kunci"
+                        "Aktif • Mode $modeName & Kostumisasi Warna"
                     } else {
-                        "Nonaktif • Ketuk untuk aktifkan & tampilkan lirik di layar kunci"
+                        "Nonaktif • Ketuk untuk aktifkan & atur tampilan"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -626,6 +655,47 @@ private fun GeneralSettingsContent(
             }
         }
     }
+
+    Spacer(modifier = Modifier.height(10.dp))
+
+    // Lockscreen Lyrics On/Off Toggle (Same Switch style as other settings)
+    Material3SettingsGroup(
+        title = "Layar Kunci",
+        items = listOf(
+            Material3SettingsItem(
+                icon = painterResource(R.drawable.lyrics),
+                title = { Text("Lirik di Layar Kunci") },
+                description = {
+                    Text(
+                        if (lockscreenLyricsEnabled) {
+                            "Aktif • Lirik berjalan otomatis tampil saat layar HP terkunci"
+                        } else {
+                            "Nonaktif • Tampilkan lirik bergerak mengikuti lagu di layar kunci"
+                        }
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = lockscreenLyricsEnabled,
+                        onCheckedChange = { enabled ->
+                            toggleLockscreenLyricsWithPermissionCheck(
+                                context = context,
+                                enable = enabled,
+                                onLockscreenLyricsChange = onLockscreenLyricsChange
+                            )
+                        }
+                    )
+                },
+                onClick = {
+                    toggleLockscreenLyricsWithPermissionCheck(
+                        context = context,
+                        enable = !lockscreenLyricsEnabled,
+                        onLockscreenLyricsChange = onLockscreenLyricsChange
+                    )
+                }
+            )
+        )
+    )
 
     Spacer(modifier = Modifier.height(12.dp))
 
@@ -750,6 +820,7 @@ private fun GeneralSettingsContent(
 private fun AppearanceSettingsContent(
     navController: NavController
 ) {
+    val context = LocalContext.current
     var showDynamicIslandDialog by rememberSaveable { mutableStateOf(false) }
     val (dynamicIslandEnabled, _) = rememberPreference(
         com.nanzbeatles.nanas.constants.DynamicIslandEnabledKey,
@@ -758,6 +829,10 @@ private fun AppearanceSettingsContent(
     val (dynamicIslandMode, _) = com.nanzbeatles.nanas.utils.rememberEnumPreference(
         com.nanzbeatles.nanas.constants.DynamicIslandModeKey,
         defaultValue = com.nanzbeatles.nanas.constants.DynamicIslandMode.KECIL
+    )
+    val (lockscreenLyricsEnabled, onLockscreenLyricsChange) = rememberPreference(
+        LockscreenLyricsEnabledKey,
+        defaultValue = false
     )
 
     if (showDynamicIslandDialog) {
@@ -787,6 +862,35 @@ private fun AppearanceSettingsContent(
                     )
                 },
                 onClick = { showDynamicIslandDialog = true }
+            ),
+            Material3SettingsItem(
+                icon = painterResource(R.drawable.lyrics),
+                title = { Text("Lirik di Layar Kunci") },
+                description = {
+                    Text(
+                        if (lockscreenLyricsEnabled) "Aktif • Lirik bergerak mengikuti lagu di layar kunci"
+                        else "Nonaktif • Ketuk sakelar untuk menampilkan lirik di layar kunci"
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = lockscreenLyricsEnabled,
+                        onCheckedChange = { enabled ->
+                            toggleLockscreenLyricsWithPermissionCheck(
+                                context = context,
+                                enable = enabled,
+                                onLockscreenLyricsChange = onLockscreenLyricsChange
+                            )
+                        }
+                    )
+                },
+                onClick = {
+                    toggleLockscreenLyricsWithPermissionCheck(
+                        context = context,
+                        enable = !lockscreenLyricsEnabled,
+                        onLockscreenLyricsChange = onLockscreenLyricsChange
+                    )
+                }
             ),
             Material3SettingsItem(
                 icon = painterResource(R.drawable.palette),

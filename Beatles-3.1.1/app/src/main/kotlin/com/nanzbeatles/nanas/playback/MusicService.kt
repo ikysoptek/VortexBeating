@@ -3391,11 +3391,17 @@ class MusicService :
                     val artistName = songData?.artists?.joinToString(", ") { it.name } ?: getString(R.string.tap_to_open)
                     val isLiked = songData?.song?.liked == true
 
+                    val meta = currentMediaMetadata.value
                     LockscreenLyricsBridge.update(
-                        mediaId = song?.id,
+                        mediaId = song?.id ?: player.currentMediaItem?.mediaId ?: meta?.id,
                         isPlaying = isPlaying,
                         positionMs = player.currentPosition,
-                        lyricsOffsetMs = (song?.lyricsOffset ?: 0).toLong()
+                        lyricsOffsetMs = (song?.lyricsOffset ?: 0).toLong(),
+                        title = song?.title ?: meta?.title,
+                        artist = songData?.artists?.joinToString(", ") { it.name }
+                            ?: meta?.artists?.joinToString(", ") { it.name },
+                        durationSec = song?.duration ?: meta?.duration ?: -1,
+                        thumbnailUrl = song?.thumbnailUrl ?: meta?.thumbnailUrl
                     )
 
                     widgetManager.updateWidgets(

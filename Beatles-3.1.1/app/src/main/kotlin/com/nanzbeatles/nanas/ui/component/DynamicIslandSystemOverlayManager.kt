@@ -442,4 +442,123 @@ private fun SystemDynamicIslandContent(
     var duration by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(playbackState, isPlaying, metadata?.id) {
-        if
+        if (playbackState == Player.STATE_READY || isPlaying) {
+            while (isActive) {
+                position = service.player.currentPosition.coerceAtLeast(0L)
+                duration = service.player.duration.coerceAtLeast(0L)
+                delay(250L)
+            }
+        } else {
+            position = service.player.currentPosition.coerceAtLeast(0L)
+            duration = service.player.duration.coerceAtLeast(0L)
+        }
+    }
+
+    val isLiked = currentSong?.song?.liked == true
+    val displayTitle = metadata?.title ?: "Vortex Music"
+    val displayArtist = metadata?.artists?.joinToString(", ") { it.name } ?: "Ketuk untuk kembali ke aplikasi"
+    val displayDuration = if (metadata != null) {
+        duration.takeIf { it > 0L } ?: ((metadata!!.duration.toLong()) * 1000L)
+    } else {
+        0L
+    }
+
+    val handleDismissWithoutStoppingMusic = {
+        onDismissedChange(true)
+        Toast.makeText(
+            service,
+            "Dynamic Island disembunyikan (musik tetap berputar)",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    Box(
+        modifier = Modifier
+            .wrapContentSize()
+            .padding(top = 4.dp, bottom = 4.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        DynamicIslandCapsuleSurface(
+            mode = mode,
+            islandTheme = islandTheme,
+            effectiveBgColor = effectiveBgColor,
+            effectiveAccentColor = effectiveAccentColor,
+            borderGlow = borderGlow,
+            blurRadius = blurRadius,
+            isSystemOverlay = true,
+            displayTitle = displayTitle,
+            displayArtist = displayArtist,
+            thumbnailUrl = metadata?.thumbnailUrl,
+            isPlaying = isPlaying,
+            isLiked = isLiked,
+            shuffleModeEnabled = shuffleModeEnabled,
+            repeatMode = repeatMode,
+            position = if (metadata != null) position else 0L,
+            duration = displayDuration,
+            canSkipPrevious = canSkipPrevious && metadata != null,
+            canSkipNext = canSkipNext && metadata != null,
+            onModeChange = onModeChange,
+            onDismissIsland = handleDismissWithoutStoppingMusic,
+            onTogglePlayPause = {
+                if (metadata != null) {
+                    service.player.togglePlayPause()
+                } else {
+                    onOpenApp()
+                }
+            },
+            onSeekTo = { newPos ->
+                if (metadata != null) {
+                    service.player.seekTo(newPos)
+                }
+            },
+            onPrevious = { service.player.seekToPrevious() },
+            onNext = { service.player.seekToNext() },
+            onToggleLike = { service.toggleLike() },
+            onToggleShuffle = {
+                service.player.shuffleModeEnabled = !service.player.shuffleModeEnabled
+            },
+            onToggleRepeat = {
+                service.player.toggleRepeatMode()
+            },
+            onOpenFullPlayer = { onOpenApp() },
+            onOpenCustomizeOrApp = { onOpenApp() }
+        )
+    }
+}
+
+private class OverlayWindowLifecycleOwner :
+    LifecycleOwner,
+    ViewModelStoreOwner,
+    SavedStateRegistryOwner {
+
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    private val store = ViewModelStore()
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
+
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
+
+    override val viewModelStore: ViewModelStore
+        get() = store
+
+    override val savedStateRegistry: SavedStateRegistry
+        get() = savedStateRegistryController.savedStateRegistry
+
+    fun onCreate() {
+        savedStateRegistryController.performRestore(null)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    }
+
+    fun onStart() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+    }
+
+    fun onResume() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    }
+
+    fun onDestroy() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        store.clear()
+    }
+}

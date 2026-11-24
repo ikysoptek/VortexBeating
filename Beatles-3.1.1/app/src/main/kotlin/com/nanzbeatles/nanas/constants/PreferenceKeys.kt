@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.constants
@@ -39,7 +39,7 @@ val SquigglySliderKey = booleanPreferencesKey("squigglySlider")
 val SwipeToSongKey = booleanPreferencesKey("SwipeToSong")
 val SwipeToRemoveSongKey = booleanPreferencesKey("SwipeToRemoveSong")
 val HomeSectionOrderKey = stringPreferencesKey("homeSectionOrder")
-val UseNewPlayerDesignKey= booleanPreferencesKey("useNewPlayerDesign")
+val UseNewPlayerDesignKey = booleanPreferencesKey("useNewPlayerDesign")
 val UseNewMiniPlayerDesignKey = booleanPreferencesKey("useNewMiniPlayerDesign")
 val MiniPlayerBallModeKey = booleanPreferencesKey("miniPlayerBallMode")
 val StreakCountKey = intPreferencesKey("musicStreakCount")
@@ -224,7 +224,6 @@ val EnableListenTogetherKey = booleanPreferencesKey("enableListenTogether")
 val ListenTogetherAutoApprovalKey = booleanPreferencesKey("listenTogetherAutoApproval")
 val ListenTogetherSyncVolumeKey = booleanPreferencesKey("listenTogetherSyncVolume")
 val ListenTogetherBlockedUsersKey = stringPreferencesKey("listenTogetherBlockedUsers")
-// Session persistence for reconnection
 val ListenTogetherSessionTokenKey = stringPreferencesKey("listenTogetherSessionToken")
 val ListenTogetherRoomCodeKey = stringPreferencesKey("listenTogetherRoomCode")
 val ListenTogetherUserIdKey = stringPreferencesKey("listenTogetherUserId")
@@ -279,7 +278,6 @@ val LastArtistSyncKey = longPreferencesKey("last_artist_sync")
 val LastPlaylistSyncKey = longPreferencesKey("last_playlist_sync")
 val LastFullSyncKey = longPreferencesKey("last_full_sync")
 
-// Sync cooldown in seconds (30 minutes)
 const val SYNC_COOLDOWN = 30 * 60L
 
 val ArtistViewTypeKey = stringPreferencesKey("artistViewType")
@@ -293,7 +291,7 @@ val LyricsProviderOrderKey = stringPreferencesKey("lyricsProviderOrder")
 val QueueEditLockKey = booleanPreferencesKey("queueEditLock")
 val ShowWrappedCardKey = booleanPreferencesKey("show_wrapped_card")
 val WrappedSeenKey = booleanPreferencesKey("wrapped_seen")
-val LastWrappedMonthKey = stringPreferencesKey("last_wrapped_month") // Format: "YYYY-MM"
+val LastWrappedMonthKey = stringPreferencesKey("last_wrapped_month")
 
 val ShowLikedPlaylistKey = booleanPreferencesKey("show_liked_playlist")
 val ShowDownloadedPlaylistKey = booleanPreferencesKey("show_downloaded_playlist")
@@ -507,14 +505,14 @@ val VideoLyricsOffsetKey = intPreferencesKey("videoLyricsOffset")
 val VideoLyricsEnabledKey = booleanPreferencesKey("videoLyricsEnabled")
 
 enum class VideoLyricsCardStyle {
-    NORMAL, // Tanpa CD, hanya gambar album dan nama musik serta artis di bawahnya
-    KASET;  // CD / Kaset jewel case dengan disc berputar
+    NORMAL,
+    KASET;
 }
 
 enum class VideoLyricsEffectStyle {
-    KINETIC_SHAKE, // Efek Alight Motion: Camera Shake, 3D Sway, Zoom Beat, Word-by-Word Pop + Vertical Motion Blur & Glow (seperti di video)
-    SMOOTH_FLOAT,  // Efek 3D Mengambang Halus + Glow tanpa getaran kuat
-    STATIC_CLASSIC // Klasik Statis (hanya teks naik)
+    KINETIC_SHAKE,
+    SMOOTH_FLOAT,
+    STATIC_CLASSIC
 }
 
 val VideoLyricsCardStyleKey = stringPreferencesKey("videoLyricsCardStyle")
@@ -580,7 +578,7 @@ val MiniPlayerShowSubscribeKey = booleanPreferencesKey("miniPlayerShowSubscribe"
 val MiniPlayerShowPlayPauseKey = booleanPreferencesKey("miniPlayerShowPlayPause")
 val MiniPlayerShowHardwareKey = booleanPreferencesKey("miniPlayerShowHardware")
 
-// Dynamic Island (Opt-in feature, default OFF)
+// Dynamic Island & Lockscreen Lyrics (Opt-in features, default OFF)
 enum class DynamicIslandMode {
     KECIL,
     SEDANG,
@@ -605,6 +603,7 @@ val DynamicIslandBorderGlowKey = booleanPreferencesKey("dynamicIslandBorderGlow"
 val DynamicIslandBlurEnabledKey = booleanPreferencesKey("dynamicIslandBlurEnabled")
 val DynamicIslandBlurRadiusKey = intPreferencesKey("dynamicIslandBlurRadius")
 val DynamicIslandPermissionConfirmedKey = booleanPreferencesKey("dynamicIslandPermissionConfirmed")
+val LockscreenLyricsEnabledKey = booleanPreferencesKey("lockscreenLyricsEnabled")
 
 val LyricsAnimationStyleKey = stringPreferencesKey("lyricsAnimationStyle")
 enum class LyricsAnimationStyle {
@@ -616,29 +615,16 @@ enum class LyricsAnimationStyle {
     APPLE,
 }
 
-// Preferences used by the Enhanced Lyrics renderer.
 val RespectAgentPositioningKey = booleanPreferencesKey("respectAgentPositioning")
 val ShowIntervalIndicatorKey = booleanPreferencesKey("showIntervalIndicator")
 
-// OpenRouter default values reused by both legacy and Enhanced lyrics paths.
 const val OpenRouterDefaultBaseUrl = "https://openrouter.ai/api/v1/chat/completions"
 const val OpenRouterDefaultModel = "mistralai/mistral-small-3.1-24b-instruct:free"
 
 val LyricsTextSizeKey = floatPreferencesKey("lyricsTextSize")
 val LyricsLineSpacingKey = floatPreferencesKey("lyricsLineSpacing")
-
-// Show a music-symbol indicator with a progress bar between lyric lines
-// when the silence/instrumental gap is at least this many milliseconds.
-// 0 disables the feature.
 val LyricsInstrumentalGapMsKey = intPreferencesKey("lyricsInstrumentalGapMs")
-
-// When true, neighbouring lyric lines whose word-timings still cover the
-// playback position remain "active" so word-by-word animations are not
-// cut off when a new line starts (e.g. background {bg} vocals).
 val LyricsConnectedLinesKey = booleanPreferencesKey("lyricsConnectedLines")
-
-// Optional user-selected font (URI of a .ttf/.otf file) used to render lyrics.
-// Empty string means "use the system default".
 val LyricsCustomFontUriKey = stringPreferencesKey("lyricsCustomFontUri")
 
 val LyricsFontKey = stringPreferencesKey("lyricsFont")

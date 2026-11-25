@@ -97,6 +97,10 @@ import androidx.compose.runtime.LaunchedEffect
 import com.nanzbeatles.nanas.utils.DeveloperProfile
 import com.nanzbeatles.nanas.utils.DeveloperProfileRepository
 import androidx.compose.runtime.collectAsState
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.common.PlaybackException
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -336,7 +340,9 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
         val mediaSource = ProgressiveMediaSource.Factory(httpFactory)
             .createMediaSource(MediaItem.fromUri(videoUri))
 
-        ExoPlayer.Builder(context).build().apply {
+        // Decoder fallback: kalau codec utama gagal, coba decoder lain (video catbox kadang HEVC/AV1)
+        val renderers = DefaultRenderersFactory(context).setEnableDecoderFallback(true)
+        ExoPlayer.Builder(context, renderers).build().apply {
             setMediaSource(mediaSource)
             repeatMode = Player.REPEAT_MODE_ALL
             videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
@@ -346,8 +352,30 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
         }
     }
 
+    // Status video (untuk diagnosis): null = lancar
+    var videoStatus by remember(exoPlayer) { mutableStateOf<String?>(null) }
     DisposableEffect(exoPlayer) {
+        var retried = false
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                videoStatus = when (playbackState) {
+                    Player.STATE_BUFFERING -> "Memuat video…"
+                    else -> null
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                videoStatus = "Video gagal: ${error.errorCodeName}"
+                // Coba sekali lagi otomatis (hanya sekali, supaya tidak berulang terus)
+                if (!retried) {
+                    retried = true
+                    exoPlayer?.prepare()
+                }
+            }
+        }
+        exoPlayer?.addListener(listener)
         onDispose {
+            exoPlayer?.removeListener(listener)
             exoPlayer?.stop()
             exoPlayer?.clearVideoSurface()
             exoPlayer?.release()
@@ -373,6 +401,17 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
+
+        videoStatus?.let { status ->
+            Text(
+                text = status,
+                fontSize = 11.sp,
+                color = Color.White.copy(alpha = 0.75f),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(14.dp)
+            )
+        }
 
         if (exoPlayer != null) {
             AndroidView(

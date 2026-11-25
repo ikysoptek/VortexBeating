@@ -11,12 +11,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import androidx.compose.animation.AnimatedContent
@@ -26,17 +30,28 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -45,13 +60,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -59,9 +82,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.media3.common.Player
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -69,10 +89,17 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.media3.common.Player
+import androidx.palette.graphics.Palette
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import coil3.ImageLoader
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.toBitmap
+import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
 import com.nanzbeatles.nanas.constants.PreferredLyricsProvider
 import com.nanzbeatles.nanas.constants.PreferredLyricsProviderKey
@@ -83,32 +110,33 @@ import com.nanzbeatles.nanas.extensions.toEnum
 import com.nanzbeatles.nanas.lyrics.LyricsHelper
 import com.nanzbeatles.nanas.lyrics.LyricsUtils
 import com.nanzbeatles.nanas.models.MediaMetadata
+import com.nanzbeatles.nanas.playback.MusicService
 import com.nanzbeatles.nanas.ui.theme.NanzBeatlesTheme
 import com.nanzbeatles.nanas.utils.dataStore
 import com.nanzbeatles.nanas.utils.get
-import com.nanzbeatles.nanas.utils.rememberPreference
+import com.nanzbeatles.nanas.widget.MusicWidgetReceiver
 import dagger.hilt.android.AndroidEntryPoint
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import javax.inject.Inject
 
 object LockscreenLyricsBridge {
     data class PlaybackSnapshot(
@@ -189,6 +217,22 @@ object LockscreenLyricsBridge {
     }
 }
 
+/** Wallpaper layar kunci yang mengikuti cover lagu. */
+private class LockArtwork(
+    val thumbnailUrl: String? = null,
+    /** Cover untuk kartu pemutar. */
+    val cover: Bitmap? = null,
+    /** Versi sangat kecil (di-upscale = efek blur) untuk wallpaper. */
+    val blurred: Bitmap? = null,
+    val color: Int = 0xFF2B2B33.toInt(),
+)
+
+/** Jika tidak ada sentuhan selama ini, overlay muncul lagi. */
+private const val OVERLAY_RETURN_DELAY_MS = 7_000L
+
+/** Overlay tetap tampil sebentar saat lagu di-pause, supaya bisa menekan Play lagi. */
+private const val PAUSED_KEEP_VISIBLE_MS = 5 * 60 * 1000L
+
 @AndroidEntryPoint
 class LockscreenLyricsAccessibilityService : AccessibilityService() {
 
@@ -200,27 +244,45 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
 
     private lateinit var windowManager: WindowManager
     private var keyguardManager: KeyguardManager? = null
+    private var powerManager: PowerManager? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var monitorJob: Job? = null
-
-    private var composeView: ComposeView? = null
-    private var lifecycleOwner: LockscreenOverlayLifecycleOwner? = null
-    private var isAttached = false
-    private val lyricsState = MutableStateFlow(LockLyricsState())
     private var lyricsJob: Job? = null
-    private var attachedFullScreen = false
+    private var artworkJob: Job? = null
+    private var hideJob: Job? = null
+
+    private var mainView: ComposeView? = null
+    private var controlsView: ComposeView? = null
+    private var touchWatcher: View? = null
+    private var lifecycleOwner: LockscreenOverlayLifecycleOwner? = null
+
+    private val lyricsState = MutableStateFlow(LockLyricsState())
+    private val artworkState = MutableStateFlow(LockArtwork())
     private val isLockedFlow = MutableStateFlow(false)
+    private val overlayVisible = MutableStateFlow(true)
+    private var lastPlayingAt = 0L
     private var lockReceiver: BroadcastReceiver? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
         isLockedFlow.value = checkLocked()
 
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                isLockedFlow.value = checkLocked()
+                when (intent?.action) {
+                    // Layar dimatikan / sudah terbuka: overlay HARUS langsung hilang
+                    Intent.ACTION_SCREEN_OFF, Intent.ACTION_USER_PRESENT -> {
+                        hideJob?.cancel()
+                        overlayVisible.value = true
+                        detachOverlay()
+                        detachTouchWatcher()
+                        isLockedFlow.value = checkLocked()
+                    }
+                    else -> isLockedFlow.value = checkLocked()
+                }
             }
         }
         lockReceiver = receiver
@@ -257,28 +319,67 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
                 }
         }
 
+        // Siapkan wallpaper dari cover lagu
+        artworkJob = scope.launch {
+            LockscreenLyricsBridge.snapshot
+                .map { it.thumbnailUrl }
+                .distinctUntilChanged()
+                .collectLatest { url ->
+                    if (url.isNullOrBlank()) {
+                        artworkState.value = LockArtwork()
+                        return@collectLatest
+                    }
+                    artworkState.value = loadArtwork(url)
+                }
+        }
+
         monitorJob = scope.launch {
             while (isActive) {
                 val locked = checkLocked()
                 isLockedFlow.value = locked
+                val interactive = powerManager?.isInteractive ?: true
                 val prefs = runCatching { dataStore.data.firstOrNull() }.getOrNull()
                 val enabled = prefs?.get(LockscreenLyricsEnabledKey) ?: false
                 val snap = LockscreenLyricsBridge.snapshot.value
+                val now = SystemClock.elapsedRealtime()
+                if (snap.isPlaying) lastPlayingAt = now
+                val recentlyActive = snap.isPlaying ||
+                    (lastPlayingAt > 0L && now - lastPlayingAt < PAUSED_KEEP_VISIBLE_MS)
 
-                if (enabled && locked && snap.isPlaying && !snap.mediaId.isNullOrBlank()) {
-                    val wantVideo = LockscreenLyricsBridge.videoModeOn.value &&
-                        LockscreenLyricsBridge.videoPlayer.value != null
-                    // Ganti jendela jika mode video berubah (teks saja <-> layar penuh video)
-                    if (isAttached && attachedFullScreen != wantVideo) {
-                        detachWindowIfNeeded()
-                    }
-                    attachWindowIfNeeded(wantVideo)
+                val shouldShow = enabled && locked && interactive &&
+                    !snap.mediaId.isNullOrBlank() && recentlyActive
+
+                if (shouldShow) {
+                    attachTouchWatcherIfNeeded()
+                    if (overlayVisible.value) attachOverlayIfNeeded() else detachOverlay()
                 } else {
-                    detachWindowIfNeeded()
+                    detachOverlay()
+                    detachTouchWatcher()
+                    overlayVisible.value = true
                 }
                 delay(250L)
             }
         }
+    }
+
+    private suspend fun loadArtwork(url: String): LockArtwork = withContext(Dispatchers.IO) {
+        runCatching {
+            val request = ImageRequest.Builder(this@LockscreenLyricsAccessibilityService)
+                .data(url)
+                .size(512)
+                .allowHardware(false)
+                .build()
+            val cover = ImageLoader(this@LockscreenLyricsAccessibilityService)
+                .execute(request).image?.toBitmap()
+                ?: return@runCatching LockArtwork(thumbnailUrl = url)
+            val palette = Palette.from(cover).generate()
+            val color = palette.getVibrantColor(
+                palette.getMutedColor(palette.getDominantColor(0xFF2B2B33.toInt()))
+            )
+            val blurred = Bitmap.createScaledBitmap(cover, 24, 24, true)
+            LockArtwork(thumbnailUrl = url, cover = cover, blurred = blurred, color = color)
+        }.onFailure { Timber.e(it, "Lockscreen artwork load failed") }
+            .getOrDefault(LockArtwork(thumbnailUrl = url))
     }
 
     private fun checkLocked(): Boolean {
@@ -286,8 +387,89 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
         return km.isKeyguardLocked || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && km.isDeviceLocked)
     }
 
-    private fun attachWindowIfNeeded(fullScreen: Boolean) {
-        if (isAttached) return
+    /** Dipanggil saat layar disentuh: sembunyikan overlay agar kunci asli (geser/PIN) terlihat. */
+    private fun onUserTouch() {
+        overlayVisible.value = false
+        detachOverlay()
+        hideJob?.cancel()
+        hideJob = scope.launch {
+            delay(OVERLAY_RETURN_DELAY_MS)
+            overlayVisible.value = true
+        }
+    }
+
+    private fun sendMusicAction(action: String) {
+        val intent = Intent(this, MusicService::class.java).apply { this.action = action }
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
+            else startService(intent)
+        }
+    }
+
+    private fun overlayParams(
+        height: Int,
+        touchable: Boolean,
+        gravity: Int,
+        yOffsetDp: Int = 0,
+    ): WindowManager.LayoutParams {
+        var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+        if (!touchable) {
+            flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        }
+        return WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            height,
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            flags,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            this.gravity = gravity
+            y = (yOffsetDp * resources.displayMetrics.density).toInt()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+    }
+
+    /** View 1x1 px yang hanya "mendengar" sentuhan di luar jendelanya (tidak menghalangi apa pun). */
+    private fun attachTouchWatcherIfNeeded() {
+        if (touchWatcher != null) return
+        try {
+            val v = View(this).apply {
+                setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) onUserTouch()
+                    false
+                }
+            }
+            val params = WindowManager.LayoutParams(
+                1,
+                1,
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,
+                PixelFormat.TRANSLUCENT
+            ).apply { gravity = Gravity.TOP or Gravity.START }
+            windowManager.addView(v, params)
+            touchWatcher = v
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to attach touch watcher")
+        }
+    }
+
+    private fun detachTouchWatcher() {
+        touchWatcher?.let { runCatching { windowManager.removeViewImmediate(it) } }
+        touchWatcher = null
+    }
+
+    private fun attachOverlayIfNeeded() {
+        if (mainView != null) return
         try {
             val owner = LockscreenOverlayLifecycleOwner().apply {
                 onCreate()
@@ -296,69 +478,61 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
             }
             lifecycleOwner = owner
 
-            val view = ComposeView(this).apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    isForceDarkAllowed = false
-                }
+            fun makeView(content: @Composable () -> Unit) = ComposeView(this).apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) isForceDarkAllowed = false
                 setViewTreeLifecycleOwner(owner)
                 setViewTreeViewModelStoreOwner(owner)
                 setViewTreeSavedStateRegistryOwner(owner)
-                setContent {
-                    NanzBeatlesTheme(darkTheme = true, pureBlack = true) {
-                        LockscreenLyricsOverlayContent(
-                            context = this@LockscreenLyricsAccessibilityService,
-                            database = database,
-                            lyricsHelper = lyricsHelper,
-                            lyricsFlow = lyricsState
-                        )
-                    }
-                }
+                setContent { NanzBeatlesTheme(darkTheme = true, pureBlack = true) { content() } }
             }
 
-            val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                if (fullScreen) WindowManager.LayoutParams.MATCH_PARENT
-                else WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,
-                PixelFormat.TRANSLUCENT
-            ).apply {
-                if (fullScreen) {
-                    // Mode video: layar penuh, sentuhan tetap tembus ke layar kunci (geser untuk buka)
+            // Jendela 1: wallpaper + jam + lirik (sentuhan TEMBUS ke layar kunci asli)
+            val main = makeView {
+                LockscreenMainContent(lyricsFlow = lyricsState, artworkFlow = artworkState)
+            }
+            windowManager.addView(
+                main,
+                overlayParams(
+                    height = WindowManager.LayoutParams.MATCH_PARENT,
+                    touchable = false,
                     gravity = Gravity.TOP or Gravity.START
-                    flags = flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                    y = 0
-                } else {
-                    gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                    y = (285 * resources.displayMetrics.density).toInt()
-                }
-            }
+                )
+            )
+            mainView = main
 
-            windowManager.addView(view, params)
-            composeView = view
-            isAttached = true
-            attachedFullScreen = fullScreen
+            // Jendela 2: kartu pemutar (bisa disentuh: prev / play-pause / next)
+            val controls = makeView {
+                LockscreenPlayerCard(
+                    artworkFlow = artworkState,
+                    onPrevious = { sendMusicAction(MusicWidgetReceiver.ACTION_PREVIOUS) },
+                    onPlayPause = { sendMusicAction(MusicWidgetReceiver.ACTION_PLAY_PAUSE) },
+                    onNext = { sendMusicAction(MusicWidgetReceiver.ACTION_NEXT) },
+                )
+            }
+            windowManager.addView(
+                controls,
+                overlayParams(
+                    height = WindowManager.LayoutParams.WRAP_CONTENT,
+                    touchable = true,
+                    gravity = Gravity.BOTTOM or Gravity.START,
+                    yOffsetDp = 96
+                )
+            )
+            controlsView = controls
         } catch (e: Exception) {
-            Timber.e(e, "Failed to attach TYPE_ACCESSIBILITY_OVERLAY for lockscreen lyrics")
+            Timber.e(e, "Failed to attach lockscreen lyrics overlay")
+            detachOverlay()
         }
     }
 
-    private fun detachWindowIfNeeded() {
-        if (!isAttached) return
-        try {
-            composeView?.let { windowManager.removeViewImmediate(it) }
-        } catch (_: Exception) {
-        } finally {
-            lifecycleOwner?.onDestroy()
-            lifecycleOwner = null
-            composeView = null
-            isAttached = false
-            attachedFullScreen = false
-        }
+    private fun detachOverlay() {
+        if (mainView == null && controlsView == null) return
+        runCatching { controlsView?.let { windowManager.removeViewImmediate(it) } }
+        runCatching { mainView?.let { windowManager.removeViewImmediate(it) } }
+        controlsView = null
+        mainView = null
+        lifecycleOwner?.onDestroy()
+        lifecycleOwner = null
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -366,7 +540,8 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        detachWindowIfNeeded()
+        detachOverlay()
+        detachTouchWatcher()
     }
 
     override fun onDestroy() {
@@ -374,7 +549,10 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
         lockReceiver = null
         monitorJob?.cancel()
         lyricsJob?.cancel()
-        detachWindowIfNeeded()
+        artworkJob?.cancel()
+        hideJob?.cancel()
+        detachOverlay()
+        detachTouchWatcher()
         scope.cancel()
         super.onDestroy()
     }
@@ -449,120 +627,152 @@ private suspend fun loadLockscreenLyrics(
 }
 
 @Composable
-private fun LockscreenLyricsOverlayContent(
-    context: Context,
-    database: MusicDatabase,
-    lyricsHelper: LyricsHelper,
-    lyricsFlow: StateFlow<LockLyricsState>,
-) {
-    // Service sudah memutuskan kapan overlay tampil (aktif + terkunci + sedang main).
-    val snap by LockscreenLyricsBridge.snapshot.collectAsState()
-
-    val lyr by lyricsFlow.collectAsState()
-    val parsedLines = if (lyr.mediaId == snap.mediaId) lyr.lines else emptyList()
-    val lyricsLoading = lyr.loading || lyr.mediaId != snap.mediaId
-
-    var livePosMs by remember { mutableLongStateOf(snap.positionMs) }
-    LaunchedEffect(snap) {
+private fun rememberLivePosition(
+    snap: LockscreenLyricsBridge.PlaybackSnapshot,
+    withLyricsOffset: Boolean,
+    tickMs: Long,
+): State<Long> {
+    val pos = remember { mutableLongStateOf(snap.positionMs) }
+    LaunchedEffect(snap, withLyricsOffset) {
         while (isActive) {
             val elapsed = if (snap.isPlaying) {
                 (SystemClock.elapsedRealtime() - snap.updatedAtElapsedMs).coerceAtLeast(0L)
             } else 0L
-            livePosMs = (snap.positionMs + elapsed + snap.lyricsOffsetMs).coerceAtLeast(0L)
-            delay(60L)
+            val offset = if (withLyricsOffset) snap.lyricsOffsetMs else 0L
+            pos.longValue = (snap.positionMs + elapsed + offset).coerceAtLeast(0L)
+            delay(tickMs)
         }
     }
+    return pos
+}
 
-    val videoOn by LockscreenLyricsBridge.videoModeOn.collectAsState()
-    val videoPlayer by LockscreenLyricsBridge.videoPlayer.collectAsState()
-    val activePlayer = videoPlayer
+private fun formatMs(ms: Long): String {
+    val total = (ms / 1000L).coerceAtLeast(0L)
+    return "%d:%02d".format(total / 60, total % 60)
+}
 
-    if (videoOn && activePlayer != null) {
-        // ===== MODE VIDEO LIRIK: video layar penuh + jam + lirik =====
-        Box(modifier = Modifier.fillMaxSize()) {
-            LockscreenVideoSurface(player = activePlayer)
+/** Wallpaper (dari cover lagu) + tanggal + jam + lirik karaoke. */
+@Composable
+private fun LockscreenMainContent(
+    lyricsFlow: StateFlow<LockLyricsState>,
+    artworkFlow: StateFlow<LockArtwork>,
+) {
+    val snap by LockscreenLyricsBridge.snapshot.collectAsState()
+    val lyr by lyricsFlow.collectAsState()
+    val art by artworkFlow.collectAsState()
 
-            // Gelapkan sedikit supaya lirik tetap terbaca
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.45f),
-                                Color.Black.copy(alpha = 0.30f),
-                                Color.Black.copy(alpha = 0.60f),
-                            )
+    val parsedLines = if (lyr.mediaId == snap.mediaId) lyr.lines else emptyList()
+    val lyricsLoading = lyr.loading || lyr.mediaId != snap.mediaId
+    val livePosMs by rememberLivePosition(snap, withLyricsOffset = true, tickMs = 60L)
+
+    val base = Color(art.color)
+    val top = lerp(base, Color.Black, 0.35f)
+    val mid = lerp(base, Color.Black, 0.55f)
+    val bottom = lerp(base, Color.Black, 0.80f)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Wallpaper pengganti: gradasi warna cover
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(top, mid, bottom)))
+        )
+        // Cover yang di-blur (diperkecil lalu diperbesar)
+        art.blurred?.let { bmp ->
+            Image(
+                bitmap = bmp.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alpha = 0.40f,
+                filterQuality = FilterQuality.Medium,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        // Peredam supaya teks selalu terbaca
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.Black.copy(alpha = 0.10f),
+                            Color.Black.copy(alpha = 0.30f),
+                            Color.Black.copy(alpha = 0.55f),
                         )
                     )
-            )
+                )
+        )
 
-            LockscreenClock(
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(56.dp))
+            Icon(
+                painter = painterResource(R.drawable.lock),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(20.dp)
+            )
+            LockscreenClock()
+
+            Box(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 96.dp)
-            )
-
-            if (parsedLines.isNotEmpty()) {
-                Box(modifier = Modifier.padding(top = 285.dp)) {
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, bottom = 12.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (parsedLines.isNotEmpty()) {
                     LockscreenLyricsLines(parsedLines = parsedLines, livePosMs = livePosMs)
+                } else {
+                    Text(
+                        text = if (lyricsLoading) "Memuat lirik…" else "Lirik tidak ditemukan",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 28.dp),
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Start
+                        )
+                    )
                 }
             }
+
+            // Ruang untuk kartu pemutar (jendela terpisah) + petunjuk geser
+            Spacer(Modifier.height(322.dp))
         }
-    } else {
-        // ===== MODE BIASA: hanya teks lirik =====
-        if (parsedLines.isNotEmpty()) {
-            LockscreenLyricsLines(parsedLines = parsedLines, livePosMs = livePosMs)
-        } else {
-            // Penanda: kalau teks ini muncul, overlay SUDAH jalan, hanya liriknya yang belum ada
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
-                text = if (lyricsLoading) "Memuat lirik…" else "Lirik tidak ditemukan",
-                modifier = Modifier.padding(horizontal = 24.dp),
+                text = "Geser ke atas untuk membuka",
                 style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.7f),
-                    shadow = Shadow(
-                        color = Color.Black.copy(alpha = 0.9f),
-                        offset = Offset(0f, 3f),
-                        blurRadius = 12f
-                    )
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.8f)
                 )
+            )
+            Spacer(Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .width(140.dp)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.9f))
             )
         }
     }
 }
 
-/** Video dari player utama (mode video) yang ditempel ke jendela layar kunci. */
 @Composable
-private fun LockscreenVideoSurface(player: Player) {
-    val context = LocalContext.current
-    val playerView = remember(player) {
-        PlayerView(context).apply {
-            useController = false
-            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            setShutterBackgroundColor(android.graphics.Color.BLACK)
-            setBackgroundColor(android.graphics.Color.BLACK)
-            this.player = player
-        }
-    }
-
-    DisposableEffect(playerView) {
-        onDispose {
-            playerView.player = null
-            // Beri tahu UI aplikasi agar memasang ulang surface videonya setelah unlock
-            LockscreenLyricsBridge.notifyVideoReleased()
-        }
-    }
-
-    AndroidView(
-        factory = { playerView },
-        modifier = Modifier.fillMaxSize()
-    )
-}
-
-@Composable
-private fun LockscreenClock(modifier: Modifier = Modifier) {
+private fun LockscreenClock() {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (isActive) {
@@ -575,39 +785,159 @@ private fun LockscreenClock(modifier: Modifier = Modifier) {
         SimpleDateFormat("HH.mm", Locale.getDefault()).format(Date(now))
     }
     val dateText = remember(minuteKey) {
-        SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(Date(now))
+        SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(Date(now))
     }
-    val shadow = Shadow(
-        color = Color.Black.copy(alpha = 0.6f),
-        offset = Offset(0f, 3f),
-        blurRadius = 12f
+    Text(
+        text = dateText,
+        style = TextStyle(
+            fontSize = 19.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White.copy(alpha = 0.95f)
+        ),
+        modifier = Modifier.padding(top = 6.dp)
     )
+    Text(
+        text = timeText,
+        style = TextStyle(
+            fontSize = 104.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            lineHeight = 110.sp
+        )
+    )
+}
+
+/** Kartu pemutar: cover, judul, progres, dan tombol (jendela ini yang bisa disentuh). */
+@Composable
+private fun LockscreenPlayerCard(
+    artworkFlow: StateFlow<LockArtwork>,
+    onPrevious: () -> Unit,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+) {
+    val snap by LockscreenLyricsBridge.snapshot.collectAsState()
+    val art by artworkFlow.collectAsState()
+    val posMs by rememberLivePosition(snap, withLyricsOffset = false, tickMs = 250L)
+
+    val durationMs = if (snap.durationSec > 0) snap.durationSec * 1000L else 0L
+    val progress = if (durationMs > 0) (posMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
+    val cardColor = lerp(Color(art.color), Color.Black, 0.45f).copy(alpha = 0.72f)
+    val shape = RoundedCornerShape(30.dp)
 
     Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(shape)
+            .background(cardColor, shape)
+            .border(1.dp, Color.White.copy(alpha = 0.28f), shape)
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = dateText,
-            style = TextStyle(
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White.copy(alpha = 0.9f),
-                shadow = shadow
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.12f))
+            ) {
+                art.cover?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = snap.title.orEmpty(),
+                    style = TextStyle(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = snap.artist.orEmpty(),
+                    style = TextStyle(
+                        fontSize = 15.sp,
+                        color = Color.White.copy(alpha = 0.72f)
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.25f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progress)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.White.copy(alpha = 0.9f))
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                val small = TextStyle(fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
+                Text(text = formatMs(posMs), style = small)
+                if (durationMs > 0) Text(text = "-" + formatMs(durationMs - posMs), style = small)
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.skip_previous),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onPrevious)
+                    .padding(6.dp)
             )
-        )
-        Text(
-            text = timeText,
-            style = TextStyle(
-                fontSize = 72.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                shadow = shadow
+            Icon(
+                painter = painterResource(if (snap.isPlaying) R.drawable.pause else R.drawable.play),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onPlayPause)
+                    .padding(8.dp)
             )
-        )
+            Icon(
+                painter = painterResource(R.drawable.skip_next),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onNext)
+                    .padding(6.dp)
+            )
+        }
     }
 }
 
+/** Lirik besar bergaya karaoke: baris aktif terisi putih mengikuti lagu, baris lain redup. */
 @Composable
 private fun LockscreenLyricsLines(
     parsedLines: List<Pair<Long, String>>,
@@ -616,24 +946,41 @@ private fun LockscreenLyricsLines(
     val activeIdx = remember(parsedLines, livePosMs) {
         parsedLines.indexOfLast { it.first <= livePosMs }
     }
-
     val textShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.92f),
-        offset = Offset(0f, 3f),
-        blurRadius = 14f
+        color = Color.Black.copy(alpha = 0.45f),
+        offset = Offset(0f, 2f),
+        blurRadius = 8f
     )
 
     AnimatedContent(
         targetState = activeIdx,
         transitionSpec = {
-            (fadeIn(tween(220)) + slideInVertically(tween(240)) { it / 3 })
-                .togetherWith(fadeOut(tween(180)) + slideOutVertically(tween(200)) { -it / 3 })
+            (fadeIn(tween(260)) + slideInVertically(tween(300)) { it / 6 })
+                .togetherWith(fadeOut(tween(200)) + slideOutVertically(tween(240)) { -it / 6 })
         },
-        label = "LockscreenAccessibilityLyrics"
+        label = "LockscreenKaraokeLyrics",
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                // Pudar di atas dan bawah seperti contoh
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        0.14f to Color.Black,
+                        0.86f to Color.Black,
+                        1f to Color.Transparent
+                    ),
+                    blendMode = BlendMode.DstIn
+                )
+            }
     ) { idx ->
-        val prevLine = parsedLines.getOrNull(idx - 1)?.second
-        val currentLine = parsedLines.getOrNull(idx)?.second ?: parsedLines.first().second
-        // Efek karaoke: warna putih "mengisi" baris sesuai posisi lagu
+        val prev = parsedLines.getOrNull(idx - 1)?.second
+        val current = parsedLines.getOrNull(idx)?.second
+        val next1 = parsedLines.getOrNull(idx + 1)?.second
+        val next2 = parsedLines.getOrNull(idx + 2)?.second
+
         val lineStart = parsedLines.getOrNull(idx)?.first ?: 0L
         val lineEnd = parsedLines.getOrNull(idx + 1)?.first ?: (lineStart + 4000L)
         val span = (lineEnd - lineStart).coerceIn(1L, 7000L)
@@ -641,80 +988,44 @@ private fun LockscreenLyricsLines(
         val karaokeBrush = Brush.horizontalGradient(
             0f to Color.White,
             fill to Color.White,
-            (fill + 0.001f).coerceAtMost(1f) to Color.White.copy(alpha = 0.42f),
-            1f to Color.White.copy(alpha = 0.42f),
+            (fill + 0.001f).coerceAtMost(1f) to Color.White.copy(alpha = 0.45f),
+            1f to Color.White.copy(alpha = 0.45f),
         )
-        val nextLine = parsedLines.getOrNull(idx + 1)?.second
-        val afterNextLine = parsedLines.getOrNull(idx + 2)?.second
+
+        fun dim(alpha: Float) = TextStyle(
+            fontFamily = FontFamily.SansSerif,
+            fontSize = 30.sp,
+            lineHeight = 36.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White.copy(alpha = alpha),
+            shadow = textShadow,
+            textAlign = TextAlign.Start
+        )
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(horizontal = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            if (!prevLine.isNullOrBlank() && idx > 0) {
+            if (!prev.isNullOrBlank()) Text(text = prev, style = dim(0.35f), maxLines = 3)
+            if (current != null) {
                 Text(
-                    text = prevLine,
+                    text = current,
                     style = TextStyle(
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.55f),
-                        shadow = textShadow
+                        fontSize = 30.sp,
+                        lineHeight = 36.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        brush = karaokeBrush,
+                        shadow = textShadow,
+                        textAlign = TextAlign.Start
                     ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Start
+                    maxLines = 4
                 )
             }
-
-            Text(
-                text = currentLine,
-                style = TextStyle(
-                    fontFamily = FontFamily.SansSerif,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    brush = karaokeBrush,
-                    shadow = textShadow
-                ),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Start
-            )
-
-            if (!nextLine.isNullOrBlank()) {
-                Text(
-                    text = nextLine,
-                    style = TextStyle(
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.72f),
-                        shadow = textShadow
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Start
-                )
-            }
-
-            if (!afterNextLine.isNullOrBlank()) {
-                Text(
-                    text = afterNextLine,
-                    style = TextStyle(
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.48f),
-                        shadow = textShadow
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Start
-                )
-            }
+            if (!next1.isNullOrBlank()) Text(text = next1, style = dim(0.5f), maxLines = 3)
+            if (!next2.isNullOrBlank()) Text(text = next2, style = dim(0.32f), maxLines = 3)
         }
     }
 }

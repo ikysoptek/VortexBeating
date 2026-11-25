@@ -1528,7 +1528,7 @@ fun DynamicIslandSettingsDialog(
         DynamicIslandAutoEnableOnStartKey,
         defaultValue = false
     )
-    val (lockscreenLyricsEnabled, onLockscreenLyricsChange) = rememberPreference(
+    val (lockscreenLyricsEnabled, _) = rememberPreference(
         LockscreenLyricsEnabledKey,
         defaultValue = false
     )
@@ -2423,54 +2423,6 @@ fun DynamicIslandSettingsDialog(
                                         }
                                     } else {
                                         onEnabledChange(false)
-                                    }
-                                }
-                            )
-                        }
-
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = Color.White.copy(alpha = 0.14f)
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    val next = !lockscreenLyricsEnabled
-                                    onLockscreenLyricsChange(next)
-                                    if (next && !canDrawOverlays) {
-                                        launchOverlaySettings()
-                                    }
-                                }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Lirik di Layar Kunci",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = if (lockscreenLyricsEnabled) {
-                                        "Aktif • Lirik bergerak otomatis tampil saat layar HP terkunci"
-                                    } else {
-                                        "Nonaktif • Tampilkan lirik berjalan di bawah jam layar kunci"
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.72f)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Switch(
-                                checked = lockscreenLyricsEnabled,
-                                onCheckedChange = { next ->
-                                    onLockscreenLyricsChange(next)
-                                    if (next && !canDrawOverlays) {
-                                        launchOverlaySettings()
                                     }
                                 }
                             )

@@ -173,6 +173,8 @@ object LockscreenLyricsBridge {
         val thumbnailUrl: String? = null,
         /** Durasi sebenarnya dari player (ms), -1 jika belum diketahui. */
         val durationMs: Long = -1L,
+        /** Kecepatan putar (Gaya Suara / tempo) supaya posisi lirik tidak melenceng. */
+        val speed: Float = 1f,
     )
 
     private val _snapshot = MutableStateFlow(PlaybackSnapshot())
@@ -212,6 +214,7 @@ object LockscreenLyricsBridge {
         durationSec: Int = -1,
         thumbnailUrl: String? = null,
         durationMs: Long = -1L,
+        speed: Float = 1f,
     ) {
         _snapshot.value = PlaybackSnapshot(
             mediaId = mediaId,
@@ -224,6 +227,7 @@ object LockscreenLyricsBridge {
             durationSec = durationSec,
             thumbnailUrl = thumbnailUrl,
             durationMs = durationMs,
+            speed = speed,
         )
     }
 
@@ -581,7 +585,7 @@ private fun rememberLivePosition(
     LaunchedEffect(snap, withLyricsOffset) {
         while (isActive) {
             val elapsed = if (snap.isPlaying) {
-                (SystemClock.elapsedRealtime() - snap.updatedAtElapsedMs).coerceAtLeast(0L)
+                ((SystemClock.elapsedRealtime() - snap.updatedAtElapsedMs).coerceAtLeast(0L) * snap.speed).toLong()
             } else 0L
             val offset = if (withLyricsOffset) snap.lyricsOffsetMs else 0L
             pos.longValue = (snap.positionMs + elapsed + offset).coerceAtLeast(0L)
@@ -608,7 +612,7 @@ private fun LockscreenMainContent(
 
     val parsedLines = if (lyr.mediaId == snap.mediaId) lyr.lines else emptyList()
     val lyricsLoading = lyr.loading || lyr.mediaId != snap.mediaId
-    val livePosMs by rememberLivePosition(snap, withLyricsOffset = true, tickMs = 60L)
+    val livePosMs by rememberLivePosition(snap, withLyricsOffset = true, tickMs = 33L)
 
     val base = Color(art.color)
     val top = lerp(base, Color.Black, 0.10f)

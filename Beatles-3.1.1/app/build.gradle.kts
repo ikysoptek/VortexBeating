@@ -79,7 +79,7 @@ android {
         create("universal") {
             dimension = "abi"
             ndk {
-                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
             }
             buildConfigField("String", "ARCHITECTURE", "\"universal\"")
         }
@@ -253,7 +253,12 @@ android {
     kotlin {
         jvmToolchain(21)
         compilerOptions {
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
+            freeCompilerArgs.addAll(
+                "-Xannotation-default-target=param-property",
+                "-Xno-param-assertions",
+                "-Xno-call-assertions",
+                "-Xno-receiver-assertions",
+            )
             jvmTarget.set(JvmTarget.JVM_21)
         }
     }
@@ -305,6 +310,10 @@ android {
             excludes += "META-INF/notice.txt"
             excludes += "META-INF/ASL2.0"
             excludes += "META-INF/*.kotlin_module"
+            excludes += "META-INF/proguard/**"
+            excludes += "META-INF/*.version"
+            excludes += "DebugProbesKt.bin"
+            excludes += "kotlin-tooling-metadata.json"
         }
     }
 }
@@ -345,6 +354,8 @@ dependencies {
     implementation(libs.material3)
     implementation("androidx.compose.material:material-icons-extended:1.6.8")
     implementation(libs.palette)
+    // Poster Musik Favorit: hapus background foto orang (model dibundel, offline)
+    implementation(libs.mlkit.selfie.segmentation)
     implementation(libs.materialKolor)
 
     implementation(libs.appcompat)

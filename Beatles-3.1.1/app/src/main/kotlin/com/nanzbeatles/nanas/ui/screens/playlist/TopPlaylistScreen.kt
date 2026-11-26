@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.playlist
@@ -672,7 +672,21 @@ private fun TopPlaylistHeader(
                                     }
                                 }
                             },
-                            onDismiss = { menuState.dismiss() }
+                            onDismiss = { menuState.dismiss() },
+                            onCreatePoster = {
+                                com.nanzbeatles.nanas.poster.PosterSession.openFromPlaylist(
+                                    name = name,
+                                    songs = songs.map {
+                                        com.nanzbeatles.nanas.poster.PosterSong(
+                                            id = it.song.id,
+                                            title = it.song.title,
+                                            artist = it.artists.joinToString(", ") { a -> a.name }.ifBlank { "Artis tidak diketahui" },
+                                            durationSec = it.song.duration.takeIf { d -> d > 0 } ?: 200,
+                                            thumbnailUrl = it.song.thumbnailUrl,
+                                        )
+                                    },
+                                )
+                            }
                         )
                     }
                 },

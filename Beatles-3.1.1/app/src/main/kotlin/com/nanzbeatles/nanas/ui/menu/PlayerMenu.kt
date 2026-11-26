@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.menu
@@ -10,6 +10,8 @@ import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -145,6 +147,19 @@ fun PlayerMenu(
     var showChoosePlaylistDialog by rememberSaveable {
         mutableStateOf(false)
     }
+
+    val artistNamesForExport = mediaMetadata.artists.joinToString(", ") { it.name }
+    val saveToDeviceController = com.nanzbeatles.nanas.utils.rememberSaveToDeviceController(
+        songId = mediaMetadata.id,
+        title = mediaMetadata.title,
+        artist = artistNamesForExport,
+        onFinishedDismissMenu = onDismiss,
+    )
+    val hasOfflineFile = com.nanzbeatles.nanas.utils.rememberIsOfflineFileAvailable(
+        songId = mediaMetadata.id,
+        download = download,
+        isDownloadedInDb = librarySong?.song?.isDownloaded == true,
+    )
     
     var showListenTogetherDialog by rememberSaveable {
         mutableStateOf(false)
@@ -210,6 +225,19 @@ fun PlayerMenu(
                 }
             }
         }
+    }
+
+    var showAudioStyleDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if (showAudioStyleDialog) {
+        AudioStyleDialog(
+            onDismiss = { showAudioStyleDialog = false },
+            onSaveToDevice = {
+                saveToDeviceController.onTriggerSave()
+            },
+        )
     }
 
     var showPitchTempoDialog by rememberSaveable {
@@ -631,84 +659,100 @@ fun PlayerMenu(
 
         item {
             Material3MenuGroup(
-                items = listOf(
+                items = buildList {
                     when (download?.state) {
                         Download.STATE_COMPLETED -> {
-                            Material3MenuItemData(
-                                title = {
-                                    Text(
-                                        text = stringResource(R.string.remove_download)
-                                    )
-                                },
-                                icon = {
-                                    Icon(
-                                        painter = painterResource(R.drawable.offline),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                onClick = {
-                                    DownloadService.sendRemoveDownload(
-                                        context,
-                                        ExoDownloadService::class.java,
-                                        mediaMetadata.id,
-                                        false,
-                                    )
-                                }
+                            add(
+                                com.nanzbeatles.nanas.utils.buildSaveToDeviceMenuItem(
+                                    controller = saveToDeviceController,
+                                )
+                            )
+                            add(
+                                Material3MenuItemData(
+                                    title = {
+                                        Text(
+                                            text = stringResource(R.string.remove_download)
+                                        )
+                                    },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.offline),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    },
+                                    onClick = {
+                                        DownloadService.sendRemoveDownload(
+                                            context,
+                                            ExoDownloadService::class.java,
+                                            mediaMetadata.id,
+                                            false,
+                                        )
+                                    }
+                                )
                             )
                         }
 
                         Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
-                            Material3MenuItemData(
-                                title = { Text(text = stringResource(R.string.downloading)) },
-                                icon = {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        strokeWidth = 2.dp
-                                    )
-                                },
-                                onClick = {
-                                    DownloadService.sendRemoveDownload(
-                                        context,
-                                        ExoDownloadService::class.java,
-                                        mediaMetadata.id,
-                                        false,
-                                    )
-                                }
+                            add(
+                                Material3MenuItemData(
+                                    title = { Text(text = stringResource(R.string.downloading)) },
+                                    icon = {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    },
+                                    onClick = {
+                                        DownloadService.sendRemoveDownload(
+                                            context,
+                                            ExoDownloadService::class.java,
+                                            mediaMetadata.id,
+                                            false,
+                                        )
+                                    }
+                                )
                             )
                         }
 
                         else -> {
-                            Material3MenuItemData(
-                                title = { Text(text = stringResource(R.string.action_download)) },
-                                icon = {
-                                    Icon(
-                                        painter = painterResource(R.drawable.download),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                onClick = {
-                                    database.transaction {
-                                        insert(mediaMetadata)
+                            add(
+                                com.nanzbeatles.nanas.utils.buildSaveToDeviceMenuItem(
+                                    controller = saveToDeviceController,
+                                )
+                            )
+                            add(
+                                Material3MenuItemData(
+                                    title = { Text(text = stringResource(R.string.action_download)) },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.download),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    },
+                                    onClick = {
+                                        database.transaction {
+                                            insert(mediaMetadata)
+                                        }
+                                        val downloadRequest =
+                                            DownloadRequest
+                                                .Builder(mediaMetadata.id, mediaMetadata.id.toUri())
+                                                .setCustomCacheKey(mediaMetadata.id)
+                                                .setData(mediaMetadata.title.toByteArray())
+                                                .build()
+                                        DownloadService.sendAddDownload(
+                                            context,
+                                            ExoDownloadService::class.java,
+                                            downloadRequest,
+                                            false,
+                                        )
                                     }
-                                    val downloadRequest =
-                                        DownloadRequest
-                                            .Builder(mediaMetadata.id, mediaMetadata.id.toUri())
-                                            .setCustomCacheKey(mediaMetadata.id)
-                                            .setData(mediaMetadata.title.toByteArray())
-                                            .build()
-                                    DownloadService.sendAddDownload(
-                                        context,
-                                        ExoDownloadService::class.java,
-                                        downloadRequest,
-                                        false,
-                                    )
-                                }
+                                )
                             )
                         }
                     }
-                )
+                }
             )
         }
 
@@ -839,10 +883,202 @@ fun PlayerMenu(
                         )
                         add(
                             Material3MenuItemData(
-                                title = { Text(text = "Gaya Suara & Tempo") },
+                                title = {
+                                    val vrState by playerConnection.vocalRemoverState.collectAsState()
+                                    val isCurrentSong = vrState.songId == mediaMetadata.id
+                                    val isCached = (isCurrentSong && vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.READY_CACHED) ||
+                                        playerConnection.isVocalSeparationCached()
+                                    var wasLoading by remember { mutableStateOf(false) }
+                                    LaunchedEffect(vrState.status, vrState.songId) {
+                                        if (vrState.songId == mediaMetadata.id &&
+                                            vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.LOADING
+                                        ) {
+                                            wasLoading = true
+                                        } else if (wasLoading &&
+                                            vrState.songId == mediaMetadata.id &&
+                                            vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.READY_CACHED
+                                        ) {
+                                            wasLoading = false
+                                            onDismiss()
+                                        }
+                                    }
+                                    Text(
+                                        text = when {
+                                            isCurrentSong && vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.LOADING ->
+                                                "Memisahkan vokal & instrumen (Beta)... (${vrState.progress}%)"
+                                            isCached ->
+                                                "Pisahkan vokal & instrumen (Beta • Cached)"
+                                            else ->
+                                                "Pisahkan vokal & instrumen (Beta)"
+                                        }
+                                    )
+                                },
+                                description = {
+                                    val vrState by playerConnection.vocalRemoverState.collectAsState()
+                                    val isCurrentSong = vrState.songId == mediaMetadata.id
+                                    val isCached = (isCurrentSong && vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.READY_CACHED) ||
+                                        playerConnection.isVocalSeparationCached()
+                                    Text(
+                                        text = when {
+                                            isCurrentSong && vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.LOADING ->
+                                                vrState.message.ifBlank { "Memisahkan suara vokal dan instrumen..." }
+                                            isCurrentSong && vrState.active && isCached ->
+                                                "Aktif di lagu ini • Vokal ${(vrState.vocalVolume * 100).toInt()}% • Instrumen ${(vrState.instrumentVolume * 100).toInt()}%"
+                                            isCached ->
+                                                "Tersimpan di cache • Ketuk untuk aktifkan 2 slider di lagu ini"
+                                            else ->
+                                                "Ganti slider volume dengan 2 slider vokal & instrumen untuk lagu ini"
+                                        }
+                                    )
+                                },
+                                icon = {
+                                    val vrState by playerConnection.vocalRemoverState.collectAsState()
+                                    val isCurrentSong = vrState.songId == mediaMetadata.id
+                                    if (isCurrentSong && vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.LOADING) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(22.dp),
+                                            strokeWidth = 2.4.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(R.drawable.graphic_eq),
+                                            contentDescription = null,
+                                            tint = if (isCurrentSong && vrState.active) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            },
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    val vrState = playerConnection.vocalRemoverState.value
+                                    val isCurrentSong = vrState.songId == mediaMetadata.id
+                                    if (!(isCurrentSong && vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.LOADING)) {
+                                        val alreadyCached = (isCurrentSong && vrState.status == com.nanzbeatles.nanas.playback.audio.VocalSeparationStatus.READY_CACHED) ||
+                                            playerConnection.isVocalSeparationCached()
+                                        playerConnection.toggleVocalInstrumentSeparation()
+                                        if (alreadyCached) {
+                                            onDismiss()
+                                        }
+                                    }
+                                }
+                            )
+                        )
+                        add(
+                            Material3MenuItemData(
+                                title = {
+                                    val vrState by playerConnection.vocalRemoverState.collectAsState()
+                                    Text(
+                                        text = if (vrState.savingVocal) {
+                                            "Mengunduh & menyimpan vokal..."
+                                        } else {
+                                            "Unduh vokal & simpan ke perangkat"
+                                        }
+                                    )
+                                },
+                                description = {
+                                    Text(text = "Simpan audio vokal terpisah ke folder Music/VortexMusic")
+                                },
+                                icon = {
+                                    val vrState by playerConnection.vocalRemoverState.collectAsState()
+                                    if (vrState.savingVocal) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(22.dp),
+                                            strokeWidth = 2.2.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(R.drawable.mic),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    playerConnection.saveVocalStemToDevice()
+                                    onDismiss()
+                                }
+                            )
+                        )
+                        add(
+                            Material3MenuItemData(
+                                title = {
+                                    val vrState by playerConnection.vocalRemoverState.collectAsState()
+                                    Text(
+                                        text = if (vrState.savingInstrument) {
+                                            "Mengunduh & menyimpan instrumen..."
+                                        } else {
+                                            "Unduh instrumen & simpan ke perangkat"
+                                        }
+                                    )
+                                },
+                                description = {
+                                    Text(text = "Simpan audio instrumen terpisah ke folder Music/VortexMusic")
+                                },
+                                icon = {
+                                    val vrState by playerConnection.vocalRemoverState.collectAsState()
+                                    if (vrState.savingInstrument) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(22.dp),
+                                            strokeWidth = 2.2.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(R.drawable.music_note),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    playerConnection.saveInstrumentStemToDevice()
+                                    onDismiss()
+                                }
+                            )
+                        )
+                        add(
+                            Material3MenuItemData(
+                                title = { Text(text = "Gaya suara") },
                                 description = {
                                     val currentStyle by playerConnection.audioStyleMode.collectAsState()
-                                    Text(text = "Aktif: ${currentStyle.label} • Bass Boost, Instrumen, Vokal, Slowed")
+                                    Text(
+                                        text = if (currentStyle == com.nanzbeatles.nanas.constants.AudioStyleMode.NORMAL) {
+                                            "Sped up, slowed + reverb, super slowed, lo-fi, 8D, dan lainnya"
+                                        } else {
+                                            "${currentStyle.label} • Sped up, slowed + reverb, super slowed, lo-fi, 8D, dan lainnya"
+                                        }
+                                    )
+                                },
+                                icon = {
+                                    val currentStyle by playerConnection.audioStyleMode.collectAsState()
+                                    Icon(
+                                        painter = painterResource(R.drawable.speed),
+                                        contentDescription = null,
+                                        tint = if (currentStyle != com.nanzbeatles.nanas.constants.AudioStyleMode.NORMAL) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                onClick = {
+                                    showAudioStyleDialog = true
+                                }
+                            )
+                        )
+                        add(
+                            Material3MenuItemData(
+                                title = { Text(text = "Lanjutan") },
+                                description = {
+                                    Text(text = "Sesuaikan tempo dan nada lagu")
                                 },
                                 icon = {
                                     Icon(
@@ -879,11 +1115,21 @@ fun PlayerMenu(
     }
 }
 
+@Composable
+fun AudioStyleDialog(
+    onDismiss: () -> Unit,
+    onSaveToDevice: (() -> Unit)? = null,
+) {
+    com.nanzbeatles.nanas.ui.player.AudioStyleDialog(
+        onDismiss = onDismiss,
+        onSaveToDevice = onSaveToDevice,
+    )
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TempoPitchDialog(onDismiss: () -> Unit) {
     val playerConnection = LocalPlayerConnection.current ?: return
-    val currentStyle by playerConnection.audioStyleMode.collectAsState()
     var tempo by remember {
         mutableFloatStateOf(playerConnection.player.playbackParameters.speed)
     }
@@ -901,7 +1147,7 @@ fun TempoPitchDialog(onDismiss: () -> Unit) {
         properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = {
-            Text("Gaya Suara & Tempo")
+            Text("Lanjutan")
         },
         dismissButton = {
             TextButton(
@@ -919,47 +1165,18 @@ fun TempoPitchDialog(onDismiss: () -> Unit) {
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text(stringResource(android.R.string.ok))
+                Text("Oke")
             }
         },
         text = {
             Column {
+                Text(
+                    text = "Sesuaikan tempo dan nada lagu",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
                 if (!isInRoom) {
-                    Text(
-                        text = "Preset Gaya Suara",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    FlowRow(
-                        maxItemsInEachRow = 3,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp)
-                    ) {
-                        com.nanzbeatles.nanas.constants.AudioStyleMode.entries.forEach { mode ->
-                            val selected = currentStyle == mode
-                            FilterChip(
-                                selected = selected,
-                                onClick = {
-                                    playerConnection.setAudioStyleMode(mode)
-                                    tempo = mode.speed
-                                    transposeValue = round(12 * log2(mode.pitch)).toInt()
-                                },
-                                label = {
-                                    Text(
-                                        text = mode.label,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
                     ValueAdjuster(
                         icon = R.drawable.speed,
                         currentValue = tempo,

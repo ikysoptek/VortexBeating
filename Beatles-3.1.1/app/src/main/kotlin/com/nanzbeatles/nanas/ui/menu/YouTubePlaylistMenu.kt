@@ -1,5 +1,5 @@
 /**
- * NanzBeatles Project (C) 2026
+ * Vortex Music Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.menu
@@ -480,6 +480,32 @@ fun YouTubePlaylistMenu(
                         },
                         onClick = {
                             showChoosePlaylistDialog = true
+                        }
+                    ),
+                    Material3MenuItemData(
+                        title = { Text(text = "Buat Poster") },
+                        description = { Text(text = "Buat poster musik dari daftar putar ini") },
+                        icon = {
+                            Icon(
+                                painter = painterResource(R.drawable.insert_photo),
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            onDismiss()
+                            com.nanzbeatles.nanas.poster.PosterSession.openFromPlaylist(
+                                name = playlist.title,
+                                songs = songs.map {
+                                    com.nanzbeatles.nanas.poster.PosterSong(
+                                        id = it.id,
+                                        title = it.title,
+                                        artist = it.artists.joinToString(", ") { a -> a.name }.ifBlank { "Artis tidak diketahui" },
+                                        durationSec = it.duration?.takeIf { d -> d > 0 } ?: 200,
+                                        thumbnailUrl = it.thumbnail,
+                                    )
+                                },
+                                browseId = playlist.id,
+                            )
                         }
                     )
                 )

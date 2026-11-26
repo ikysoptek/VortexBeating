@@ -24,6 +24,7 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.navArgument
 import com.nanzbeatles.nanas.constants.DarkModeKey
 import com.nanzbeatles.nanas.constants.PureBlackKey
+import com.nanzbeatles.nanas.poster.PosterScreen
 import com.nanzbeatles.nanas.ui.screens.artist.ArtistAlbumsScreen
 import com.nanzbeatles.nanas.ui.screens.artist.ArtistItemsScreen
 import com.nanzbeatles.nanas.ui.screens.artist.ArtistScreen
@@ -112,6 +113,10 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("stats") {
         StatsScreen(navController)
+    }
+
+    composable("poster") {
+        PosterScreen(navController)
     }
 
     composable("mood_and_genres") {

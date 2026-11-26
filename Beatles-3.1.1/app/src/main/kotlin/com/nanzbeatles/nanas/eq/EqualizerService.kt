@@ -96,7 +96,8 @@ class EqualizerService @Inject constructor() {
     private fun applyProfileToProcessor(processor: CustomEqualizerAudioProcessor, profile: SavedEQProfile) {
         val parametricEQ = ParametricEQ(
             preamp = profile.preamp,
-            bands = profile.bands
+            bands = profile.bands,
+            bassBoostDb = profile.bassBoostDb
         )
         processor.applyProfile(parametricEQ)
     }
@@ -216,6 +217,20 @@ class EqualizerService @Inject constructor() {
      * Get current vocal suppression strength
      */
     fun getVocalSuppressionStrength(): Float = vocalSuppressionStrength
+
+    @OptIn(UnstableApi::class)
+    fun setStemMixer(enabled: Boolean, vocalVolume: Float, instrumentVolume: Float) {
+        vocalSuppressionProcessors.forEach { processor ->
+            processor.setStemMixer(enabled, vocalVolume, instrumentVolume)
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    fun setMuteMainForExternalStems(mute: Boolean) {
+        vocalSuppressionProcessors.forEach { processor ->
+            processor.setMuteMainForExternalStems(mute)
+        }
+    }
 
     /**
      * Release resources (not needed for AudioProcessor, but kept for API compatibility)

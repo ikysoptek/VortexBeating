@@ -607,6 +607,15 @@ class MainActivity : ComponentActivity() {
                 val bottomInsetDp = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
                 val navController = rememberNavController()
+                // Poster Musik: playlist -> layar poster
+                androidx.compose.runtime.DisposableEffect(navController) {
+                    com.nanzbeatles.nanas.poster.PosterSession.navigateCallback = {
+                        navController.navigate("poster")
+                    }
+                    onDispose {
+                        com.nanzbeatles.nanas.poster.PosterSession.navigateCallback = null
+                    }
+                }
                 val homeViewModel: HomeViewModel = hiltViewModel()
                 val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()

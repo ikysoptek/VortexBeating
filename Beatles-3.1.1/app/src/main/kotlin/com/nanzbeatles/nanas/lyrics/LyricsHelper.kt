@@ -422,9 +422,22 @@ constructor(
                     }
                 }
                 if (maxLyricSec > 0) {
-                    // Reject if lyrics end > 18s after the song ends, or end more than 55% too early
-                    if (maxLyricSec > expectedDurationSec + 18) return false
-                    if (maxLyricSec < (expectedDurationSec * 0.45).toInt()) return false
+                    // Tolak lirik versi lain (live/remix/durasi beda): berakhir > 12 dtk setelah lagu
+                    // selesai, atau berakhir terlalu cepat (< 55% durasi lagu).
+                    if (maxLyricSec > expectedDurationSec + 12) return false
+                    if (maxLyricSec < (expectedDurationSec * 0.55).toInt()) return false
+                }
+                // Tag [length:mm:ss] dari penyedia lirik: harus cocok dengan durasi lagu (+-10 dtk)
+                val lengthTag = lines.firstOrNull { it.trim().startsWith("[length:", ignoreCase = true) }
+                    ?.substringAfter(":")?.substringBefore("]")?.trim()
+                val lengthParts = lengthTag?.split(":")
+                if (lengthParts != null && lengthParts.size == 2) {
+                    val lm = lengthParts[0].trim().toIntOrNull()
+                    val ls = lengthParts[1].trim().toIntOrNull()
+                    if (lm != null && ls != null) {
+                        val tagSec = lm * 60 + ls
+                        if (tagSec > 20 && kotlin.math.abs(tagSec - expectedDurationSec) > 10) return false
+                    }
                 }
             }
             return true

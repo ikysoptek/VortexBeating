@@ -146,6 +146,10 @@ import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicBgKey
 import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
 import com.nanzbeatles.nanas.extensions.togglePlayPause
 import com.nanzbeatles.nanas.extensions.toggleRepeatMode
+import com.nanzbeatles.nanas.lyrics.LiveLine
+import com.nanzbeatles.nanas.lyrics.LiveLyricsRepository
+import com.nanzbeatles.nanas.lyrics.activeIndexAt
+import com.nanzbeatles.nanas.lyrics.karaokeFill
 import com.nanzbeatles.nanas.ui.utils.frostedGlassSurface
 import com.nanzbeatles.nanas.ui.utils.liquidGlassPill
 import com.nanzbeatles.nanas.utils.dataStore
@@ -154,10 +158,6 @@ import com.nanzbeatles.nanas.utils.rememberEnumPreference
 import com.nanzbeatles.nanas.utils.rememberPreference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import com.nanzbeatles.nanas.lyrics.LiveLine
-import com.nanzbeatles.nanas.lyrics.LiveLyricsRepository
-import com.nanzbeatles.nanas.lyrics.activeIndexAt
-import com.nanzbeatles.nanas.lyrics.karaokeFill
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -480,7 +480,9 @@ fun DynamicIslandOverlay(
                     onModeChange(DynamicIslandMode.KECIL)
                 }
             },
-            onOpenCustomizeOrApp = { showSettingsDialog = true }
+            onOpenCustomizeOrApp = { showSettingsDialog = true },
+            lyricLines = islandLyricLines,
+            lyricPositionMs = lyricPosMs
         )
     }
 }
@@ -517,6 +519,8 @@ internal fun DynamicIslandCapsuleSurface(
     onToggleRepeat: () -> Unit = {},
     onOpenFullPlayer: () -> Unit,
     onOpenCustomizeOrApp: () -> Unit,
+    lyricLines: List<LiveLine> = emptyList(),
+    lyricPositionMs: Long = 0L,
 ) {
     val isLiquidGlass = islandTheme == DynamicIslandTheme.LIQUID_GLASS
     val cornerRadius by animateDpAsState(
@@ -743,8 +747,8 @@ internal fun DynamicIslandCapsuleSurface(
                             position = position,
                             duration = duration,
                             accentColor = effectiveAccentColor,
-                            lyricLines = islandLyricLines,
-                            lyricPositionMs = lyricPosMs,
+                            lyricLines = lyricLines,
+                            lyricPositionMs = lyricPositionMs,
                             onTap = {
                                 onModeChange(DynamicIslandMode.SEDANG)
                             },
@@ -769,8 +773,8 @@ internal fun DynamicIslandCapsuleSurface(
                             canSkipPrevious = canSkipPrevious,
                             canSkipNext = canSkipNext,
                             accentColor = effectiveAccentColor,
-                            lyricLines = islandLyricLines,
-                            lyricPositionMs = lyricPosMs,
+                            lyricLines = lyricLines,
+                            lyricPositionMs = lyricPositionMs,
                             onTogglePlayPause = onTogglePlayPause,
                             onSeekTo = onSeekTo,
                             onPrevious = onPrevious,
@@ -1042,39 +1046,39 @@ internal fun DynamicIslandSmallContent(
                     }
                 } else {
                     Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = title,
-                        color = Color(0xFFFFFFFF),
-                        style = TextStyle(
-                            fontFamily = FontFamily.SansSerif,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFFFFFF),
-                            platformStyle = PlatformTextStyle(includeFontPadding = false)
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
-                    )
-                    if (artist.isNotBlank() && artist != "Putar lagu untuk mulai") {
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         Text(
-                            text = artist,
-                            color = Color.White.copy(alpha = 0.85f),
+                            text = title,
+                            color = Color(0xFFFFFFFF),
                             style = TextStyle(
                                 fontFamily = FontFamily.SansSerif,
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFFFFFF),
                                 platformStyle = PlatformTextStyle(includeFontPadding = false)
                             ),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
                         )
+                        if (artist.isNotBlank() && artist != "Putar lagu untuk mulai") {
+                            Text(
+                                text = artist,
+                                color = Color.White.copy(alpha = 0.85f),
+                                style = TextStyle(
+                                    fontFamily = FontFamily.SansSerif,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
-                }
                 }
             }
 
@@ -2888,6 +2892,58 @@ fun DynamicIslandSettingsDialog(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun IslandLyricsBlock(
+    lines: List<LiveLine>,
+    posMs: Long,
+    accent: Color,
+) {
+    val activeIdx = lines.activeIndexAt(posMs)
+    if (activeIdx < 0) return
+
+    val currentLine = lines.getOrNull(activeIdx) ?: return
+    val nextLine = lines.getOrNull(activeIdx + 1)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.08f))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        KaraokeLine(
+            text = currentLine.text,
+            fill = currentLine.karaokeFill(posMs, nextLine?.startMs),
+            style = TextStyle(
+                fontFamily = FontFamily.SansSerif,
+                fontSize = 13.5.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.ExtraBold,
+                platformStyle = PlatformTextStyle(includeFontPadding = false)
+            ),
+            dimAlpha = 0.45f,
+            brightColor = Color.White,
+            maxLines = 2
+        )
+
+        if (nextLine != null && nextLine.text.isNotBlank()) {
+            Text(
+                text = nextLine.text,
+                color = accent.copy(alpha = 0.72f),
+                style = TextStyle(
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

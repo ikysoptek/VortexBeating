@@ -580,7 +580,7 @@ class MusicService :
         isRunning = true
 
         // Muat lirik lagu yang sedang diputar (dipakai layar kunci + Dynamic Island).
-        // Hanya jika salah satu fitur itu aktif, supaya tidak menghabiskan data tanpa perlu.
+        // Otomatis mengikuti database lirik pemutar utama jika user mengganti provider.
         scope.launch {
             val wantLyricsFlow = applicationContext.dataStore.data
                 .map { prefs ->
@@ -598,7 +598,7 @@ class MusicService :
                     }
                     LiveLyricsRepository.publish(LiveLyricsState(mediaId = id, loading = true))
                     val snap = LockscreenLyricsBridge.snapshot.value
-                    val lines = LiveLyricsRepository.load(
+                    val initialLines = LiveLyricsRepository.load(
                         context = applicationContext,
                         database = database,
                         lyricsHelper = lyricsHelper,
@@ -608,7 +608,14 @@ class MusicService :
                         durationSec = snap.durationSec,
                         thumbnailUrl = snap.thumbnailUrl,
                     )
-                    LiveLyricsRepository.publish(LiveLyricsState(mediaId = id, lines = lines, loading = false))
+                    LiveLyricsRepository.publish(LiveLyricsState(mediaId = id, lines = initialLines, loading = false))
+
+                    database.lyrics(id).collect { entity ->
+                        val updatedLines = LiveLyricsRepository.parseRawLines(entity?.lyrics)
+                        LiveLyricsRepository.publish(
+                            LiveLyricsState(mediaId = id, lines = updatedLines, loading = false)
+                        )
+                    }
                 }
         }
 

@@ -9,7 +9,6 @@ import android.view.TextureView
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -26,7 +25,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,17 +55,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shader
-import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -100,10 +92,6 @@ import com.nanzbeatles.nanas.BuildConfig
 import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.MiniPlayerHeight
 import com.nanzbeatles.nanas.constants.NavigationBarHeight
-import com.nanzbeatles.nanas.streak.MusicJourneyManager
-import com.nanzbeatles.nanas.streak.StreakTier
-import com.nanzbeatles.nanas.ui.component.LevelEmblemIcon
-import com.nanzbeatles.nanas.ui.component.StreakFlameIcon
 import com.nanzbeatles.nanas.ui.utils.backToMain
 import com.nanzbeatles.nanas.utils.DeveloperProfile
 import com.nanzbeatles.nanas.utils.DeveloperProfileRepository
@@ -232,7 +220,7 @@ fun AboutScreen(
             }
         }
 
-        // 3. Hero Developer Video Card: centang biru + Level 10 + Streak/Rekor 999
+        // 3. Hero Developer Video Card
         val devProfile by DeveloperProfileRepository.state.collectAsState()
         LaunchedEffect(Unit) { DeveloperProfileRepository.pollWhileActive() }
 
@@ -326,7 +314,6 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
     val avatarUrl = profile.avatarUrl
     val context = LocalContext.current
 
-    // Video lokal (res/raw/developer_bg.mp4) diutamakan: langsung jalan tanpa internet.
     val localRawId = remember {
         context.resources.getIdentifier("developer_bg", "raw", context.packageName)
     }
@@ -344,12 +331,10 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15_000)
             .setReadTimeoutMs(15_000)
-        // DefaultDataSource: http(s) lewat httpFactory, res/raw lewat RawResourceDataSource
         val dataSourceFactory = DefaultDataSource.Factory(context, httpFactory)
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(videoUri))
 
-        // Decoder fallback: kalau codec utama gagal, coba decoder lain
         val renderers = DefaultRenderersFactory(context).setEnableDecoderFallback(true)
         ExoPlayer.Builder(context, renderers).build().apply {
             setMediaSource(mediaSource)
@@ -361,7 +346,6 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
         }
     }
 
-    // Status video (untuk diagnosis): null = lancar
     var videoStatus by remember(exoPlayer) { mutableStateOf<String?>(null) }
     DisposableEffect(exoPlayer) {
         var retried = false
@@ -387,18 +371,20 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
         }
     }
 
-    val shape = RoundedCornerShape(30.dp)
-    val borderBrush = rememberRotatingBorderBrush()
+    val shape = RoundedCornerShape(28.dp)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(360.dp)
             .clip(shape)
-            .background(Color(0xFF0B0D12))
-            .border(width = 2.dp, brush = borderBrush, shape = shape)
+            .background(Color(0xFF0A0C10))
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.16f),
+                shape = shape
+            )
     ) {
-        // Latar: pp sebagai placeholder sebelum video siap (atau gambar jika bukan video)
         AsyncImage(
             model = if (playVideo) avatarUrl else profile.backgroundUrl,
             contentDescription = null,
@@ -427,15 +413,15 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
             )
         }
 
-        // Peredam gelap di bawah supaya nama terbaca
+        // Peredam gelap elegan di bagian bawah agar teks terbaca jelas
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
-                            0.0f to Color.Black.copy(alpha = 0.18f),
-                            0.45f to Color.Transparent,
+                            0.0f to Color.Black.copy(alpha = 0.14f),
+                            0.48f to Color.Transparent,
                             1.0f to Color.Black.copy(alpha = 0.88f)
                         )
                     )
@@ -446,7 +432,7 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
             Text(
                 text = status,
                 fontSize = 11.sp,
-                color = Color.White.copy(alpha = 0.75f),
+                color = Color.White.copy(alpha = 0.72f),
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(16.dp)
@@ -464,7 +450,7 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -472,140 +458,74 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
                 ) {
                     Text(
                         text = developerName,
-                        fontSize = 25.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    // Hanya centang biru
-                    VerifiedCheckBadge(modifier = Modifier.size(22.dp))
+                    VerifiedCheckBadge(modifier = Modifier.size(21.dp))
                 }
 
-                // "Developer": font serif miring + warna gradasi, dalam pil berborder gradasi
-                val pillShape = RoundedCornerShape(50)
+                // Tag label Developer monokrom kaca minimalis & profesional
+                val pillShape = RoundedCornerShape(10.dp)
                 Box(
                     modifier = Modifier
                         .clip(pillShape)
-                        .background(Color.White.copy(alpha = 0.08f))
+                        .background(Color.Black.copy(alpha = 0.52f))
                         .border(
-                            1.2.dp,
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFF38BDF8), Color(0xFFA78BFA), Color(0xFFF472B6))
-                            ),
-                            pillShape
+                            width = 1.dp,
+                            color = Color.White.copy(alpha = 0.22f),
+                            shape = pillShape
                         )
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
                 ) {
                     Text(
-                        text = "Developer",
+                        text = "DEVELOPER",
                         style = TextStyle(
-                            fontFamily = FontFamily.Serif,
-                            fontStyle = FontStyle.Italic,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            letterSpacing = 1.5.sp,
-                            brush = Brush.horizontalGradient(
-                                listOf(Color(0xFF7DD3FC), Color(0xFFC4B5FD), Color(0xFFF9A8D4))
-                            )
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.4.sp,
+                            color = Color.White.copy(alpha = 0.88f)
                         )
                     )
                 }
             }
 
-            MinimalAnimatedAvatarRing(
+            CleanAvatarRing(
                 avatarUrl = avatarUrl,
                 contentDescription = developerName,
-                ringSize = 116.dp
+                ringSize = 112.dp
             )
         }
     }
 }
 
-/** Border kartu: garis gradasi tipis (biru -> ungu -> pink) yang berputar pelan. */
 @Composable
-private fun rememberRotatingBorderBrush(): Brush {
-    val transition = rememberInfiniteTransition(label = "dev_border")
-    val angle by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 7000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "dev_border_angle"
-    )
-    val colors = remember {
-        intArrayOf(
-            0x00FFFFFF,
-            0xFF38BDF8.toInt(),
-            0xFFA78BFA.toInt(),
-            0xFFF472B6.toInt(),
-            0x00FFFFFF,
-        )
-    }
-    return remember(angle) {
-        object : ShaderBrush() {
-            override fun createShader(size: Size): Shader {
-                val cx = size.width / 2f
-                val cy = size.height / 2f
-                val sweep = android.graphics.SweepGradient(cx, cy, colors, null)
-                val matrix = android.graphics.Matrix().apply { setRotate(angle, cx, cy) }
-                sweep.setLocalMatrix(matrix)
-                return sweep
-            }
-        }
-    }
-}
-
-@Composable
-private fun MinimalAnimatedAvatarRing(
+private fun CleanAvatarRing(
     avatarUrl: String,
     contentDescription: String,
-    ringSize: androidx.compose.ui.unit.Dp = 76.dp,
+    ringSize: androidx.compose.ui.unit.Dp = 112.dp,
 ) {
-    // Border tipis & halus: satu garis gradasi perak-biru yang berputar pelan
-    val infiniteTransition = rememberInfiniteTransition(label = "avatar_ring")
-    val rotationAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 6000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "avatar_ring_spin"
-    )
-
     Box(
-        modifier = Modifier.size(ringSize),
+        modifier = Modifier
+            .size(ringSize)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.35f))
+            .border(
+                width = 1.5.dp,
+                color = Color.White.copy(alpha = 0.28f),
+                shape = CircleShape
+            )
+            .padding(5.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2f, size.height / 2f)
-            val radius = size.minDimension / 2f - 1.5.dp.toPx()
-            rotate(degrees = rotationAngle, pivot = center) {
-                drawCircle(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.0f),
-                            Color.White.copy(alpha = 0.95f),
-                            Color(0xFF7DD3FC),
-                            Color.White.copy(alpha = 0.0f),
-                        ),
-                        center = center
-                    ),
-                    radius = radius,
-                    center = center,
-                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                )
-            }
-        }
-
         Surface(
-            modifier = Modifier.size(ringSize - 12.dp),
+            modifier = Modifier.fillMaxSize(),
             shape = CircleShape,
-            color = Color(0xFF161922)
+            color = Color(0xFF14171F)
         ) {
             AsyncImage(
                 model = avatarUrl,

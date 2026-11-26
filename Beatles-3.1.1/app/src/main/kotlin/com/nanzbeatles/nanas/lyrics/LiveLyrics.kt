@@ -136,18 +136,22 @@ object LiveLyricsRepository {
 
 private val SYNCED_LINE_REGEX = Regex("\\[\\d{1,2}:\\d{2}\\.\\d{2,3}\\]")
 
-/** True jika teks lirik terpotong per suku kata ("Ber san ding ber sa ma di ri nya"). */
+/** True jika teks lirik terpotong per suku kata ("Ma af kan", "A ku ja tuh su ka"). */
 private fun looksSyllableSplit(lines: List<LiveLine>): Boolean {
     var tokens = 0
     var chars = 0
     for (l in lines) {
-        for (w in l.words) {
-            tokens++
-            chars += w.text.count { !it.isWhitespace() }
+        val parts = if (l.words.isNotEmpty()) l.words.map { it.text } else l.text.split(' ')
+        for (p in parts) {
+            val c = p.count { !it.isWhitespace() }
+            if (c > 0) {
+                tokens++
+                chars += c
+            }
         }
     }
-    if (tokens < 30) return false
-    return chars.toFloat() / tokens.toFloat() < 3.3f
+    if (tokens < 20) return false
+    return chars.toFloat() / tokens.toFloat() < 3.4f
 }
 
 private fun parseLineLevel(raw: String): List<Pair<Long, String>> =
@@ -180,10 +184,6 @@ private suspend fun fetchLineLevelText(
     return emptyList()
 }
 
-/**
- * Jika lirik rich-sync terpotong per suku kata, pakai teks utuh dari versi per baris,
- * tapi waktu per kata tetap dari rich-sync (supaya isi karaoke tetap pas dengan suara).
- */
 private suspend fun fixSyllableSpacing(
     lines: List<LiveLine>,
     mediaId: String,
@@ -197,7 +197,7 @@ private suspend fun fixSyllableSpacing(
 
     return lines.map { line ->
         val match = reference.minByOrNull { kotlin.math.abs(it.first - line.startMs) }
-        if (match == null || kotlin.math.abs(match.first - line.startMs) > 1500L) return@map line
+        if (match == null || kotlin.math.abs(match.first - line.startMs) > 1800L) return@map line
         val a = line.text.count { !it.isWhitespace() }
         val b = match.second.count { !it.isWhitespace() }
         if (kotlin.math.abs(a - b) > maxOf(3, (a * 0.35f).toInt())) line
@@ -209,33 +209,56 @@ private suspend fun fixSyllableSpacing(
 fun List<LiveLine>.activeIndexAt(posMs: Long): Int = indexOfLast { it.startMs <= posMs }
 
 /**
- * Seberapa banyak baris ini sudah dinyanyikan (0..1).
- * Durasi nyala dibatasi berdasarkan panjang teks agar tidak molor saat ada jeda musik panjang.
+ * Progres pengisian karaoke (0..1) yang stabil dan tidak terlalu cepat:
+ * - Untuk rich-sync per kata: merentangkan kata terakhir hingga mendekati baris berikutnya
+ *   (maksimal +1500 ms) agar vokal yang ditahan tidak selesai lebih cepat dari suara penyanyi.
+ * - Untuk sinkron per baris: mengikuti rentang waktu alami menuju baris berikutnya
+ *   (dibatasi maksimal 6500 ms pada jeda instrumental panjang).
  */
 fun LiveLine.karaokeFill(posMs: Long, nextStartMs: Long?): Float {
     if (posMs <= startMs) return 0f
 
+    val naturalGap = ((nextStartMs ?: (startMs + 4500L)) - startMs).coerceAtLeast(400L)
+
     if (words.isNotEmpty()) {
+        val lastIdx = words.lastIndex
+        val extendedLineEnd = if (nextStartMs != null && nextStartMs > words[lastIdx].endMs) {
+            minOf(nextStartMs - 80L, words[lastIdx].endMs + 1500L)
+        } else {
+            words[lastIdx].endMs + 400L
+        }
+
         var total = 0
         var done = 0f
-        for (w in words) {
+        for (i in words.indices) {
+            val w = words[i]
             val len = w.text.count { !it.isWhitespace() }.coerceAtLeast(1)
+            val wStart = w.startMs
+            val wEnd = when {
+                i == lastIdx -> maxOf(w.endMs, extendedLineEnd)
+                else -> maxOf(w.endMs, minOf(words[i + 1].startMs, w.endMs + 350L))
+            }.coerceAtLeast(wStart + 1L)
+
             total += len
             done += len * when {
-                posMs >= w.endMs -> 1f
-                posMs <= w.startMs -> 0f
-                else -> (posMs - w.startMs).toFloat() / (w.endMs - w.startMs).coerceAtLeast(1L).toFloat()
+                posMs >= wEnd -> 1f
+                posMs <= wStart -> 0f
+                else -> (posMs - wStart).toFloat() / (wEnd - wStart).toFloat()
             }
         }
         return if (total == 0) 0f else (done / total).coerceIn(0f, 1f)
     }
 
-    val gap = ((nextStartMs ?: (startMs + 3800L)) - startMs).coerceAtLeast(1L)
-    val estimatedVocalDuration = (text.length * 65L).coerceIn(1200L, 4800L)
     val span = if (endMs > startMs) {
-        minOf(endMs - startMs, gap, 5500L)
+        val paddedEnd = if (nextStartMs != null && nextStartMs > endMs) {
+            minOf(nextStartMs - 100L, endMs + 1200L)
+        } else {
+            endMs
+        }
+        minOf(paddedEnd - startMs, naturalGap, 6500L)
     } else {
-        minOf(gap, estimatedVocalDuration)
+        minOf(naturalGap, 6500L)
     }.coerceAtLeast(1L)
+
     return ((posMs - startMs).toFloat() / span.toFloat()).coerceIn(0f, 1f)
 }

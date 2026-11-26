@@ -16,15 +16,8 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import kotlin.coroutines.coroutineContext
 
-/**
- * ISI DENGAN LINK JSON PROFIL DEVELOPER (harus bisa dibuka publik, hasilnya JSON mentah).
- * Contoh: Firebase Realtime Database -> "https://NAMA-PROJECT-default-rtdb.firebaseio.com/developer.json"
- *         atau GitHub raw     -> "https://raw.githubusercontent.com/USER/REPO/main/developer.json"
- * Kosong = halaman Developer memakai data bawaan di bawah.
- */
 const val DEVELOPER_PROFILE_URL: String = ""
 
-/** Seberapa sering halaman Developer memeriksa pembaruan (selama halamannya terbuka). */
 private const val DEVELOPER_POLL_INTERVAL_MS = 20_000L
 
 data class DeveloperNowPlaying(
@@ -43,9 +36,8 @@ data class DeveloperTopSong(
 data class DeveloperProfile(
     val name: String = "ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者",
     val role: String = "Developer",
-    val avatarUrl: String = "https://lunara.softbotz.my.id/f/oCoNReNcCbDD.jpg",
-    /** Gambar atau video latar. Kalau backgroundIsVideo = true, harus link .mp4 */
-    val backgroundUrl: String = "https://lunara.softbotz.my.id/f/vKndPhcVw9Is.mp4",
+    val avatarUrl: String = "https://lunara.softbotz.my.id/f/95I4TkhFHPV8.jpg",
+    val backgroundUrl: String = "https://lunara.softbotz.my.id/f/TWlUMEzDv7LE.mp4",
     val backgroundIsVideo: Boolean = true,
     val level: Int = 10,
     val xp: Int = 100_080,
@@ -61,7 +53,6 @@ object DeveloperProfileRepository {
     private val _state = MutableStateFlow(DeveloperProfile())
     val state: StateFlow<DeveloperProfile> = _state.asStateFlow()
 
-    /** Dipanggil dari LaunchedEffect: berhenti otomatis saat halaman Developer ditutup. */
     suspend fun pollWhileActive() {
         if (DEVELOPER_PROFILE_URL.isBlank()) return
         while (coroutineContext.isActive) {

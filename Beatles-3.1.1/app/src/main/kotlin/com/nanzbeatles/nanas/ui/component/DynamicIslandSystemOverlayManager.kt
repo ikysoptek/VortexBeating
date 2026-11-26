@@ -68,6 +68,7 @@ import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicAccentKey
 import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicBgKey
 import com.nanzbeatles.nanas.extensions.togglePlayPause
 import com.nanzbeatles.nanas.extensions.toggleRepeatMode
+import com.nanzbeatles.nanas.lyrics.LiveLyricsRepository
 import com.nanzbeatles.nanas.playback.MusicService
 import com.nanzbeatles.nanas.ui.theme.NanzBeatlesTheme
 import com.nanzbeatles.nanas.utils.dataStore
@@ -454,6 +455,19 @@ private fun SystemDynamicIslandContent(
         }
     }
 
+    // Lirik karaoke untuk Dynamic Island di luar aplikasi (update 50 ms agar sinkron vokal)
+    val liveLyrics by LiveLyricsRepository.state.collectAsState()
+    val islandLyricLines = if (liveLyrics.mediaId == metadata?.id) liveLyrics.lines else emptyList()
+    val lyricsOffsetMs = (currentSong?.song?.lyricsOffset ?: 0).toLong()
+    var lyricPosMs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(mode, isPlaying, metadata?.id, lyricsOffsetMs) {
+        if (mode == DynamicIslandMode.BOLA) return@LaunchedEffect
+        while (isActive) {
+            lyricPosMs = (service.player.currentPosition + lyricsOffsetMs).coerceAtLeast(0L)
+            delay(if (isPlaying) 50L else 400L)
+        }
+    }
+
     val isLiked = currentSong?.song?.liked == true
     val displayTitle = metadata?.title ?: "Vortex Music"
     val displayArtist = metadata?.artists?.joinToString(", ") { it.name } ?: "Ketuk untuk kembali ke aplikasi"
@@ -521,7 +535,9 @@ private fun SystemDynamicIslandContent(
                 service.player.toggleRepeatMode()
             },
             onOpenFullPlayer = { onOpenApp() },
-            onOpenCustomizeOrApp = { onOpenApp() }
+            onOpenCustomizeOrApp = { onOpenApp() },
+            lyricLines = islandLyricLines,
+            lyricPositionMs = lyricPosMs
         )
     }
 }

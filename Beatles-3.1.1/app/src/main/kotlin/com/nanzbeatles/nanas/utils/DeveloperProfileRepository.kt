@@ -43,9 +43,9 @@ data class DeveloperTopSong(
 data class DeveloperProfile(
     val name: String = "ɪᴋʏ ᴠᴏʀᴛᴇx | 技術者",
     val role: String = "Developer",
-    val avatarUrl: String = "https://files.catbox.moe/wjsgt5.jpg",
+    val avatarUrl: String = "https://lunara.softbotz.my.id/f/oCoNReNcCbDD.jpg",
     /** Gambar atau video latar. Kalau backgroundIsVideo = true, harus link .mp4 */
-    val backgroundUrl: String = "https://lunara.softbotz.my.id/f/q4h7pILeRjvo.mp4",
+    val backgroundUrl: String = "https://lunara.softbotz.my.id/f/vKndPhcVw9Is.mp4",
     val backgroundIsVideo: Boolean = true,
     val level: Int = 10,
     val xp: Int = 100_080,
@@ -57,20 +57,6 @@ data class DeveloperProfile(
     val topSongs: List<DeveloperTopSong> = emptyList(),
 )
 
-/*
- * Contoh isi JSON (semua field opsional, yang kosong memakai data bawaan):
- * {
- *   "name": "IKY VORTEX | 技術者",
- *   "role": "Developer",
- *   "avatarUrl": "https://.../pp.jpg",
- *   "backgroundUrl": "https://.../bg.jpg",
- *   "backgroundIsVideo": false,
- *   "level": 10, "xp": 100077, "xpTarget": 105000,
- *   "streakDays": 999, "dailyRecordHours": 999, "monthlyRecordHours": 999,
- *   "nowPlaying": { "title": "Bahagia Lagi", "artist": "Piche Kota", "artworkUrl": "https://..." },
- *   "topSongs": [ { "title": "Bahagia Lagi", "artist": "Piche Kota", "plays": 2, "artworkUrl": "https://..." } ]
- * }
- */
 object DeveloperProfileRepository {
     private val _state = MutableStateFlow(DeveloperProfile())
     val state: StateFlow<DeveloperProfile> = _state.asStateFlow()

@@ -79,7 +79,6 @@ object LiveLyricsRepository {
                         thumbnailUrl = songWithArtists.song.thumbnailUrl,
                     )
                 } else if (!title.isNullOrBlank()) {
-                    // Lagu belum ada di database: pakai metadata dari player
                     MediaMetadata(
                         id = mediaId,
                         title = title,
@@ -163,14 +162,12 @@ private suspend fun fetchLineLevelText(
     artist: String?,
     durationSec: Int,
 ): List<Pair<Long, String>> {
-    // 1) SimpMusic: varian non-rich dari lagu yang sama
     val variants = mutableListOf<String>()
     runCatching { SimpMusicLyrics.getAllLyrics(mediaId, durationSec) { variants += it } }
     variants.firstOrNull { !it.contains('<') && SYNCED_LINE_REGEX.containsMatchIn(it) }?.let { raw ->
         val parsed = runCatching { parseLineLevel(raw) }.getOrDefault(emptyList())
         if (parsed.isNotEmpty()) return parsed
     }
-    // 2) LRCLIB
     if (!title.isNullOrBlank()) {
         val raw = runCatching {
             LrcLibLyricsProvider.getLyrics(mediaId, title, artist.orEmpty(), durationSec, null).getOrNull()
@@ -203,7 +200,6 @@ private suspend fun fixSyllableSpacing(
         if (match == null || kotlin.math.abs(match.first - line.startMs) > 1500L) return@map line
         val a = line.text.count { !it.isWhitespace() }
         val b = match.second.count { !it.isWhitespace() }
-        // Pastikan itu memang baris yang sama (jumlah huruf kira-kira sama)
         if (kotlin.math.abs(a - b) > maxOf(3, (a * 0.35f).toInt())) line
         else line.copy(text = match.second)
     }
@@ -214,9 +210,7 @@ fun List<LiveLine>.activeIndexAt(posMs: Long): Int = indexOfLast { it.startMs <=
 
 /**
  * Seberapa banyak baris ini sudah dinyanyikan (0..1).
- * - Jika ada waktu per kata: mengikuti kata demi kata, jadi saat penyanyi JEDA
- *   isinya ikut berhenti (tidak lanjut sendiri).
- * - Jika hanya per baris: diperkirakan dari panjang teks, dibatasi sampai baris berikutnya.
+ * Durasi nyala dibatasi berdasarkan panjang teks agar tidak molor saat ada jeda musik panjang.
  */
 fun LiveLine.karaokeFill(posMs: Long, nextStartMs: Long?): Float {
     if (posMs <= startMs) return 0f
@@ -236,11 +230,12 @@ fun LiveLine.karaokeFill(posMs: Long, nextStartMs: Long?): Float {
         return if (total == 0) 0f else (done / total).coerceIn(0f, 1f)
     }
 
-    val gap = ((nextStartMs ?: (startMs + 4000L)) - startMs).coerceAtLeast(1L)
+    val gap = ((nextStartMs ?: (startMs + 3800L)) - startMs).coerceAtLeast(1L)
+    val estimatedVocalDuration = (text.length * 65L).coerceIn(1200L, 4800L)
     val span = if (endMs > startMs) {
-        minOf(endMs - startMs, gap)
+        minOf(endMs - startMs, gap, 5500L)
     } else {
-        minOf(gap, (text.length * 85L).coerceIn(1500L, 7000L))
+        minOf(gap, estimatedVocalDuration)
     }.coerceAtLeast(1L)
     return ((posMs - startMs).toFloat() / span.toFloat()).coerceIn(0f, 1f)
 }

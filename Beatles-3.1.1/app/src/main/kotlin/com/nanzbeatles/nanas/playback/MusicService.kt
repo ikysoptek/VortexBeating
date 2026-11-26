@@ -176,6 +176,10 @@ import com.nanzbeatles.nanas.extensions.toEnum
 import com.nanzbeatles.nanas.extensions.toMediaItem
 import com.nanzbeatles.nanas.extensions.toPersistQueue
 import com.nanzbeatles.nanas.extensions.toQueue
+import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
+import com.nanzbeatles.nanas.constants.DynamicIslandEnabledKey
+import com.nanzbeatles.nanas.lyrics.LiveLyricsRepository
+import com.nanzbeatles.nanas.lyrics.LiveLyricsState
 import com.nanzbeatles.nanas.lyrics.LyricsHelper
 import com.nanzbeatles.nanas.models.MediaMetadata
 import com.nanzbeatles.nanas.models.PersistPlayerState
@@ -229,6 +233,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest as flowCollectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -573,6 +578,39 @@ class MusicService :
     override fun onCreate() {
         super.onCreate()
         isRunning = true
+
+        // Muat lirik lagu yang sedang diputar (dipakai layar kunci + Dynamic Island).
+        // Hanya jika salah satu fitur itu aktif, supaya tidak menghabiskan data tanpa perlu.
+        scope.launch {
+            val wantLyricsFlow = applicationContext.dataStore.data
+                .map { prefs ->
+                    (prefs[LockscreenLyricsEnabledKey] ?: false) || (prefs[DynamicIslandEnabledKey] ?: false)
+                }
+                .distinctUntilChanged()
+            combine(
+                LockscreenLyricsBridge.snapshot.map { it.mediaId }.distinctUntilChanged(),
+                wantLyricsFlow
+            ) { id, want -> id to want }
+                .flowCollectLatest { (id, want) ->
+                    if (id.isNullOrBlank() || !want) {
+                        LiveLyricsRepository.publish(LiveLyricsState(mediaId = id))
+                        return@flowCollectLatest
+                    }
+                    LiveLyricsRepository.publish(LiveLyricsState(mediaId = id, loading = true))
+                    val snap = LockscreenLyricsBridge.snapshot.value
+                    val lines = LiveLyricsRepository.load(
+                        context = applicationContext,
+                        database = database,
+                        lyricsHelper = lyricsHelper,
+                        mediaId = id,
+                        title = snap.title,
+                        artist = snap.artist,
+                        durationSec = snap.durationSec,
+                        thumbnailUrl = snap.thumbnailUrl,
+                    )
+                    LiveLyricsRepository.publish(LiveLyricsState(mediaId = id, lines = lines, loading = false))
+                }
+        }
 
         // Kirim player + status mode video ke overlay layar kunci (video lirik)
         scope.launch {
@@ -3333,6 +3371,13 @@ class MusicService :
                 if (player.isPlaying) player.pause() else player.play()
                 updateWidgetUI(player.isPlaying)
             }
+            LockscreenLyricsBridge.ACTION_SEEK -> {
+                val pos = intent?.getLongExtra(LockscreenLyricsBridge.EXTRA_POSITION_MS, -1L) ?: -1L
+                if (pos >= 0L) {
+                    player.seekTo(pos)
+                    updateWidgetUI(player.isPlaying)
+                }
+            }
             MusicWidgetReceiver.ACTION_LIKE -> {
                 toggleLike()
             }
@@ -3401,7 +3446,8 @@ class MusicService :
                         artist = songData?.artists?.joinToString(", ") { it.name }
                             ?: meta?.artists?.joinToString(", ") { it.name },
                         durationSec = song?.duration ?: meta?.duration ?: -1,
-                        thumbnailUrl = song?.thumbnailUrl ?: meta?.thumbnailUrl
+                        thumbnailUrl = song?.thumbnailUrl ?: meta?.thumbnailUrl,
+                        durationMs = player.duration.takeIf { it > 0L } ?: -1L
                     )
 
                     widgetManager.updateWidgets(

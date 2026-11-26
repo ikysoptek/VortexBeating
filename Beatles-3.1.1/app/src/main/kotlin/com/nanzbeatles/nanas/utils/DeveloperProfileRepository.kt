@@ -45,7 +45,7 @@ data class DeveloperProfile(
     val role: String = "Developer",
     val avatarUrl: String = "https://files.catbox.moe/wjsgt5.jpg",
     /** Gambar atau video latar. Kalau backgroundIsVideo = true, harus link .mp4 */
-    val backgroundUrl: String = "https://files.catbox.moe/483jh1.mp4",
+    val backgroundUrl: String = "https://lunara.softbotz.my.id/f/q4h7pILeRjvo.mp4",
     val backgroundIsVideo: Boolean = true,
     val level: Int = 10,
     val xp: Int = 100_080,

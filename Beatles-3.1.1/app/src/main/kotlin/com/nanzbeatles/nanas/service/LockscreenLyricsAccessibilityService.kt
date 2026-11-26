@@ -25,6 +25,11 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.input.pointer.pointerInput
@@ -121,6 +126,11 @@ import com.nanzbeatles.nanas.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.nanzbeatles.nanas.extensions.toEnum
 import com.nanzbeatles.nanas.lyrics.LyricsHelper
 import com.nanzbeatles.nanas.lyrics.LyricsUtils
+import com.nanzbeatles.nanas.lyrics.LiveLine
+import com.nanzbeatles.nanas.lyrics.LiveLyricsRepository
+import com.nanzbeatles.nanas.lyrics.activeIndexAt
+import com.nanzbeatles.nanas.lyrics.karaokeFill
+import com.nanzbeatles.nanas.ui.component.KaraokeLine
 import com.nanzbeatles.nanas.models.MediaMetadata
 import com.nanzbeatles.nanas.playback.MusicService
 import com.nanzbeatles.nanas.ui.theme.NanzBeatlesTheme
@@ -161,10 +171,16 @@ object LockscreenLyricsBridge {
         val artist: String? = null,
         val durationSec: Int = -1,
         val thumbnailUrl: String? = null,
+        /** Durasi sebenarnya dari player (ms), -1 jika belum diketahui. */
+        val durationMs: Long = -1L,
     )
 
     private val _snapshot = MutableStateFlow(PlaybackSnapshot())
     val snapshot: StateFlow<PlaybackSnapshot> = _snapshot.asStateFlow()
+
+    /** Perintah geser posisi lagu dari slider layar kunci -> MusicService. */
+    const val ACTION_SEEK = "com.nanzbeatles.nanas.lockscreen.SEEK"
+    const val EXTRA_POSITION_MS = "position_ms"
 
     // ---- Video lirik di layar kunci ----
     private val _videoPlayer = MutableStateFlow<Player?>(null)
@@ -195,6 +211,7 @@ object LockscreenLyricsBridge {
         artist: String? = null,
         durationSec: Int = -1,
         thumbnailUrl: String? = null,
+        durationMs: Long = -1L,
     ) {
         _snapshot.value = PlaybackSnapshot(
             mediaId = mediaId,
@@ -206,6 +223,7 @@ object LockscreenLyricsBridge {
             artist = artist,
             durationSec = durationSec,
             thumbnailUrl = thumbnailUrl,
+            durationMs = durationMs,
         )
     }
 
@@ -256,7 +274,6 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
     private var powerManager: PowerManager? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var monitorJob: Job? = null
-    private var lyricsJob: Job? = null
     private var artworkJob: Job? = null
 
     private var mainView: ComposeView? = null
@@ -264,7 +281,6 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var lifecycleOwner: LockscreenOverlayLifecycleOwner? = null
 
-    private val lyricsState = MutableStateFlow(LockLyricsState())
     private val artworkState = MutableStateFlow(LockArtwork())
     private val isLockedFlow = MutableStateFlow(false)
     private val overlayVisible = MutableStateFlow(true)
@@ -300,31 +316,7 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
         }
         runCatching { registerReceiver(receiver, filter) }
 
-        // Muat lirik begitu lagu berganti, supaya langsung ada saat layar dikunci
-        lyricsJob = scope.launch {
-            LockscreenLyricsBridge.snapshot
-                .map { it.mediaId }
-                .distinctUntilChanged()
-                .collectLatest { id ->
-                    if (id.isNullOrBlank()) {
-                        lyricsState.value = LockLyricsState()
-                        return@collectLatest
-                    }
-                    val prefs = runCatching { dataStore.data.firstOrNull() }.getOrNull()
-                    if (prefs?.get(LockscreenLyricsEnabledKey) != true) {
-                        lyricsState.value = LockLyricsState(mediaId = id)
-                        return@collectLatest
-                    }
-                    lyricsState.value = LockLyricsState(mediaId = id, loading = true)
-                    val lines = loadLockscreenLyrics(
-                        context = this@LockscreenLyricsAccessibilityService,
-                        database = database,
-                        lyricsHelper = lyricsHelper,
-                        snap = LockscreenLyricsBridge.snapshot.value,
-                    )
-                    lyricsState.value = LockLyricsState(mediaId = id, lines = lines, loading = false)
-                }
-        }
+        // Lirik dimuat oleh MusicService (LiveLyricsRepository) dan dipakai bersama Dynamic Island
 
         // Siapkan wallpaper dari cover lagu
         artworkJob = scope.launch {
@@ -445,8 +437,11 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun sendMusicAction(action: String) {
-        val intent = Intent(this, MusicService::class.java).apply { this.action = action }
+    private fun sendMusicAction(action: String, positionMs: Long? = null) {
+        val intent = Intent(this, MusicService::class.java).apply {
+            this.action = action
+            if (positionMs != null) putExtra(LockscreenLyricsBridge.EXTRA_POSITION_MS, positionMs)
+        }
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
             else startService(intent)
@@ -504,7 +499,6 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
             // Hanya geser ke atas (mau buka kunci) yang menyembunyikannya.
             val main = makeView {
                 LockscreenMainContent(
-                    lyricsFlow = lyricsState,
                     artworkFlow = artworkState,
                     onSwipeUp = { onUnlockSwipe() }
                 )
@@ -527,6 +521,7 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
                     onPrevious = { sendMusicAction(MusicWidgetReceiver.ACTION_PREVIOUS) },
                     onPlayPause = { sendMusicAction(MusicWidgetReceiver.ACTION_PLAY_PAUSE) },
                     onNext = { sendMusicAction(MusicWidgetReceiver.ACTION_NEXT) },
+                    onSeek = { ms -> sendMusicAction(LockscreenLyricsBridge.ACTION_SEEK, ms) },
                 )
             }
             windowManager.addView(
@@ -568,81 +563,12 @@ class LockscreenLyricsAccessibilityService : AccessibilityService() {
         lockReceiver?.let { runCatching { unregisterReceiver(it) } }
         lockReceiver = null
         monitorJob?.cancel()
-        lyricsJob?.cancel()
         artworkJob?.cancel()
         detachOverlay()
         updateKeepAwake(false)
         scope.cancel()
         super.onDestroy()
     }
-}
-
-/** Satu keadaan lirik untuk overlay (dimuat di service, jadi sudah siap saat layar dikunci). */
-private data class LockLyricsState(
-    val mediaId: String? = null,
-    val lines: List<Pair<Long, String>> = emptyList(),
-    val loading: Boolean = false,
-)
-
-private suspend fun loadLockscreenLyrics(
-    context: Context,
-    database: MusicDatabase,
-    lyricsHelper: LyricsHelper,
-    snap: LockscreenLyricsBridge.PlaybackSnapshot,
-): List<Pair<Long, String>> = withContext(Dispatchers.IO) {
-    val songId = snap.mediaId ?: return@withContext emptyList()
-    runCatching {
-                var raw = database.lyrics(songId).firstOrNull()?.lyrics
-                if (raw.isNullOrBlank()) {
-                    val songWithArtists = database.song(songId).firstOrNull()
-                    val metadata = if (songWithArtists != null) {
-                        MediaMetadata(
-                            id = songWithArtists.song.id,
-                            title = songWithArtists.song.title,
-                            artists = songWithArtists.artists.map {
-                                MediaMetadata.Artist(id = it.id, name = it.name)
-                            },
-                            duration = songWithArtists.song.duration,
-                            thumbnailUrl = songWithArtists.song.thumbnailUrl,
-                        )
-                    } else if (!snap.title.isNullOrBlank()) {
-                        // Lagu belum ada di database: pakai metadata dari player
-                        MediaMetadata(
-                            id = songId,
-                            title = snap.title.orEmpty(),
-                            artists = listOf(MediaMetadata.Artist(id = null, name = snap.artist.orEmpty())),
-                            duration = snap.durationSec,
-                            thumbnailUrl = snap.thumbnailUrl,
-                        )
-                    } else null
-                    if (metadata != null) {
-                        val preferredProvider = context.dataStore
-                            .get(PreferredLyricsProviderKey)
-                            .toEnum(PreferredLyricsProvider.SIMPMUSIC)
-                        val fetched = lyricsHelper.getLyricsFromProvider(metadata, preferredProvider)
-                        raw = fetched.lyrics
-                        database.query {
-                            upsert(
-                                LyricsEntity(
-                                    id = songId,
-                                    lyrics = fetched.lyrics,
-                                    provider = fetched.provider,
-                                )
-                            )
-                        }
-                    }
-                }
-                if (!raw.isNullOrBlank() && raw != LYRICS_NOT_FOUND) {
-                    LyricsUtils.parseLyrics(raw)
-                        .map { entry ->
-                            entry.time to entry.text.lineSequence().firstOrNull()?.trim().orEmpty()
-                        }
-                        .filter { it.second.isNotBlank() }
-                } else {
-                    emptyList()
-                }
-            }.onFailure { Timber.e(it, "Lockscreen lyrics load failed") }
-        .getOrDefault(emptyList())
 }
 
 @Composable
@@ -673,12 +599,11 @@ private fun formatMs(ms: Long): String {
 /** Wallpaper (dari cover lagu) + tanggal + jam + lirik karaoke. */
 @Composable
 private fun LockscreenMainContent(
-    lyricsFlow: StateFlow<LockLyricsState>,
     artworkFlow: StateFlow<LockArtwork>,
     onSwipeUp: () -> Unit,
 ) {
     val snap by LockscreenLyricsBridge.snapshot.collectAsState()
-    val lyr by lyricsFlow.collectAsState()
+    val lyr by LiveLyricsRepository.state.collectAsState()
     val art by artworkFlow.collectAsState()
 
     val parsedLines = if (lyr.mediaId == snap.mediaId) lyr.lines else emptyList()
@@ -778,6 +703,16 @@ private fun LockscreenMainContent(
                 modifier = Modifier.size(20.dp)
             )
             LockscreenClock()
+            Text(
+                text = "VORTEX MUSIC",
+                modifier = Modifier.padding(top = 2.dp),
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 5.sp,
+                    color = Color.White.copy(alpha = 0.30f)
+                )
+            )
 
             Box(
                 modifier = Modifier
@@ -877,13 +812,23 @@ private fun LockscreenPlayerCard(
     onPrevious: () -> Unit,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
+    onSeek: (Long) -> Unit,
 ) {
     val snap by LockscreenLyricsBridge.snapshot.collectAsState()
     val art by artworkFlow.collectAsState()
-    val posMs by rememberLivePosition(snap, withLyricsOffset = false, tickMs = 250L)
+    val livePos by rememberLivePosition(snap, withLyricsOffset = false, tickMs = 100L)
 
-    val durationMs = if (snap.durationSec > 0) snap.durationSec * 1000L else 0L
-    val progress = if (durationMs > 0) (posMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
+    // Durasi: utamakan dari player (selalu ada), cadangan dari data lagu
+    val durationMs = when {
+        snap.durationMs > 0L -> snap.durationMs
+        snap.durationSec > 0 -> snap.durationSec * 1000L
+        else -> 0L
+    }
+    // Saat slider digeser, tampilkan posisi geseran (bukan posisi lagu)
+    var dragFraction by remember { mutableStateOf<Float?>(null) }
+    val posMs = dragFraction?.let { (it * durationMs).toLong() } ?: livePos
+    val progress = dragFraction
+        ?: if (durationMs > 0) (livePos.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
     val cardColor = lerp(Color(art.color), Color.Black, 0.45f).copy(alpha = 0.72f)
     val shape = RoundedCornerShape(30.dp)
 
@@ -938,26 +883,69 @@ private fun LockscreenPlayerCard(
         }
 
         Column {
+            // Slider yang bisa digeser / diketuk untuk pindah posisi lagu
+            var widthPx by remember { mutableFloatStateOf(1f) }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(5.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.25f))
+                    .height(28.dp)
+                    .onSizeChanged { widthPx = it.width.toFloat().coerceAtLeast(1f) }
+                    .pointerInput(durationMs) {
+                        detectTapGestures { offset ->
+                            if (durationMs > 0) {
+                                onSeek((offset.x / widthPx).coerceIn(0f, 1f).times(durationMs).toLong())
+                            }
+                        }
+                    }
+                    .pointerInput(durationMs) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { offset -> dragFraction = (offset.x / widthPx).coerceIn(0f, 1f) },
+                            onDragEnd = {
+                                val f = dragFraction
+                                if (f != null && durationMs > 0) onSeek((f * durationMs).toLong())
+                                dragFraction = null
+                            },
+                            onDragCancel = { dragFraction = null },
+                            onHorizontalDrag = { change, _ ->
+                                dragFraction = (change.position.x / widthPx).coerceIn(0f, 1f)
+                            }
+                        )
+                    },
+                contentAlignment = Alignment.CenterStart
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(progress)
+                        .fillMaxWidth()
+                        .height(6.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.9f))
+                        .background(Color.White.copy(alpha = 0.25f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(progress)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.White.copy(alpha = 0.95f))
+                    )
+                }
+                // Gagang slider
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset((progress * widthPx - 8.dp.toPx()).toInt().coerceAtLeast(0), 0) }
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(2.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                val small = TextStyle(fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f))
+                val small = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.75f))
                 Text(text = formatMs(posMs), style = small)
-                if (durationMs > 0) Text(text = "-" + formatMs(durationMs - posMs), style = small)
+                if (durationMs > 0) {
+                    Text(text = "-" + formatMs((durationMs - posMs).coerceAtLeast(0L)), style = small)
+                } else {
+                    Text(text = "--:--", style = small)
+                }
             }
         }
 
@@ -1000,15 +988,13 @@ private fun LockscreenPlayerCard(
     }
 }
 
-/** Lirik besar bergaya karaoke: baris aktif terisi putih mengikuti lagu, baris lain redup. */
+/** Lirik besar bergaya karaoke: baris aktif terisi putih mengikuti suara, baris lain redup. */
 @Composable
 private fun LockscreenLyricsLines(
-    parsedLines: List<Pair<Long, String>>,
+    parsedLines: List<LiveLine>,
     livePosMs: Long,
 ) {
-    val activeIdx = remember(parsedLines, livePosMs) {
-        parsedLines.indexOfLast { it.first <= livePosMs }
-    }
+    val activeIdx = remember(parsedLines, livePosMs) { parsedLines.activeIndexAt(livePosMs) }
     val textShadow = Shadow(
         color = Color.Black.copy(alpha = 0.40f),
         offset = Offset(0f, 2f),
@@ -1047,18 +1033,13 @@ private fun LockscreenLyricsLines(
                 )
             }
     ) { idx ->
-        val prev = parsedLines.getOrNull(idx - 1)?.second
-        val current = parsedLines.getOrNull(idx)?.second
-        val next1 = parsedLines.getOrNull(idx + 1)?.second
-        val next2 = parsedLines.getOrNull(idx + 2)?.second
+        val prev = parsedLines.getOrNull(idx - 1)?.text
+        val current = parsedLines.getOrNull(idx)
+        val next1 = parsedLines.getOrNull(idx + 1)
+        val next2 = parsedLines.getOrNull(idx + 2)?.text
 
-        // Perkiraan lama baris dinyanyikan: dari panjang teks, dibatasi jarak ke baris berikutnya.
-        // (Jadi cahaya tidak "ketinggalan" saat ada jeda panjang, dan tidak menyala duluan.)
-        val lineStart = parsedLines.getOrNull(idx)?.first ?: 0L
-        val gap = (parsedLines.getOrNull(idx + 1)?.first ?: (lineStart + 4000L)) - lineStart
-        val estimate = ((current?.length ?: 0) * 85L).coerceIn(1500L, 7000L)
-        val span = minOf(gap, estimate).coerceAtLeast(1L)
-        val fill = if (idx < 0) 0f else ((livePosMs - lineStart).toFloat() / span.toFloat()).coerceIn(0f, 1f)
+        // Isi putih mengikuti waktu per kata (jeda penyanyi = isi ikut berhenti)
+        val fill = current?.karaokeFill(livePosMs, next1?.startMs) ?: 0f
 
         Column(
             modifier = Modifier
@@ -1071,59 +1052,16 @@ private fun LockscreenLyricsLines(
                 Text(text = prev, style = baseStyle.copy(color = Color.White.copy(alpha = 0.25f)), maxLines = 3)
             }
             if (current != null) {
-                KaraokeLine(text = current, fill = fill, style = baseStyle, dimAlpha = 0.42f)
+                KaraokeLine(text = current.text, fill = fill, style = baseStyle, dimAlpha = 0.42f)
             }
-            if (!next1.isNullOrBlank()) {
-                Text(text = next1, style = baseStyle.copy(color = Color.White.copy(alpha = 0.30f)), maxLines = 3)
+            if (next1 != null) {
+                Text(text = next1.text, style = baseStyle.copy(color = Color.White.copy(alpha = 0.30f)), maxLines = 3)
             }
             if (!next2.isNullOrBlank()) {
                 Text(text = next2, style = baseStyle.copy(color = Color.White.copy(alpha = 0.20f)), maxLines = 3)
             }
         }
     }
-}
-
-/**
- * Satu baris lirik dengan efek karaoke yang benar untuk teks yang turun baris:
- * putih terisi dari kiri ke kanan di baris pertama, LALU baris kedua, dst.
- */
-@Composable
-private fun KaraokeLine(
-    text: String,
-    fill: Float,
-    style: TextStyle,
-    dimAlpha: Float,
-) {
-    var layout by remember(text) { mutableStateOf<TextLayoutResult?>(null) }
-    Text(
-        text = text,
-        style = style.copy(color = Color.White.copy(alpha = dimAlpha)),
-        maxLines = 4,
-        onTextLayout = { layout = it },
-        modifier = Modifier.drawWithContent {
-            drawContent() // dasar redup
-            val l = layout ?: return@drawWithContent
-            var total = 0f
-            for (i in 0 until l.lineCount) total += l.getLineRight(i) - l.getLineLeft(i)
-            var remaining = fill * total
-            for (i in 0 until l.lineCount) {
-                val left = l.getLineLeft(i)
-                val lineWidth = l.getLineRight(i) - left
-                val w = remaining.coerceIn(0f, lineWidth)
-                if (w > 0f) {
-                    clipRect(
-                        left = left,
-                        top = l.getLineTop(i),
-                        right = left + w,
-                        bottom = l.getLineBottom(i)
-                    ) {
-                        drawText(textLayoutResult = l, color = Color.White)
-                    }
-                }
-                remaining -= lineWidth
-            }
-        }
-    )
 }
 
 private class LockscreenOverlayLifecycleOwner :

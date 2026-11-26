@@ -154,6 +154,10 @@ import com.nanzbeatles.nanas.utils.rememberEnumPreference
 import com.nanzbeatles.nanas.utils.rememberPreference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import com.nanzbeatles.nanas.lyrics.LiveLine
+import com.nanzbeatles.nanas.lyrics.LiveLyricsRepository
+import com.nanzbeatles.nanas.lyrics.activeIndexAt
+import com.nanzbeatles.nanas.lyrics.karaokeFill
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -382,6 +386,20 @@ fun DynamicIslandOverlay(
         } else {
             position = conn.player.currentPosition.coerceAtLeast(0L)
             duration = conn.player.duration.coerceAtLeast(0L)
+        }
+    }
+
+    // Lirik untuk mode Kecil & Sedang: waktu halus (50 ms) supaya isi karaoke pas dengan suara
+    val liveLyrics by LiveLyricsRepository.state.collectAsState()
+    val islandLyricLines = if (liveLyrics.mediaId == metadata?.id) liveLyrics.lines else emptyList()
+    val lyricsOffsetMs = (currentSong?.song?.lyricsOffset ?: 0).toLong()
+    var lyricPosMs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(playerConnection, mode, isPlaying, metadata?.id, lyricsOffsetMs) {
+        val conn = playerConnection ?: return@LaunchedEffect
+        if (mode == DynamicIslandMode.BOLA) return@LaunchedEffect
+        while (isActive) {
+            lyricPosMs = (conn.player.currentPosition + lyricsOffsetMs).coerceAtLeast(0L)
+            delay(if (isPlaying) 50L else 400L)
         }
     }
 
@@ -725,6 +743,8 @@ internal fun DynamicIslandCapsuleSurface(
                             position = position,
                             duration = duration,
                             accentColor = effectiveAccentColor,
+                            lyricLines = islandLyricLines,
+                            lyricPositionMs = lyricPosMs,
                             onTap = {
                                 onModeChange(DynamicIslandMode.SEDANG)
                             },
@@ -749,6 +769,8 @@ internal fun DynamicIslandCapsuleSurface(
                             canSkipPrevious = canSkipPrevious,
                             canSkipNext = canSkipNext,
                             accentColor = effectiveAccentColor,
+                            lyricLines = islandLyricLines,
+                            lyricPositionMs = lyricPosMs,
                             onTogglePlayPause = onTogglePlayPause,
                             onSeekTo = onSeekTo,
                             onPrevious = onPrevious,
@@ -904,9 +926,22 @@ internal fun DynamicIslandSmallContent(
     onTap: () -> Unit,
     onLongPress: () -> Unit,
     onDismissIsland: () -> Unit,
+    lyricLines: List<LiveLine> = emptyList(),
+    lyricPositionMs: Long = 0L,
 ) {
     val configuration = LocalConfiguration.current
     val pillWidth = (configuration.screenWidthDp.dp * 0.86f).coerceIn(272.dp, 368.dp)
+
+    // Tampilan bawaan: LIRIK. Digeser (kiri/kanan) -> judul muncul 3 detik, lalu kembali ke lirik.
+    var showTitle by remember { mutableStateOf(false) }
+    LaunchedEffect(showTitle) {
+        if (showTitle) {
+            delay(3000L)
+            showTitle = false
+        }
+    }
+    val activeLyricIdx = lyricLines.activeIndexAt(lyricPositionMs)
+    val showLyric = lyricLines.isNotEmpty() && activeLyricIdx >= 0 && !showTitle
 
     val safeDuration = duration.coerceAtLeast(1L)
     val rawProgress = if (duration > 0L) {
@@ -927,8 +962,14 @@ internal fun DynamicIslandSmallContent(
         modifier = Modifier
             .width(pillWidth)
             .height(54.dp)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { _, _ -> showTitle = true }
+            }
             .combinedClickable(
-                onClick = onTap,
+                onClick = {
+                    showTitle = true
+                    onTap()
+                },
                 onLongClick = onLongPress
             )
     ) {
@@ -969,40 +1010,71 @@ internal fun DynamicIslandSmallContent(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            Column(
+            AnimatedContent(
+                targetState = showLyric,
+                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
+                label = "SmallLyricOrTitle",
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 6.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = title,
-                    color = Color(0xFFFFFFFF),
-                    style = TextStyle(
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFFFFF),
-                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
-                )
-                if (artist.isNotBlank() && artist != "Putar lagu untuk mulai") {
+                    .padding(end = 6.dp)
+            ) { lyricMode ->
+                if (lyricMode) {
+                    // LIRIK karaoke (maks. 2 baris) menggantikan judul lagu
+                    val line = lyricLines.getOrNull(activeLyricIdx)
+                    val next = lyricLines.getOrNull(activeLyricIdx + 1)
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                        if (line != null) {
+                            KaraokeLine(
+                                text = line.text,
+                                fill = line.karaokeFill(lyricPositionMs, next?.startMs),
+                                style = TextStyle(
+                                    fontFamily = FontFamily.SansSerif,
+                                    fontSize = 13.sp,
+                                    lineHeight = 15.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                dimAlpha = 0.45f,
+                                brightColor = Color.White,
+                                maxLines = 2
+                            )
+                        }
+                    }
+                } else {
+                    Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = artist,
-                        color = Color.White.copy(alpha = 0.85f),
+                        text = title,
+                        color = Color(0xFFFFFFFF),
                         style = TextStyle(
                             fontFamily = FontFamily.SansSerif,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFFFFFF),
                             platformStyle = PlatformTextStyle(includeFontPadding = false)
                         ),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
                     )
+                    if (artist.isNotBlank() && artist != "Putar lagu untuk mulai") {
+                        Text(
+                            text = artist,
+                            color = Color.White.copy(alpha = 0.85f),
+                            style = TextStyle(
+                                fontFamily = FontFamily.SansSerif,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.85f),
+                                platformStyle = PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
                 }
             }
 
@@ -1089,6 +1161,8 @@ internal fun DynamicIslandMediumContent(
     onDismissIsland: () -> Unit,
     onOpenFullPlayer: () -> Unit,
     onOpenCustomize: () -> Unit,
+    lyricLines: List<LiveLine> = emptyList(),
+    lyricPositionMs: Long = 0L,
 ) {
     val configuration = LocalConfiguration.current
     val cardWidth = (configuration.screenWidthDp.dp * 0.94f).coerceIn(316.dp, 408.dp)
@@ -1226,6 +1300,16 @@ internal fun DynamicIslandMediumContent(
                     modifier = Modifier.size(16.dp)
                 )
             }
+        }
+
+        // Lirik karaoke (hanya tampil jika lirik lagu ini tersedia)
+        if (lyricLines.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            IslandLyricsBlock(
+                lines = lyricLines,
+                posMs = lyricPositionMs,
+                accent = visibleAccent
+            )
         }
 
         Spacer(modifier = Modifier.height(14.dp))

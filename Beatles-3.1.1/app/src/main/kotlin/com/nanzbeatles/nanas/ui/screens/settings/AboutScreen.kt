@@ -66,6 +66,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -101,6 +102,10 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.common.PlaybackException
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.RawResourceDataSource
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.geometry.Size
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -231,12 +236,6 @@ fun AboutScreen(
         LaunchedEffect(Unit) { DeveloperProfileRepository.pollWhileActive() }
 
         DeveloperHeroVideoCard(profile = devProfile)
-        Spacer(Modifier.height(12.dp))
-        DeveloperLevelCard(devProfile)
-        Spacer(Modifier.height(10.dp))
-        DeveloperRecordsRow(devProfile)
-        Spacer(Modifier.height(12.dp))
-        DeveloperActivityCard(profile = devProfile)
 
         // 4. Social Section (WhatsApp Only)
         Text(
@@ -323,24 +322,33 @@ fun AboutScreen(
 @Composable
 private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
     val developerName = profile.name
-    val developerRole = profile.role
     val avatarUrl = profile.avatarUrl
-    val useVideo = profile.backgroundIsVideo && profile.backgroundUrl.isNotBlank()
     val context = LocalContext.current
-    val videoUri = remember(profile.backgroundUrl) { Uri.parse(profile.backgroundUrl) }
 
-    val exoPlayer = remember(videoUri, useVideo) {
-        if (!useVideo) return@remember null
+    // Video lokal (res/raw/developer_bg.mp4) diutamakan: langsung jalan tanpa internet.
+    val localRawId = remember {
+        context.resources.getIdentifier("developer_bg", "raw", context.packageName)
+    }
+    val useRemote = profile.backgroundIsVideo && profile.backgroundUrl.isNotBlank()
+    val playVideo = localRawId != 0 || useRemote
+    val videoUri = remember(profile.backgroundUrl, localRawId) {
+        if (localRawId != 0) RawResourceDataSource.buildRawResourceUri(localRawId)
+        else Uri.parse(profile.backgroundUrl)
+    }
+
+    val exoPlayer = remember(videoUri, playVideo) {
+        if (!playVideo) return@remember null
         val httpFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15_000)
             .setReadTimeoutMs(15_000)
-
-        val mediaSource = ProgressiveMediaSource.Factory(httpFactory)
+        // DefaultDataSource: http(s) lewat httpFactory, res/raw lewat RawResourceDataSource
+        val dataSourceFactory = DefaultDataSource.Factory(context, httpFactory)
+        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(videoUri))
 
-        // Decoder fallback: kalau codec utama gagal, coba decoder lain (video catbox kadang HEVC/AV1)
+        // Decoder fallback: kalau codec utama gagal, coba decoder lain
         val renderers = DefaultRenderersFactory(context).setEnableDecoderFallback(true)
         ExoPlayer.Builder(context, renderers).build().apply {
             setMediaSource(mediaSource)
@@ -358,15 +366,11 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
         var retried = false
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                videoStatus = when (playbackState) {
-                    Player.STATE_BUFFERING -> "Memuat video…"
-                    else -> null
-                }
+                videoStatus = if (playbackState == Player.STATE_BUFFERING) "Memuat video…" else null
             }
 
             override fun onPlayerError(error: PlaybackException) {
                 videoStatus = "Video gagal: ${error.errorCodeName}"
-                // Coba sekali lagi otomatis (hanya sekali, supaya tidak berulang terus)
                 if (!retried) {
                     retried = true
                     exoPlayer?.prepare()
@@ -382,36 +386,24 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
         }
     }
 
+    val shape = RoundedCornerShape(30.dp)
+    val borderBrush = rememberRotatingBorderBrush()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(210.dp)
-            .clip(RoundedCornerShape(26.dp))
-            .background(Color(0xFF141820))
-            .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.16f),
-                shape = RoundedCornerShape(26.dp)
-            )
+            .height(360.dp)
+            .clip(shape)
+            .background(Color(0xFF0B0D12))
+            .border(width = 2.dp, brush = borderBrush, shape = shape)
     ) {
-        // Latar: gambar (atau pp sebagai placeholder sebelum video siap)
+        // Latar: pp sebagai placeholder sebelum video siap (atau gambar jika bukan video)
         AsyncImage(
-            model = if (useVideo) avatarUrl else profile.backgroundUrl,
+            model = if (playVideo) avatarUrl else profile.backgroundUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-
-        videoStatus?.let { status ->
-            Text(
-                text = status,
-                fontSize = 11.sp,
-                color = Color.White.copy(alpha = 0.75f),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(14.dp)
-            )
-        }
 
         if (exoPlayer != null) {
             AndroidView(
@@ -434,64 +426,133 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
             )
         }
 
+        // Peredam gelap di bawah supaya nama terbaca
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.22f),
-                            Color.Black.copy(alpha = 0.88f)
-                        ),
-                        startY = 60f
+                        colorStops = arrayOf(
+                            0.0f to Color.Black.copy(alpha = 0.18f),
+                            0.45f to Color.Transparent,
+                            1.0f to Color.Black.copy(alpha = 0.88f)
+                        )
                     )
                 )
         )
+
+        videoStatus?.let { status ->
+            Text(
+                text = status,
+                fontSize = 11.sp,
+                color = Color.White.copy(alpha = 0.75f),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            )
+        }
 
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 20.dp, vertical = 20.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
-            MinimalAnimatedAvatarRing(
-                avatarUrl = avatarUrl,
-                contentDescription = developerName
-            )
-
-            Spacer(Modifier.width(14.dp))
-
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = developerName,
-                        fontSize = 20.sp,
+                        fontSize = 25.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     // Hanya centang biru
-                    VerifiedCheckBadge(modifier = Modifier.size(19.dp))
+                    VerifiedCheckBadge(modifier = Modifier.size(22.dp))
                 }
 
-                Text(
-                    text = developerRole,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.85f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                // "Developer": font serif miring + warna gradasi, dalam pil berborder gradasi
+                val pillShape = RoundedCornerShape(50)
+                Box(
+                    modifier = Modifier
+                        .clip(pillShape)
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .border(
+                            1.2.dp,
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFF38BDF8), Color(0xFFA78BFA), Color(0xFFF472B6))
+                            ),
+                            pillShape
+                        )
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Developer",
+                        style = TextStyle(
+                            fontFamily = FontFamily.Serif,
+                            fontStyle = FontStyle.Italic,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            letterSpacing = 1.5.sp,
+                            brush = Brush.horizontalGradient(
+                                listOf(Color(0xFF7DD3FC), Color(0xFFC4B5FD), Color(0xFFF9A8D4))
+                            )
+                        )
+                    )
+                }
+            }
+
+            MinimalAnimatedAvatarRing(
+                avatarUrl = avatarUrl,
+                contentDescription = developerName,
+                ringSize = 116.dp
+            )
+        }
+    }
+}
+
+/** Border kartu: garis gradasi tipis (biru -> ungu -> pink) yang berputar pelan. */
+@Composable
+private fun rememberRotatingBorderBrush(): Brush {
+    val transition = rememberInfiniteTransition(label = "dev_border")
+    val angle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 7000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dev_border_angle"
+    )
+    val colors = remember {
+        intArrayOf(
+            0x00FFFFFF,
+            0xFF38BDF8.toInt(),
+            0xFFA78BFA.toInt(),
+            0xFFF472B6.toInt(),
+            0x00FFFFFF,
+        )
+    }
+    return remember(angle) {
+        object : ShaderBrush() {
+            override fun createShader(size: Size): Shader {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val sweep = android.graphics.SweepGradient(cx, cy, colors, null)
+                val matrix = android.graphics.Matrix().apply { setRotate(angle, cx, cy) }
+                sweep.setLocalMatrix(matrix)
+                return sweep
             }
         }
     }
@@ -501,6 +562,7 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
 private fun MinimalAnimatedAvatarRing(
     avatarUrl: String,
     contentDescription: String,
+    ringSize: androidx.compose.ui.unit.Dp = 76.dp,
 ) {
     // Border tipis & halus: satu garis gradasi perak-biru yang berputar pelan
     val infiniteTransition = rememberInfiniteTransition(label = "avatar_ring")
@@ -515,7 +577,7 @@ private fun MinimalAnimatedAvatarRing(
     )
 
     Box(
-        modifier = Modifier.size(76.dp),
+        modifier = Modifier.size(ringSize),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -540,7 +602,7 @@ private fun MinimalAnimatedAvatarRing(
         }
 
         Surface(
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(ringSize - 12.dp),
             shape = CircleShape,
             color = Color(0xFF161922)
         ) {
@@ -553,296 +615,6 @@ private fun MinimalAnimatedAvatarRing(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-            )
-        }
-    }
-}
-
-private val DevCardBg = Brush.verticalGradient(
-    colors = listOf(Color(0xFF141519).copy(alpha = 0.92f), Color(0xFF0C0D10).copy(alpha = 0.92f))
-)
-private val DevCardBorder = Brush.linearGradient(
-    colors = listOf(
-        Color.White.copy(alpha = 0.16f),
-        Color.White.copy(alpha = 0.05f),
-        Color.White.copy(alpha = 0.12f),
-    )
-)
-
-private fun formatDot(value: Int): String =
-    java.text.NumberFormat.getIntegerInstance(java.util.Locale("id", "ID")).format(value)
-
-/** Kartu "Level 10 • Ikon Musik" - tampilan sama seperti di Profil. */
-@Composable
-private fun DeveloperLevelCard(profile: DeveloperProfile) {
-    val spec = MusicJourneyManager.allLevels[(profile.level - 1).coerceIn(0, 9)]
-    val xp = profile.xp
-    val xpTarget = profile.xpTarget
-    val progress = (xp.toFloat() / xpTarget.toFloat()).coerceIn(0f, 1f)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(DevCardBg, RoundedCornerShape(20.dp))
-            .border(1.dp, DevCardBorder, RoundedCornerShape(20.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        LevelEmblemIcon(
-            level = spec.level,
-            staticResId = spec.drawableResId,
-            contentDescription = "Level ${spec.level}",
-            modifier = Modifier.size(56.dp),
-            contentScale = ContentScale.Fit
-        )
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Level ${spec.level}",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFFD0D5E0),
-                maxLines = 1
-            )
-            Text(
-                text = spec.title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.10f))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(progress)
-                            .fillMaxHeight()
-                            .clip(CircleShape)
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFFD8DEE9), Color.White)
-                                )
-                            )
-                    )
-                }
-                Text(
-                    text = "${formatDot(xp)} / ${formatDot(xpTarget)} XP",
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFB0B6C2),
-                    maxLines = 1,
-                    softWrap = false
-                )
-            }
-        }
-    }
-}
-
-/** Sedang didengarkan + lagu paling sering didengar (hanya tampil bila datanya ada). */
-@Composable
-private fun DeveloperActivityCard(profile: DeveloperProfile) {
-    val now = profile.nowPlaying
-    if (now == null && profile.topSongs.isEmpty()) return
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(DevCardBg, RoundedCornerShape(20.dp))
-            .border(1.dp, DevCardBorder, RoundedCornerShape(20.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (now != null) {
-            Text(
-                text = "Sedang didengarkan",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF7DD3FC)
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = now.artworkUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
-                )
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(now.title, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold,
-                        color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(now.artist, fontSize = 12.sp, color = Color(0xFFB0B6C2),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-
-        if (profile.topSongs.isNotEmpty()) {
-            Text(
-                text = "Lagu paling sering didengar",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFFD0D5E0)
-            )
-            profile.topSongs.take(3).forEachIndexed { index, song ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("${index + 1}", fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                        color = Color(0xFF989EA9), modifier = Modifier.width(18.dp))
-                    AsyncImage(
-                        model = song.artworkUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.08f))
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(song.title, fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                            color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(song.artist, fontSize = 11.sp, color = Color(0xFFB0B6C2),
-                            maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    if (song.plays > 0) {
-                        Text("${song.plays}x", fontSize = 12.sp, fontWeight = FontWeight.Medium,
-                            color = Color(0xFFA0A6B4))
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** 3 kartu: Streak 999 Hari | Rekor Harian 999 Jam | Rekor Bulanan 999 Jam. */
-@Composable
-private fun DeveloperRecordsRow(profile: DeveloperProfile) {
-    val streakDays = profile.streakDays
-    val flame = StreakTier.fromStreak(streakDays).toVisual()
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        DevRecordCard(
-            modifier = Modifier.weight(1f),
-            label = "Streak",
-            value = "$streakDays Hari",
-            footer = "Terus dengar!",
-            glowColor = flame.glowColor,
-            leading = {
-                StreakFlameIcon(flame = flame, size = 28.dp, animated = true)
-            }
-        )
-        DevRecordCard(
-            modifier = Modifier.weight(1f),
-            label = "Rekor Harian",
-            value = "${profile.dailyRecordHours} Jam",
-            footer = "Hari terbaik!",
-            leading = {
-                Icon(
-                    painter = painterResource(R.drawable.timer),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        )
-        DevRecordCard(
-            modifier = Modifier.weight(1f),
-            label = "Rekor Bulanan",
-            value = "${profile.monthlyRecordHours} Jam",
-            footer = "Bulan terbaik!",
-            leading = {
-                Icon(
-                    painter = painterResource(R.drawable.baseline_event_repeat_24),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        )
-    }
-}
-
-@Composable
-private fun DevRecordCard(
-    modifier: Modifier,
-    label: String,
-    value: String,
-    footer: String,
-    glowColor: Color? = null,
-    leading: @Composable () -> Unit,
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(DevCardBg, RoundedCornerShape(18.dp))
-            .drawBehind {
-                if (glowColor != null) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(glowColor.copy(alpha = 0.22f), Color.Transparent),
-                            center = Offset(size.width * 0.28f, size.height * 0.35f),
-                            radius = size.width * 0.72f
-                        ),
-                        radius = size.width * 0.72f,
-                        center = Offset(size.width * 0.28f, size.height * 0.35f)
-                    )
-                }
-            }
-            .border(1.dp, DevCardBorder, RoundedCornerShape(18.dp))
-            .padding(horizontal = 9.dp, vertical = 10.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                leading()
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = label,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFB0B6C2),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = value,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            Text(
-                text = footer,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFFA0A6B4),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
             )
         }
     }

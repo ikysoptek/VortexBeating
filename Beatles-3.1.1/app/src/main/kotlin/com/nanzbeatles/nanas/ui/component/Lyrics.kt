@@ -224,7 +224,7 @@ private fun normalizeSyllableWords(
             } else {
                 val gapToPrevMs = ((w.startTime - bufEnd) * 1000.0).toLong()
                 val startsUppercase = clean.firstOrNull()?.isUpperCase() == true && bufText.length >= 2
-                val endsPunctuation = bufText.lastOrNull() in charArrayOf(',', '.', '!', '?', ';', ':', ')')
+                val endsPunctuation = bufText.isNotEmpty() && bufText.last() in charArrayOf(',', '.', '!', '?', ';', ':', ')')
                 val shouldSplitWord = endsPunctuation || startsUppercase || gapToPrevMs > 180L || bufText.length >= 9
                 if (shouldSplitWord) {
                     grouped.add(WordTimestamp(text = bufText.toString(), startTime = bufStart, endTime = bufEnd))

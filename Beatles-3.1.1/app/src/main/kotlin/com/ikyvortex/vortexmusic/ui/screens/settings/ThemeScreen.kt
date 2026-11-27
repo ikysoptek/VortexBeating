@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.nanzbeatles.nanas.ui.screens.settings
+package com.ikyvortex.vortexmusic.ui.screens.settings
 
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
@@ -84,26 +84,26 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
-import com.nanzbeatles.nanas.LocalPlayerConnection
-import com.nanzbeatles.nanas.R
-import com.nanzbeatles.nanas.constants.AppVisualStyle
-import com.nanzbeatles.nanas.constants.AppVisualStyleKey
-import com.nanzbeatles.nanas.constants.DarkModeKey
-import com.nanzbeatles.nanas.constants.DynamicIslandTheme
-import com.nanzbeatles.nanas.constants.DynamicIslandThemeKey
-import com.nanzbeatles.nanas.constants.DynamicThemeKey
-import com.nanzbeatles.nanas.constants.LiquidGlassApplyNavBarKey
-import com.nanzbeatles.nanas.constants.LiquidGlassApplyPlayerKey
-import com.nanzbeatles.nanas.constants.LiquidGlassEffectKey
-import com.nanzbeatles.nanas.constants.PureBlackKey
-import com.nanzbeatles.nanas.constants.PureBlackMiniPlayerKey
-import com.nanzbeatles.nanas.constants.SelectedThemeColorKey
-import com.nanzbeatles.nanas.ui.theme.AuraMusicTheme
-import com.nanzbeatles.nanas.ui.theme.DefaultThemeColor
-import com.nanzbeatles.nanas.ui.theme.extractThemeColor
-import com.nanzbeatles.nanas.ui.utils.frostedGlassSurface
-import com.nanzbeatles.nanas.utils.rememberEnumPreference
-import com.nanzbeatles.nanas.utils.rememberPreference
+import com.ikyvortex.vortexmusic.LocalPlayerConnection
+import com.ikyvortex.vortexmusic.R
+import com.ikyvortex.vortexmusic.constants.AppVisualStyle
+import com.ikyvortex.vortexmusic.constants.AppVisualStyleKey
+import com.ikyvortex.vortexmusic.constants.DarkModeKey
+import com.ikyvortex.vortexmusic.constants.DynamicIslandTheme
+import com.ikyvortex.vortexmusic.constants.DynamicIslandThemeKey
+import com.ikyvortex.vortexmusic.constants.DynamicThemeKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassApplyNavBarKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassApplyPlayerKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassEffectKey
+import com.ikyvortex.vortexmusic.constants.PureBlackKey
+import com.ikyvortex.vortexmusic.constants.PureBlackMiniPlayerKey
+import com.ikyvortex.vortexmusic.constants.SelectedThemeColorKey
+import com.ikyvortex.vortexmusic.ui.theme.AuraMusicTheme
+import com.ikyvortex.vortexmusic.ui.theme.DefaultThemeColor
+import com.ikyvortex.vortexmusic.ui.theme.extractThemeColor
+import com.ikyvortex.vortexmusic.ui.utils.frostedGlassSurface
+import com.ikyvortex.vortexmusic.utils.rememberEnumPreference
+import com.ikyvortex.vortexmusic.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -513,7 +513,7 @@ private fun SoftThemeOptionCard(
                 Text(
                     text = "Pastel Notebook",
                     color = ink,
-                    fontFamily = com.nanzbeatles.nanas.ui.theme.SoftHandFont,
+                    fontFamily = com.ikyvortex.vortexmusic.ui.theme.SoftHandFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
                 )
@@ -1594,7 +1594,7 @@ private fun LiquidGlassWidgetShowcaseCard(
                 )
                 .clickable {
                     requestPinWidget(
-                        com.nanzbeatles.nanas.widget.LiquidGlassWidgetReceiver::class.java,
+                        com.ikyvortex.vortexmusic.widget.LiquidGlassWidgetReceiver::class.java,
                         "Liquid Glass Player"
                     )
                 }
@@ -1739,7 +1739,7 @@ private fun LiquidGlassWidgetShowcaseCard(
                 )
                 .clickable {
                     requestPinWidget(
-                        com.nanzbeatles.nanas.widget.LiquidGlassWideWidgetReceiver::class.java,
+                        com.ikyvortex.vortexmusic.widget.LiquidGlassWideWidgetReceiver::class.java,
                         "Liquid Glass Pill"
                     )
                 }

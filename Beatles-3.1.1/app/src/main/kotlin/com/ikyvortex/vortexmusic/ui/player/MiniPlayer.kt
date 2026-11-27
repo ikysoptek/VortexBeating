@@ -4,7 +4,7 @@
  * Performance optimized MiniPlayer - prevents unnecessary recomposition
  */
 
-package com.nanzbeatles.nanas.ui.player
+package com.ikyvortex.vortexmusic.ui.player
 
 import android.content.res.Configuration
 import android.os.Build
@@ -79,43 +79,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
-import com.nanzbeatles.nanas.LocalDatabase
-import com.nanzbeatles.nanas.LocalListenTogetherManager
-import com.nanzbeatles.nanas.LocalPlayerConnection
-import com.nanzbeatles.nanas.R
-import com.nanzbeatles.nanas.constants.CropAlbumArtKey
-import com.nanzbeatles.nanas.constants.DarkModeKey
-import com.nanzbeatles.nanas.constants.LiquidGlassEffectKey
-import com.nanzbeatles.nanas.constants.LiquidGlassBlurRadiusKey
-import com.nanzbeatles.nanas.constants.LiquidGlassCornerRadiusKey
-import com.nanzbeatles.nanas.constants.LiquidGlassOpacityKey
-import com.nanzbeatles.nanas.constants.MiniPlayerHeight
-import com.nanzbeatles.nanas.constants.MiniPlayerHeightKey
-import com.nanzbeatles.nanas.constants.MiniPlayerCornerRadiusKey
-import com.nanzbeatles.nanas.constants.MiniPlayerShowFavoriteKey
-import com.nanzbeatles.nanas.constants.MiniPlayerShowSubscribeKey
-import com.nanzbeatles.nanas.constants.MiniPlayerShowPlayPauseKey
-import com.nanzbeatles.nanas.constants.PureBlackMiniPlayerKey
-import com.nanzbeatles.nanas.constants.SwipeSensitivityKey
-import com.nanzbeatles.nanas.constants.SwipeThumbnailKey
-import com.nanzbeatles.nanas.constants.ThumbnailCornerRadius
-import com.nanzbeatles.nanas.constants.UseNewMiniPlayerDesignKey
-import com.nanzbeatles.nanas.db.entities.ArtistEntity
-import com.nanzbeatles.nanas.listentogether.ListenTogetherManager
-import com.nanzbeatles.nanas.models.MediaMetadata
-import com.nanzbeatles.nanas.playback.CastConnectionHandler
-import com.nanzbeatles.nanas.playback.PlayerConnection
-import com.nanzbeatles.nanas.ui.screens.settings.DarkMode
-import com.nanzbeatles.nanas.ui.utils.crystalLiquidGlassPill
-import com.nanzbeatles.nanas.ui.utils.liquidGlassPill
-import com.nanzbeatles.nanas.ui.utils.resize
-import com.nanzbeatles.nanas.ui.utils.resolveArtworkUrl
-import com.nanzbeatles.nanas.utils.rememberEnumPreference
-import com.nanzbeatles.nanas.utils.rememberPreference
+import com.ikyvortex.vortexmusic.LocalDatabase
+import com.ikyvortex.vortexmusic.LocalListenTogetherManager
+import com.ikyvortex.vortexmusic.LocalPlayerConnection
+import com.ikyvortex.vortexmusic.R
+import com.ikyvortex.vortexmusic.constants.CropAlbumArtKey
+import com.ikyvortex.vortexmusic.constants.DarkModeKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassEffectKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassBlurRadiusKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassCornerRadiusKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassOpacityKey
+import com.ikyvortex.vortexmusic.constants.MiniPlayerHeight
+import com.ikyvortex.vortexmusic.constants.MiniPlayerHeightKey
+import com.ikyvortex.vortexmusic.constants.MiniPlayerCornerRadiusKey
+import com.ikyvortex.vortexmusic.constants.MiniPlayerShowFavoriteKey
+import com.ikyvortex.vortexmusic.constants.MiniPlayerShowSubscribeKey
+import com.ikyvortex.vortexmusic.constants.MiniPlayerShowPlayPauseKey
+import com.ikyvortex.vortexmusic.constants.PureBlackMiniPlayerKey
+import com.ikyvortex.vortexmusic.constants.SwipeSensitivityKey
+import com.ikyvortex.vortexmusic.constants.SwipeThumbnailKey
+import com.ikyvortex.vortexmusic.constants.ThumbnailCornerRadius
+import com.ikyvortex.vortexmusic.constants.UseNewMiniPlayerDesignKey
+import com.ikyvortex.vortexmusic.db.entities.ArtistEntity
+import com.ikyvortex.vortexmusic.listentogether.ListenTogetherManager
+import com.ikyvortex.vortexmusic.models.MediaMetadata
+import com.ikyvortex.vortexmusic.playback.CastConnectionHandler
+import com.ikyvortex.vortexmusic.playback.PlayerConnection
+import com.ikyvortex.vortexmusic.ui.screens.settings.DarkMode
+import com.ikyvortex.vortexmusic.ui.utils.crystalLiquidGlassPill
+import com.ikyvortex.vortexmusic.ui.utils.liquidGlassPill
+import com.ikyvortex.vortexmusic.ui.utils.resize
+import com.ikyvortex.vortexmusic.ui.utils.resolveArtworkUrl
+import com.ikyvortex.vortexmusic.utils.rememberEnumPreference
+import com.ikyvortex.vortexmusic.utils.rememberPreference
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
-import com.nanzbeatles.nanas.ui.component.Icon as MIcon
+import com.ikyvortex.vortexmusic.ui.component.Icon as MIcon
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -137,7 +137,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import com.nanzbeatles.nanas.constants.MiniPlayerBallModeKey
+import com.ikyvortex.vortexmusic.constants.MiniPlayerBallModeKey
 
 /**
  * Stable wrapper for progress state - reads values only during draw phase
@@ -267,7 +267,7 @@ private fun MiniPlayerDockedBall(
     onExpandPlayer: (() -> Unit)? = null,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
-    val isEditorial = com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
+    val isEditorial = com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
     val useDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val liquidGlassPref by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
     val liquidGlassEnabled = !isEditorial && liquidGlassPref
@@ -653,7 +653,7 @@ private fun NewMiniPlayer(
     // Memoize colors
     // Memoize colors
     val liquidGlassPref by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
-    val isEditorial = com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
+    val isEditorial = com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
     val liquidGlassEnabled = !isEditorial && liquidGlassPref
     val liquidGlassBlurRadius by rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 35f)
     val liquidGlassCornerRadius by rememberPreference(LiquidGlassCornerRadiusKey, defaultValue = 18f)
@@ -662,8 +662,8 @@ private fun NewMiniPlayer(
     // Mini player customization
     val miniPlayerHeight by rememberPreference(MiniPlayerHeightKey, defaultValue = 64f)
     val miniPlayerCornerPref by rememberPreference(MiniPlayerCornerRadiusKey, defaultValue = 32f)
-    val isSoftMini = com.nanzbeatles.nanas.ui.theme.LocalSoftTheme.current
-    val softInkMini = com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(useDarkTheme)
+    val isSoftMini = com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current
+    val softInkMini = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(useDarkTheme)
     val miniPlayerCornerRadius = if (isSoftMini) 30f else if (isEditorial) 10f else miniPlayerCornerPref
     val showFavorite by rememberPreference(MiniPlayerShowFavoriteKey, defaultValue = true)
     val showSubscribe by rememberPreference(MiniPlayerShowSubscribeKey, defaultValue = true)
@@ -768,7 +768,7 @@ private fun NewMiniPlayer(
                     if (!liquidGlassEnabled) {
                         base.background(
                             color = if (isSoftMini) {
-                                if (useDarkTheme) Color(0xFF1F3A55) else com.nanzbeatles.nanas.ui.theme.SoftPalette.SkyBlue
+                                if (useDarkTheme) Color(0xFF1F3A55) else com.ikyvortex.vortexmusic.ui.theme.SoftPalette.SkyBlue
                             } else if (isEditorial) {
                                 if (useDarkTheme) Color(0xFF101014) else Color(0xFFF6F3EB)
                             } else {
@@ -1167,7 +1167,7 @@ private fun LegacyMiniPlayer(
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val pureBlack by rememberPreference(PureBlackMiniPlayerKey, defaultValue = false)
-    val isEditorial = com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
+    val isEditorial = com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
     val useDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val liquidGlassPref by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
     val liquidGlassEnabled = !isEditorial && liquidGlassPref
@@ -1564,7 +1564,7 @@ private fun SubscribeButton(
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val primaryColor = if (isDark) Color.White else Color.Black
     val onSurfaceColor = if (isDark) Color.White else Color.Black
-    val iconTint = com.nanzbeatles.nanas.ui.utils.editorialPillContentColor(
+    val iconTint = com.ikyvortex.vortexmusic.ui.utils.editorialPillContentColor(
         isSelected = isSubscribed,
         defaultColor = if (isSubscribed) primaryColor else onSurfaceColor.copy(alpha = 0.8f),
         isDark = isDark
@@ -1629,7 +1629,7 @@ private fun NewMiniPlayerPlayPauseButton(
         else -> R.drawable.play to "Play"
     }
 
-    val iconTint = com.nanzbeatles.nanas.ui.utils.editorialPillContentColor(
+    val iconTint = com.ikyvortex.vortexmusic.ui.utils.editorialPillContentColor(
         isSelected = effectiveIsPlaying,
         defaultColor = onSurfaceColor,
         isDark = isDark
@@ -1672,10 +1672,10 @@ private fun FavoriteButton(songId: String) {
     val isLiked = librarySong?.song?.liked == true
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val isEditorial = com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
+    val isEditorial = com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
     val errorColor = if (isEditorial) Color(0xFFE03E2D) else MaterialTheme.colorScheme.error
     val onSurfaceColor = if (isDark) Color.White else Color.Black
-    val unlikedTint = com.nanzbeatles.nanas.ui.utils.editorialPillContentColor(
+    val unlikedTint = com.ikyvortex.vortexmusic.ui.utils.editorialPillContentColor(
         isSelected = false,
         defaultColor = onSurfaceColor.copy(alpha = 0.8f),
         isDark = isDark

@@ -2,17 +2,17 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.nanzbeatles.nanas.ui.screens
-import com.nanzbeatles.nanas.ui.screens.wrapped.WrappedConstants
+package com.ikyvortex.vortexmusic.ui.screens
+import com.ikyvortex.vortexmusic.ui.screens.wrapped.WrappedConstants
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
-import com.nanzbeatles.nanas.ui.theme.AuraAnimatedVisibility
-import com.nanzbeatles.nanas.ui.theme.AuraTransitions
-import com.nanzbeatles.nanas.ui.theme.StaggeredAnimatedVisibility
+import com.ikyvortex.vortexmusic.ui.theme.AuraAnimatedVisibility
+import com.ikyvortex.vortexmusic.ui.theme.AuraTransitions
+import com.ikyvortex.vortexmusic.ui.theme.StaggeredAnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -109,75 +109,75 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.nanzbeatles.innertube.models.AlbumItem
-import com.nanzbeatles.innertube.models.ArtistItem
-import com.nanzbeatles.innertube.models.EpisodeItem
-import com.nanzbeatles.innertube.models.PlaylistItem
-import com.nanzbeatles.innertube.models.PodcastItem
-import com.nanzbeatles.innertube.models.SongItem
-import com.nanzbeatles.innertube.models.YTItem
-import com.nanzbeatles.innertube.utils.parseCookieString
-import com.nanzbeatles.nanas.LocalDatabase
-import com.nanzbeatles.nanas.LocalListenTogetherManager
-import com.nanzbeatles.nanas.LocalPlayerAwareWindowInsets
-import com.nanzbeatles.nanas.LocalPlayerConnection
-import com.nanzbeatles.nanas.R
-import com.nanzbeatles.nanas.constants.GridItemSize
-import com.nanzbeatles.nanas.constants.GridItemsSizeKey
-import com.nanzbeatles.nanas.constants.GridThumbnailHeight
-import com.nanzbeatles.nanas.constants.HomeLayoutMode
-import com.nanzbeatles.nanas.constants.HomeLayoutModeKey
-import com.nanzbeatles.nanas.constants.InnerTubeCookieKey
-import com.nanzbeatles.nanas.constants.ListItemHeight
-import com.nanzbeatles.nanas.constants.ListThumbnailSize
-import com.nanzbeatles.nanas.constants.SmallGridThumbnailHeight
-import com.nanzbeatles.nanas.constants.ThumbnailCornerRadius
-import com.nanzbeatles.nanas.ui.component.PlayingIndicatorBox
-import com.nanzbeatles.nanas.db.entities.Album
-import com.nanzbeatles.nanas.db.entities.Artist
-import com.nanzbeatles.nanas.db.entities.LocalItem
-import com.nanzbeatles.nanas.db.entities.Playlist
-import com.nanzbeatles.nanas.db.entities.Song
-import com.nanzbeatles.nanas.extensions.toMediaItem
-import com.nanzbeatles.nanas.models.toMediaMetadata
-import com.nanzbeatles.nanas.playback.queues.LocalAlbumRadio
-import com.nanzbeatles.nanas.playback.queues.YouTubeAlbumRadio
-import com.nanzbeatles.nanas.playback.queues.YouTubeQueue
-import com.nanzbeatles.nanas.playback.queues.ListQueue
-import com.nanzbeatles.nanas.ui.component.YouTubeListItem
-import com.nanzbeatles.nanas.ui.component.AlbumGridItem
-import com.nanzbeatles.nanas.ui.component.ArtistGridItem
-import com.nanzbeatles.nanas.ui.component.ChipsRow
-import com.nanzbeatles.nanas.ui.component.HeroCarousel
-import com.nanzbeatles.nanas.ui.component.HideOnScrollFAB
-import com.nanzbeatles.nanas.ui.component.HomeStreakCard
-import com.nanzbeatles.nanas.ui.component.LocalBottomSheetPageState
-import com.nanzbeatles.nanas.ui.component.LocalMenuState
-import com.nanzbeatles.nanas.ui.component.NavigationTitle
-import com.nanzbeatles.nanas.ui.component.PlaylistGridItem
-import com.nanzbeatles.nanas.ui.component.SongGridItem
-import com.nanzbeatles.nanas.ui.component.SongListItem
-import com.nanzbeatles.nanas.ui.component.SpeedDialGridItem
-import com.nanzbeatles.nanas.ui.component.YouTubeGridItem
-import com.nanzbeatles.nanas.ui.component.shimmer.GridItemPlaceHolder
-import com.nanzbeatles.nanas.ui.component.shimmer.ShimmerHost
-import com.nanzbeatles.nanas.ui.component.shimmer.TextPlaceholder
-import com.nanzbeatles.nanas.ui.menu.AlbumMenu
-import com.nanzbeatles.nanas.ui.menu.ArtistMenu
-import com.nanzbeatles.nanas.ui.menu.PlaylistMenu
-import com.nanzbeatles.nanas.ui.menu.SongMenu
-import com.nanzbeatles.nanas.ui.menu.YouTubeAlbumMenu
-import com.nanzbeatles.nanas.ui.menu.YouTubeArtistMenu
-import com.nanzbeatles.nanas.ui.menu.YouTubePlaylistMenu
-import com.nanzbeatles.nanas.ui.menu.YouTubeSongMenu
-import com.nanzbeatles.nanas.ui.utils.SnapLayoutInfoProvider
-import com.nanzbeatles.nanas.ui.utils.liquidGlassFromPrefs
-import com.nanzbeatles.nanas.constants.LiquidGlassApplyHomeCardsKey
-import com.nanzbeatles.nanas.utils.makeTimeString
-import com.nanzbeatles.nanas.utils.rememberEnumPreference
-import com.nanzbeatles.nanas.utils.rememberPreference
-import com.nanzbeatles.nanas.viewmodels.HomeViewModel
-import com.nanzbeatles.nanas.viewmodels.CommunityPlaylistItem
+import com.ikyvortex.innertube.models.AlbumItem
+import com.ikyvortex.innertube.models.ArtistItem
+import com.ikyvortex.innertube.models.EpisodeItem
+import com.ikyvortex.innertube.models.PlaylistItem
+import com.ikyvortex.innertube.models.PodcastItem
+import com.ikyvortex.innertube.models.SongItem
+import com.ikyvortex.innertube.models.YTItem
+import com.ikyvortex.innertube.utils.parseCookieString
+import com.ikyvortex.vortexmusic.LocalDatabase
+import com.ikyvortex.vortexmusic.LocalListenTogetherManager
+import com.ikyvortex.vortexmusic.LocalPlayerAwareWindowInsets
+import com.ikyvortex.vortexmusic.LocalPlayerConnection
+import com.ikyvortex.vortexmusic.R
+import com.ikyvortex.vortexmusic.constants.GridItemSize
+import com.ikyvortex.vortexmusic.constants.GridItemsSizeKey
+import com.ikyvortex.vortexmusic.constants.GridThumbnailHeight
+import com.ikyvortex.vortexmusic.constants.HomeLayoutMode
+import com.ikyvortex.vortexmusic.constants.HomeLayoutModeKey
+import com.ikyvortex.vortexmusic.constants.InnerTubeCookieKey
+import com.ikyvortex.vortexmusic.constants.ListItemHeight
+import com.ikyvortex.vortexmusic.constants.ListThumbnailSize
+import com.ikyvortex.vortexmusic.constants.SmallGridThumbnailHeight
+import com.ikyvortex.vortexmusic.constants.ThumbnailCornerRadius
+import com.ikyvortex.vortexmusic.ui.component.PlayingIndicatorBox
+import com.ikyvortex.vortexmusic.db.entities.Album
+import com.ikyvortex.vortexmusic.db.entities.Artist
+import com.ikyvortex.vortexmusic.db.entities.LocalItem
+import com.ikyvortex.vortexmusic.db.entities.Playlist
+import com.ikyvortex.vortexmusic.db.entities.Song
+import com.ikyvortex.vortexmusic.extensions.toMediaItem
+import com.ikyvortex.vortexmusic.models.toMediaMetadata
+import com.ikyvortex.vortexmusic.playback.queues.LocalAlbumRadio
+import com.ikyvortex.vortexmusic.playback.queues.YouTubeAlbumRadio
+import com.ikyvortex.vortexmusic.playback.queues.YouTubeQueue
+import com.ikyvortex.vortexmusic.playback.queues.ListQueue
+import com.ikyvortex.vortexmusic.ui.component.YouTubeListItem
+import com.ikyvortex.vortexmusic.ui.component.AlbumGridItem
+import com.ikyvortex.vortexmusic.ui.component.ArtistGridItem
+import com.ikyvortex.vortexmusic.ui.component.ChipsRow
+import com.ikyvortex.vortexmusic.ui.component.HeroCarousel
+import com.ikyvortex.vortexmusic.ui.component.HideOnScrollFAB
+import com.ikyvortex.vortexmusic.ui.component.HomeStreakCard
+import com.ikyvortex.vortexmusic.ui.component.LocalBottomSheetPageState
+import com.ikyvortex.vortexmusic.ui.component.LocalMenuState
+import com.ikyvortex.vortexmusic.ui.component.NavigationTitle
+import com.ikyvortex.vortexmusic.ui.component.PlaylistGridItem
+import com.ikyvortex.vortexmusic.ui.component.SongGridItem
+import com.ikyvortex.vortexmusic.ui.component.SongListItem
+import com.ikyvortex.vortexmusic.ui.component.SpeedDialGridItem
+import com.ikyvortex.vortexmusic.ui.component.YouTubeGridItem
+import com.ikyvortex.vortexmusic.ui.component.shimmer.GridItemPlaceHolder
+import com.ikyvortex.vortexmusic.ui.component.shimmer.ShimmerHost
+import com.ikyvortex.vortexmusic.ui.component.shimmer.TextPlaceholder
+import com.ikyvortex.vortexmusic.ui.menu.AlbumMenu
+import com.ikyvortex.vortexmusic.ui.menu.ArtistMenu
+import com.ikyvortex.vortexmusic.ui.menu.PlaylistMenu
+import com.ikyvortex.vortexmusic.ui.menu.SongMenu
+import com.ikyvortex.vortexmusic.ui.menu.YouTubeAlbumMenu
+import com.ikyvortex.vortexmusic.ui.menu.YouTubeArtistMenu
+import com.ikyvortex.vortexmusic.ui.menu.YouTubePlaylistMenu
+import com.ikyvortex.vortexmusic.ui.menu.YouTubeSongMenu
+import com.ikyvortex.vortexmusic.ui.utils.SnapLayoutInfoProvider
+import com.ikyvortex.vortexmusic.ui.utils.liquidGlassFromPrefs
+import com.ikyvortex.vortexmusic.constants.LiquidGlassApplyHomeCardsKey
+import com.ikyvortex.vortexmusic.utils.makeTimeString
+import com.ikyvortex.vortexmusic.utils.rememberEnumPreference
+import com.ikyvortex.vortexmusic.utils.rememberPreference
+import com.ikyvortex.vortexmusic.viewmodels.HomeViewModel
+import com.ikyvortex.vortexmusic.viewmodels.CommunityPlaylistItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -632,7 +632,7 @@ fun HomeScreen(
         }
 
         val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-        val isEditorial = com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
+        val isEditorial = com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
         val greetingText = remember {
             val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
             when (hour) {
@@ -920,8 +920,8 @@ fun HomeScreen(
                             if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.06f)
                         }
                         val textColor = MaterialTheme.colorScheme.onSurface
-                        val isSoftHome = com.nanzbeatles.nanas.ui.theme.LocalSoftTheme.current
-                        val softInk = com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(isDark)
+                        val isSoftHome = com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current
+                        val softInk = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(isDark)
                         val cornerDp = if (isSoftHome) 16.dp else if (isEditorial) 6.dp else 10.dp
 
                         Column(
@@ -940,9 +940,9 @@ fun HomeScreen(
                                     pair.forEach { entry ->
                                         val cardShape = RoundedCornerShape(cornerDp)
                                         val softPalette = if (isDark) {
-                                            com.nanzbeatles.nanas.ui.theme.SoftPalette.PastelsDark
+                                            com.ikyvortex.vortexmusic.ui.theme.SoftPalette.PastelsDark
                                         } else {
-                                            com.nanzbeatles.nanas.ui.theme.SoftPalette.Pastels
+                                            com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Pastels
                                         }
                                         val softTile = softPalette[
                                             compactGridItems.indexOf(entry).coerceAtLeast(0) % softPalette.size
@@ -1212,7 +1212,7 @@ fun HomeScreen(
                                         Text(
                                             text = stringResource(R.string.wrapped_ready_title, WrappedConstants.displayMonthYear),
                                             style = MaterialTheme.typography.headlineLarge.copy(
-                                                fontFamily = com.nanzbeatles.nanas.ui.theme.bbh_bartle,
+                                                fontFamily = com.ikyvortex.vortexmusic.ui.theme.bbh_bartle,
                                                 textAlign = TextAlign.Center
                                             ),
                                             color = accentColor,

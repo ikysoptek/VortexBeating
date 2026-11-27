@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.nanzbeatles.nanas.ui.theme
+package com.ikyvortex.vortexmusic.ui.theme
 
 import android.graphics.Bitmap
 import androidx.compose.animation.animateColorAsState

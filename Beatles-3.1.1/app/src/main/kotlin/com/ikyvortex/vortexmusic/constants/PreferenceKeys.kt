@@ -2,7 +2,7 @@
  * Vortex Music Project (C) 2026
  */
 
-package com.nanzbeatles.nanas.constants
+package com.ikyvortex.vortexmusic.constants
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey

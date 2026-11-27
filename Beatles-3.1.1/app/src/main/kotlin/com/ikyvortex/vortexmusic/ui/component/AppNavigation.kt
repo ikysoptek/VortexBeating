@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.nanzbeatles.nanas.ui.component
+package com.ikyvortex.vortexmusic.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -77,11 +77,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
-import com.nanzbeatles.nanas.constants.LiquidGlassApplyNavBarKey
-import com.nanzbeatles.nanas.constants.LiquidGlassEffectKey
-import com.nanzbeatles.nanas.ui.screens.Screens
-import com.nanzbeatles.nanas.ui.utils.crystalLiquidGlassSurface
-import com.nanzbeatles.nanas.utils.rememberPreference
+import com.ikyvortex.vortexmusic.constants.LiquidGlassApplyNavBarKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassEffectKey
+import com.ikyvortex.vortexmusic.ui.screens.Screens
+import com.ikyvortex.vortexmusic.ui.utils.crystalLiquidGlassSurface
+import com.ikyvortex.vortexmusic.utils.rememberPreference
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -264,9 +264,9 @@ fun AppNavigationBar(
 ) {
     val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
     val liquidGlassApplyNavBar by rememberPreference(LiquidGlassApplyNavBarKey, defaultValue = true)
-    val isEditorial = com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
+    val isEditorial = com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
     val isGlass = !isEditorial && liquidGlassEnabled && liquidGlassApplyNavBar
-    val isSoftNav = com.nanzbeatles.nanas.ui.theme.LocalSoftTheme.current
+    val isSoftNav = com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val haptic = LocalHapticFeedback.current
 
@@ -516,9 +516,9 @@ fun AppNavigationBar(
                         // =========================================================================
                         // PASTEL NOTEBOOK DOCK: kapsul biru muda, garis navy tebal, bayangan keras
                         // =========================================================================
-                        val sInk = com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(isDark)
-                        val sBar = if (isDark) Color(0xFF1F3A55) else com.nanzbeatles.nanas.ui.theme.SoftPalette.SkyBlue
-                        val sActive = if (isDark) Color(0xFF4A4220) else com.nanzbeatles.nanas.ui.theme.SoftPalette.Yellow
+                        val sInk = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(isDark)
+                        val sBar = if (isDark) Color(0xFF1F3A55) else com.ikyvortex.vortexmusic.ui.theme.SoftPalette.SkyBlue
+                        val sActive = if (isDark) Color(0xFF4A4220) else com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Yellow
                         val shOff = 4.dp.toPx()
                         val bw = barW - shOff
                         val bh = barH - shOff
@@ -977,8 +977,8 @@ fun AppNavigationBar(
 
                     val contentColor by animateColorAsState(
                         targetValue = if (isSoftNav) {
-                            if (isHoveredOrSelected) com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(isDark)
-                            else com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(isDark).copy(alpha = 0.72f)
+                            if (isHoveredOrSelected) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(isDark)
+                            else com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(isDark).copy(alpha = 0.72f)
                         } else if (isEditorial) {
                             if (isHoveredOrSelected) {
                                 if (isDark) Color(0xFF0A0A0D) else Color(0xFFFBF9F5)

@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.nanzbeatles.nanas.ui.utils
+package com.ikyvortex.vortexmusic.ui.utils
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,15 +27,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.nanzbeatles.nanas.constants.LiquidGlassBlurRadiusKey
-import com.nanzbeatles.nanas.constants.LiquidGlassCornerRadiusKey
-import com.nanzbeatles.nanas.constants.LiquidGlassEffectKey
-import com.nanzbeatles.nanas.constants.LiquidGlassOpacityKey
-import com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle
-import com.nanzbeatles.nanas.ui.theme.LocalSoftTheme
-import com.nanzbeatles.nanas.ui.theme.SoftNotebookBackground
-import com.nanzbeatles.nanas.ui.theme.SoftPalette
-import com.nanzbeatles.nanas.utils.rememberPreference
+import com.ikyvortex.vortexmusic.constants.LiquidGlassBlurRadiusKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassCornerRadiusKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassEffectKey
+import com.ikyvortex.vortexmusic.constants.LiquidGlassOpacityKey
+import com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle
+import com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme
+import com.ikyvortex.vortexmusic.ui.theme.SoftNotebookBackground
+import com.ikyvortex.vortexmusic.ui.theme.SoftPalette
+import com.ikyvortex.vortexmusic.utils.rememberPreference
 
 /**
  * Clean Backdrop that adapts to both Liquid Glass (#000000 / #FFFFFF)

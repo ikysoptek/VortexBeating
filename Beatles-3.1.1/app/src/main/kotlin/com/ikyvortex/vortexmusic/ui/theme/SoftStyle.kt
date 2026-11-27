@@ -2,7 +2,7 @@
  * Vortex Music - Tema "Pastel Notebook" (Soft Neobrutalism):
  * kertas buku bergaris, kartu pastel, garis tinta navy tebal, bayangan keras.
  */
-package com.nanzbeatles.nanas.ui.theme
+package com.ikyvortex.vortexmusic.ui.theme
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

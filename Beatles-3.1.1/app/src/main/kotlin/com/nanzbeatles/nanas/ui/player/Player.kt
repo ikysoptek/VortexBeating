@@ -1547,7 +1547,14 @@ fun BottomSheetPlayer(
 
             Spacer(Modifier.height(6.dp))
 
-            // 3b. Gaya Suara (Normal / Speed Up / Slowed + Reverb)
+            // 3b. Gaya Suara (semua mode, bisa digeser ke samping)
+            val styleScroll = rememberScrollState()
+            val styleDensity = LocalDensity.current
+            LaunchedEffect(audioStyleMode) {
+                val idx = AudioStyleMode.entries.indexOf(audioStyleMode)
+                val target = with(styleDensity) { (idx * 96).dp.roundToPx() }
+                styleScroll.animateScrollTo(target.coerceAtMost(styleScroll.maxValue))
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -1559,12 +1566,9 @@ fun BottomSheetPlayer(
                         isHighlighted = audioStyleMode != AudioStyleMode.NORMAL
                     )
                     .padding(horizontal = 5.dp, vertical = 4.dp)
+                    .horizontalScroll(styleScroll)
             ) {
-                listOf(
-                    AudioStyleMode.NORMAL,
-                    AudioStyleMode.SPEED_UP,
-                    AudioStyleMode.SLOWED_REVERB,
-                ).forEach { mode ->
+                AudioStyleMode.entries.forEach { mode ->
                     val isSelectedMode = audioStyleMode == mode
                     val modeFgColor = if (isSelectedMode) {
                         if (isEditorial) iconButtonColor else TextBackgroundColor
@@ -1573,7 +1577,6 @@ fun BottomSheetPlayer(
                     }
                     Box(
                         modifier = Modifier
-                            .weight(1f)
                             .clip(RoundedCornerShape(18.dp))
                             .crystalLiquidGlassPill(
                                 isSelected = isSelectedMode,
@@ -1595,6 +1598,7 @@ fun BottomSheetPlayer(
                                         AudioStyleMode.NORMAL -> R.drawable.music_note
                                         AudioStyleMode.SPEED_UP -> R.drawable.speed
                                         AudioStyleMode.SLOWED_REVERB -> R.drawable.graphic_eq
+                                        AudioStyleMode.NIGHTCORE -> R.drawable.speed
                                         else -> R.drawable.graphic_eq
                                     }
                                 ),
@@ -1609,7 +1613,7 @@ fun BottomSheetPlayer(
                                 fontWeight = if (isSelectedMode) FontWeight.Bold else FontWeight.Medium,
                                 color = modeFgColor,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                softWrap = false
                             )
                         }
                     }

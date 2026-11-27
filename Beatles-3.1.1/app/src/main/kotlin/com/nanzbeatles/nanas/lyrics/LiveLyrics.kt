@@ -129,7 +129,16 @@ object LiveLyricsRepository {
                         val start = if (firstWordStart != null && firstWordStart > entry.time &&
                             firstWordStart - entry.time <= 2000L
                         ) firstWordStart else entry.time
-                        LiveLine(startMs = start, endMs = end, text = text, words = words)
+                        // Jika spasi antar kata sebenarnya ada di data per-kata (bukan antar suku kata),
+                        // pakai itu supaya teks tidak terpotong "Ter lu ka pe ra sa an".
+                        val rebuilt = words.joinToString("") { it.text }
+                            .replace(Regex("\\s+"), " ").trim()
+                        val finalText = if (
+                            rebuilt.isNotEmpty() &&
+                            normalizeForMatch(rebuilt) == normalizeForMatch(text) &&
+                            rebuilt.count { it == ' ' } < text.count { it == ' ' }
+                        ) rebuilt else text
+                        LiveLine(startMs = start, endMs = end, text = finalText, words = words)
                     }
                     .sortedBy { it.startMs }
                     .let { lines -> fixSyllableSpacing(lines, mediaId, title, artist, durationSec) }

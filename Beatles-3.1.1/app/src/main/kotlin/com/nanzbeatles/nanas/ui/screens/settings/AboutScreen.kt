@@ -464,23 +464,23 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
+                    // Nama selalu satu baris: ukuran font mengecil otomatis kalau tidak muat
+                    FitOneLineText(
                         text = developerName,
-                        fontSize = 25.sp,
+                        maxSize = 24.sp,
+                        minSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     // Hanya centang biru
-                    VerifiedCheckBadge(modifier = Modifier.size(22.dp))
+                    VerifiedCheckBadge(modifier = Modifier.size(20.dp))
                 }
 
                 // "Developer": font serif miring + warna gradasi, dalam pil berborder gradasi
@@ -519,10 +519,38 @@ private fun DeveloperHeroVideoCard(profile: DeveloperProfile) {
             MinimalAnimatedAvatarRing(
                 avatarUrl = avatarUrl,
                 contentDescription = developerName,
-                ringSize = 116.dp
+                ringSize = 96.dp
             )
         }
     }
+}
+
+/** Teks satu baris yang mengecil otomatis sampai muat (tidak pernah turun ke baris kedua). */
+@Composable
+private fun FitOneLineText(
+    text: String,
+    maxSize: androidx.compose.ui.unit.TextUnit,
+    minSize: androidx.compose.ui.unit.TextUnit,
+    fontWeight: FontWeight,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    var size by remember(text) { mutableStateOf(maxSize) }
+    Text(
+        text = text,
+        fontSize = size,
+        fontWeight = fontWeight,
+        color = color,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { result ->
+            if (result.hasVisualOverflow && size.value > minSize.value) {
+                size = (size.value - 1f).sp
+            }
+        },
+        modifier = modifier
+    )
 }
 
 /** Border kartu: garis perak tipis yang berputar pelan (monokrom, elegan). */

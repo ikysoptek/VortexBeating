@@ -657,29 +657,6 @@ private fun LockscreenMainContent(
                 modifier = Modifier.fillMaxSize()
             )
         }
-        // Album bundar di belakang lirik (berputar pelan seperti piringan)
-        art.cover?.let { cover ->
-            val spin = rememberInfiniteTransition(label = "album_spin")
-            val angle by spin.animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(tween(40_000, easing = LinearEasing)),
-                label = "album_angle"
-            )
-            Image(
-                bitmap = cover.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                alpha = 0.38f,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .offset(x = 150.dp, y = 70.dp)
-                    .size(400.dp)
-                    .graphicsLayer { rotationZ = angle }
-                    .clip(CircleShape)
-                    .border(2.dp, Color.White.copy(alpha = 0.18f), CircleShape)
-            )
-        }
         // Peredam supaya teks selalu terbaca
         Box(
             modifier = Modifier

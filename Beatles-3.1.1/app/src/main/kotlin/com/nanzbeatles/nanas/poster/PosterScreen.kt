@@ -287,7 +287,7 @@ private fun SongsStep(vm: PosterViewModel) {
             }
         } else {
             LazyColumn(Modifier.weight(1f)) {
-                items(songs, key = { it.id }) { song ->
+                itemsIndexed(songs, key = { index, song -> "${index}_${song.id}" }) { _, song ->
                     val checked = vm.selectedSongs.any { it.id == song.id }
                     val orderIdx = vm.selectedSongs.indexOfFirst { it.id == song.id }
                     Row(

@@ -103,7 +103,7 @@ object PosterSession {
         browseId: String? = null,
     ) {
         this.playlistName = name
-        this.songs = songs
+        this.songs = songs.distinctBy { it.id }
         this.playlistId = playlistId
         this.browseId = browseId
         this.sessionVersion++

@@ -77,6 +77,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nanzbeatles.nanas.R
+import com.nanzbeatles.nanas.ui.theme.Outfit
 import kotlin.math.roundToInt
 
 private fun fmtTime(seconds: Int): String {
@@ -228,9 +229,11 @@ fun PosterCard(
                             Spacer(Modifier.width(dp(0.012f)))
                             Text(
                                 text = "VORTEX MUSIC",
-                                color = textColor.copy(alpha = 0.80f),
-                                fontSize = sp(0.034f),
-                                fontWeight = FontWeight.Medium,
+                                color = textColor.copy(alpha = 0.58f),
+                                fontSize = sp(0.029f),
+                                fontFamily = Outfit,
+                                fontWeight = FontWeight.Light,
+                                letterSpacing = sp(0.004f),
                             )
                         }
                         Text(
@@ -423,12 +426,13 @@ fun PosterCard(
 
 @Composable
 private fun BrandWaveIcon(color: Color, modifier: Modifier = Modifier) {
-    // Logo Vortex Music (menggantikan badge gelombang bawaan)
+    // Logo Vortex Music (kepala singa) - tipis dan sedikit transparan
     Image(
-        painter = painterResource(R.drawable.vortex_icon),
+        painter = painterResource(R.drawable.vortex_mark),
         contentDescription = null,
         contentScale = ContentScale.Crop,
-        modifier = modifier.clip(RoundedCornerShape(percent = 28)),
+        alpha = 0.78f,
+        modifier = modifier.clip(RoundedCornerShape(percent = 24)),
     )
 }
 
@@ -625,10 +629,12 @@ fun PosterCardVertical(
                                 Spacer(Modifier.width(dp(0.014f)))
                                 Text(
                                     text = "VORTEX MUSIC",
-                                    color = textColor.copy(alpha = 0.82f),
-                                    fontSize = sp(0.038f),
-                                    lineHeight = sp(0.042f),
-                                    fontWeight = FontWeight.Medium,
+                                    color = textColor.copy(alpha = 0.58f),
+                                    fontSize = sp(0.032f),
+                                    lineHeight = sp(0.038f),
+                                    fontFamily = Outfit,
+                                    fontWeight = FontWeight.Light,
+                                    letterSpacing = sp(0.0045f),
                                 )
                             }
                             Spacer(Modifier.height(dp(0.004f)))
@@ -1226,14 +1232,15 @@ fun PosterContent(
     }
 }
 
-/** Badge logo persegi membulat + teks tebal di bagian bawah Mode 2, 100% mirip referensi Mode 2. */
+/** Watermark kecil dan tipis di bagian bawah Mode 2: logo kepala singa + teks ringan transparan. */
 @Composable
 private fun BoxScope.WatermarkMode2(cw: Float, ch: Float) {
     val density = LocalDensity.current
-    val badgeDp = with(density) { (cw * 0.056f).toDp() }
-    val padBottom = with(density) { (ch * 0.025f).toDp() }
-    val textSp = with(density) { (cw * 0.048f).toSp() }
-    val badgeShape = RoundedCornerShape(with(density) { (cw * 0.015f).toDp() })
+    val badgeDp = with(density) { (cw * 0.040f).toDp() }
+    val padBottom = with(density) { (ch * 0.022f).toDp() }
+    val textSp = with(density) { (cw * 0.029f).toSp() }
+    val trackingSp = with(density) { (cw * 0.0055f).toSp() }
+    val badgeShape = RoundedCornerShape(with(density) { (cw * 0.010f).toDp() })
 
     Row(
         modifier = Modifier
@@ -1241,36 +1248,28 @@ private fun BoxScope.WatermarkMode2(cw: Float, ch: Float) {
             .padding(bottom = padBottom),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
+        Image(
+            painter = painterResource(R.drawable.vortex_mark),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            alpha = 0.72f,
             modifier = Modifier
                 .size(badgeDp)
-                .shadow(with(density) { (cw * 0.01f).toDp() }, badgeShape, clip = false)
-                .clip(badgeShape)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFF0E2233), Color(0xFF061018))
-                    )
-                )
-                .border(with(density) { (cw * 0.002f).toDp() }, Color.White.copy(alpha = 0.22f), badgeShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(R.drawable.vortex_icon),
-                contentDescription = null,
-                modifier = Modifier.size(badgeDp * 0.72f),
-            )
-        }
-        Spacer(Modifier.width(badgeDp * 0.28f))
+                .clip(badgeShape),
+        )
+        Spacer(Modifier.width(badgeDp * 0.30f))
         Text(
             text = "VORTEX MUSIC",
-            color = Color.White,
+            color = Color.White.copy(alpha = 0.62f),
             fontSize = textSp,
-            fontWeight = FontWeight.Bold,
+            fontFamily = Outfit,
+            fontWeight = FontWeight.Light,
+            letterSpacing = trackingSp,
             style = TextStyle(
                 shadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.65f),
-                    offset = Offset(0f, 3f),
-                    blurRadius = 8f,
+                    color = Color.Black.copy(alpha = 0.35f),
+                    offset = Offset(0f, 2f),
+                    blurRadius = 6f,
                 )
             ),
         )

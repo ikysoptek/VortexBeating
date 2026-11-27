@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.musixmatch"
+    namespace = "com.ikyvortex.musixmatch"
     compileSdk = 36
 
     defaultConfig {

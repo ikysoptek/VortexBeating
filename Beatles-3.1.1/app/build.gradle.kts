@@ -17,12 +17,12 @@ plugins {
 
 
 android {
-    namespace = "com.nanzbeatles.nanas"
+    namespace = "com.ikyvortex.vortexmusic"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        applicationId = "com.nanzbeatles.nanas"
+        applicationId = "com.ikyvortex.vortexmusic"
         minSdk = 23
         targetSdk = 36
         versionCode = 311
@@ -227,7 +227,7 @@ android {
                 it.name.contains("tv", ignoreCase = true) &&
                 it.name.contains("release", ignoreCase = true)
             }.forEach { apkFile ->
-                val newName = "Beatles-Tv.apk"
+                val newName = "Vortex-Tv.apk"
                 val newFile = apkFile.parentFile.resolve(newName)
                 apkFile.renameTo(newFile)
                 println("Renamed TV APK: ${apkFile.name} -> $newName")

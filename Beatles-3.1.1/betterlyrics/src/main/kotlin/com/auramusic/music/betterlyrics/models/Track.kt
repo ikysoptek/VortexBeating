@@ -1,4 +1,4 @@
-package com.nanzbeatles.music.betterlyrics.models
+package com.ikyvortex.music.betterlyrics.models
 
 import kotlinx.serialization.Serializable
 

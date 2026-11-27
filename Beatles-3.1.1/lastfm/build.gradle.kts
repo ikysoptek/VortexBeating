@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.lastfm"
+    namespace = "com.ikyvortex.lastfm"
     compileSdk = 36
 
     defaultConfig {

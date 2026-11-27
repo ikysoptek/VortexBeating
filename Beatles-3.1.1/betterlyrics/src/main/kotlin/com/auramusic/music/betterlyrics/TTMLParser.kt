@@ -1,4 +1,4 @@
-package com.nanzbeatles.music.betterlyrics
+package com.ikyvortex.music.betterlyrics
 
 import org.w3c.dom.Element
 import org.w3c.dom.Node

@@ -17,7 +17,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Beatles"
+rootProject.name = "Vortex"
 
 include(":app")
 include(":innertube")

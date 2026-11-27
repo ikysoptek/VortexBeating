@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.betterlyrics"
+    namespace = "com.ikyvortex.betterlyrics"
     compileSdk = 36
 
     defaultConfig {

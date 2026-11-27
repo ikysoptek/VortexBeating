@@ -1,6 +1,6 @@
-package com.nanzbeatles.music.betterlyrics
+package com.ikyvortex.music.betterlyrics
 
-import com.nanzbeatles.music.betterlyrics.models.TTMLResponse
+import com.ikyvortex.music.betterlyrics.models.TTMLResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp

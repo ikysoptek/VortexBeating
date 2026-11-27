@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme -->
-    <style name="Theme.NanzBeatles" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.VortexMusic" parent="android:Theme.Material.Light.NoActionBar">
         <!-- Primary brand color -->
         <item name="android:colorPrimary">@android:color/black</item>
         <item name="android:colorPrimaryDark">@android:color/black</item>
@@ -15,5 +15,5 @@
         <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
     </style>
 
-    <style name="Theme.AuraMusic" parent="Theme.NanzBeatles" />
+    <style name="Theme.AuraMusic" parent="Theme.VortexMusic" />
 </resources>

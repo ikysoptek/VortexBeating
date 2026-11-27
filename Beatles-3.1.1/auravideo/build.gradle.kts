@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.auravideo"
+    namespace = "com.ikyvortex.auravideo"
     compileSdk = 36
 
     defaultConfig {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.lrclib"
+    namespace = "com.ikyvortex.lrclib"
     compileSdk = 36
 
     defaultConfig {

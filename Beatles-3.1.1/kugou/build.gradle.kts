@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.kugou"
+    namespace = "com.ikyvortex.kugou"
     compileSdk = 36
 
     defaultConfig {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.rush"
+    namespace = "com.ikyvortex.rush"
     compileSdk = 36
 
     defaultConfig {

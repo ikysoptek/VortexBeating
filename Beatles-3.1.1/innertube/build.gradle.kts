@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.innertube"
+    namespace = "com.ikyvortex.innertube"
     compileSdk = 36
 
     defaultConfig {

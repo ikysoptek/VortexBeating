@@ -1,4 +1,4 @@
-# Beatles (NanzBeatles)
+# Vortex (VortexMusic)
 
 A modern, elegant Android music streaming and player app powered by Jetpack Compose and Media3.
 

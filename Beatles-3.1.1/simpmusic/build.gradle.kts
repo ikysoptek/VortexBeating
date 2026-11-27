@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.simpmusic"
+    namespace = "com.ikyvortex.simpmusic"
     compileSdk = 36
 
     defaultConfig {

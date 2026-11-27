@@ -57,7 +57,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@drawable/vortex_icon"
         android:supportsRtl="false"
-        android:theme="@style/Theme.NanzBeatles"
+        android:theme="@style/Theme.VortexMusic"
         tools:targetApi="tiramisu">
         <uses-library
             android:name="org.apache.http.legacy"
@@ -66,7 +66,7 @@
         <activity
             android:name=".ui.screens.CrashActivity"
             android:exported="false"
-            android:theme="@style/Theme.NanzBeatles"
+            android:theme="@style/Theme.VortexMusic"
             android:excludeFromRecents="true"
             android:process=":crash" />
 
@@ -75,7 +75,7 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
-            android:theme="@style/Theme.NanzBeatles"
+            android:theme="@style/Theme.VortexMusic"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -184,7 +184,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="auramusic" android:host="play" />
-                <data android:scheme="nanzbeatles" android:host="play" />
+                <data android:scheme="vortexmusic" android:host="play" />
             </intent-filter>
 
             <meta-data
@@ -246,7 +246,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="auramusicdiscord" />
-                <data android:scheme="nanzbeatlesdiscord" />
+                <data android:scheme="vortexmusicdiscord" />
                 <data android:host="oauth2" />
             </intent-filter>
         </activity>
@@ -302,7 +302,7 @@
             android:name=".notifications.NewReleaseNotificationReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.nanzbeatles.nanas.notifications.ACTION_CHECK_NEW_RELEASES" />
+                <action android:name="com.ikyvortex.vortexmusic.notifications.ACTION_CHECK_NEW_RELEASES" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
@@ -325,11 +325,11 @@
             android:label="@string/widget_music_player">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nanzbeatles.nanas.widget.PLAY_PAUSE" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIKE" />
-                <action android:name="com.nanzbeatles.nanas.widget.NEXT" />
-                <action android:name="com.nanzbeatles.nanas.widget.PREVIOUS" />
-                <action android:name="com.nanzbeatles.nanas.widget.UPDATE_WIDGET" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.PLAY_PAUSE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIKE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.NEXT" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.PREVIOUS" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.UPDATE_WIDGET" />
             </intent-filter>
 
             <meta-data
@@ -344,10 +344,10 @@
             android:label="@string/widget_compact_square">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_PLAY_PAUSE" />
-                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_PREVIOUS" />
-                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_NEXT" />
-                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_UPDATE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.COMPACT_SQUARE_PLAY_PAUSE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.COMPACT_SQUARE_PREVIOUS" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.COMPACT_SQUARE_NEXT" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.COMPACT_SQUARE_UPDATE" />
             </intent-filter>
 
             <meta-data
@@ -362,9 +362,9 @@
             android:label="@string/widget_compact_wide">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_WIDE_PLAY_PAUSE" />
-                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_WIDE_LIKE" />
-                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_WIDE_UPDATE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.COMPACT_WIDE_PLAY_PAUSE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.COMPACT_WIDE_LIKE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.COMPACT_WIDE_UPDATE" />
             </intent-filter>
 
             <meta-data
@@ -379,11 +379,11 @@
             android:label="@string/widget_liquid_glass">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_PLAY_PAUSE" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_LIKE" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_NEXT" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_PREVIOUS" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_UPDATE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_PLAY_PAUSE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_LIKE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_NEXT" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_PREVIOUS" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_UPDATE" />
             </intent-filter>
 
             <meta-data
@@ -398,11 +398,11 @@
             android:label="@string/widget_liquid_glass_wide">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_WIDE_PLAY_PAUSE" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_WIDE_LIKE" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_WIDE_NEXT" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_WIDE_PREVIOUS" />
-                <action android:name="com.nanzbeatles.nanas.widget.LIQUID_GLASS_WIDE_UPDATE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_WIDE_PLAY_PAUSE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_WIDE_LIKE" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_WIDE_NEXT" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_WIDE_PREVIOUS" />
+                <action android:name="com.ikyvortex.vortexmusic.widget.LIQUID_GLASS_WIDE_UPDATE" />
             </intent-filter>
 
             <meta-data
@@ -416,9 +416,9 @@
             android:exported="true"
             android:directBootAware="false">
             <intent-filter>
-                <action android:name="com.nanzbeatles.nanas.alarm.ACTION_FIRE" />
-                <action android:name="com.nanzbeatles.nanas.alarm.ACTION_SNOOZE" />
-                <action android:name="com.nanzbeatles.nanas.alarm.ACTION_DISMISS" />
+                <action android:name="com.ikyvortex.vortexmusic.alarm.ACTION_FIRE" />
+                <action android:name="com.ikyvortex.vortexmusic.alarm.ACTION_SNOOZE" />
+                <action android:name="com.ikyvortex.vortexmusic.alarm.ACTION_DISMISS" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />

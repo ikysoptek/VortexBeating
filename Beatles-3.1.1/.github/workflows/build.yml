@@ -15,13 +15,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { variant: foss, ui: Mobile, arch: universal, task: FossMobileUniversal, output: fossMobileUniversal, asset: Beatles.apk }
-          - { variant: standalone, ui: Mobile, arch: arm64, task: StandaloneMobileArm64, output: standaloneMobileArm64, asset: Beatles-arm64.apk }
-          - { variant: standalone, ui: Mobile, arch: armeabi, task: StandaloneMobileArmeabi, output: standaloneMobileArmeabi, asset: Beatles-armeabi.apk }
-          - { variant: standalone, ui: Mobile, arch: x86, task: StandaloneMobileX86, output: standaloneMobileX86, asset: Beatles-x86.apk }
-          - { variant: standalone, ui: Mobile, arch: x86_64, task: StandaloneMobileX86_64, output: standaloneMobileX86_64, asset: Beatles-x86_64.apk }
-          - { variant: gms, ui: Mobile, arch: universal, task: GmsMobileUniversal, output: gmsMobileUniversal, asset: Beatles-with-Google-Cast.apk }
-          - { variant: foss, ui: Tv, arch: universal, task: FossTvUniversal, output: fossTvUniversal, asset: Beatles-Tv.apk }
+          - { variant: foss, ui: Mobile, arch: universal, task: FossMobileUniversal, output: fossMobileUniversal, asset: Vortex.apk }
+          - { variant: standalone, ui: Mobile, arch: arm64, task: StandaloneMobileArm64, output: standaloneMobileArm64, asset: Vortex-arm64.apk }
+          - { variant: standalone, ui: Mobile, arch: armeabi, task: StandaloneMobileArmeabi, output: standaloneMobileArmeabi, asset: Vortex-armeabi.apk }
+          - { variant: standalone, ui: Mobile, arch: x86, task: StandaloneMobileX86, output: standaloneMobileX86, asset: Vortex-x86.apk }
+          - { variant: standalone, ui: Mobile, arch: x86_64, task: StandaloneMobileX86_64, output: standaloneMobileX86_64, asset: Vortex-x86_64.apk }
+          - { variant: gms, ui: Mobile, arch: universal, task: GmsMobileUniversal, output: gmsMobileUniversal, asset: Vortex-with-Google-Cast.apk }
+          - { variant: foss, ui: Tv, arch: universal, task: FossTvUniversal, output: fossTvUniversal, asset: Vortex-Tv.apk }
     permissions:
       contents: write
       id-token: write
@@ -107,10 +107,10 @@ jobs:
           version_name="$(grep -E 'versionName = "[^"]+"' app/build.gradle.kts | head -n1 | cut -d'"' -f2)"
           tag_name="v${version_name}"
           gh release upload "$tag_name" "release-artifact/${{ matrix.asset }}" --clobber || \
-          gh release create "$tag_name" "release-artifact/${{ matrix.asset }}" --title "NanzBeatles $tag_name" --notes "### NanzBeatles $tag_name (Beatles)" || true
+          gh release create "$tag_name" "release-artifact/${{ matrix.asset }}" --title "VortexMusic $tag_name" --notes "### VortexMusic $tag_name (Vortex)" || true
 
-          gh release upload "$tag_name" "release-artifact/${{ matrix.asset }}" --clobber --repo nanasmuda121/update-NanzBeatles || \
-          gh release create "$tag_name" "release-artifact/${{ matrix.asset }}" --title "NanzBeatles $tag_name" --notes "### NanzBeatles $tag_name (Beatles)" --repo nanasmuda121/update-NanzBeatles || true
+          gh release upload "$tag_name" "release-artifact/${{ matrix.asset }}" --clobber --repo ikysoptek/VortexBeating || \
+          gh release create "$tag_name" "release-artifact/${{ matrix.asset }}" --title "VortexMusic $tag_name" --notes "### VortexMusic $tag_name (Vortex)" --repo ikysoptek/VortexBeating || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

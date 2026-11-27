@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.paxsenix"
+    namespace = "com.ikyvortex.paxsenix"
     compileSdk = 36
 
     defaultConfig {

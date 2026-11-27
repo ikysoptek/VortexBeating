@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nanzbeatles.shazamkit"
+    namespace = "com.ikyvortex.shazamkit"
     compileSdk = 36
 
     defaultConfig {

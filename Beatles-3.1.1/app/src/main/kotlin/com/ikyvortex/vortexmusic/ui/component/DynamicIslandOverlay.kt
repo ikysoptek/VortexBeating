@@ -2,7 +2,7 @@
  * Vortex Music Project (C) 2026
  */
 
-package com.ikyvortex.vortexmusic.ui.component
+package com.nanzbeatles.nanas.ui.component
 
 import android.Manifest
 import android.content.Context
@@ -89,6 +89,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -127,35 +128,35 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
-import com.ikyvortex.vortexmusic.LocalPlayerConnection
-import com.ikyvortex.vortexmusic.R
-import com.ikyvortex.vortexmusic.constants.DynamicIslandAccentColorKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandAutoEnableOnStartKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandBgColorKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandBlurRadiusKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandBorderGlowKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandDismissedKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandEnabledKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandMode
-import com.ikyvortex.vortexmusic.constants.DynamicIslandModeKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandPermissionConfirmedKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandTheme
-import com.ikyvortex.vortexmusic.constants.DynamicIslandThemeKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandUseDynamicAccentKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandUseDynamicBgKey
-import com.ikyvortex.vortexmusic.constants.LockscreenLyricsEnabledKey
-import com.ikyvortex.vortexmusic.extensions.togglePlayPause
-import com.ikyvortex.vortexmusic.extensions.toggleRepeatMode
-import com.ikyvortex.vortexmusic.lyrics.LiveLine
-import com.ikyvortex.vortexmusic.lyrics.LiveLyricsRepository
-import com.ikyvortex.vortexmusic.lyrics.activeIndexAt
-import com.ikyvortex.vortexmusic.lyrics.karaokeFill
-import com.ikyvortex.vortexmusic.ui.utils.frostedGlassSurface
-import com.ikyvortex.vortexmusic.ui.utils.liquidGlassPill
-import com.ikyvortex.vortexmusic.utils.dataStore
-import com.ikyvortex.vortexmusic.utils.makeTimeString
-import com.ikyvortex.vortexmusic.utils.rememberEnumPreference
-import com.ikyvortex.vortexmusic.utils.rememberPreference
+import com.nanzbeatles.nanas.LocalPlayerConnection
+import com.nanzbeatles.nanas.R
+import com.nanzbeatles.nanas.constants.DynamicIslandAccentColorKey
+import com.nanzbeatles.nanas.constants.DynamicIslandAutoEnableOnStartKey
+import com.nanzbeatles.nanas.constants.DynamicIslandBgColorKey
+import com.nanzbeatles.nanas.constants.DynamicIslandBlurRadiusKey
+import com.nanzbeatles.nanas.constants.DynamicIslandBorderGlowKey
+import com.nanzbeatles.nanas.constants.DynamicIslandDismissedKey
+import com.nanzbeatles.nanas.constants.DynamicIslandEnabledKey
+import com.nanzbeatles.nanas.constants.DynamicIslandMode
+import com.nanzbeatles.nanas.constants.DynamicIslandModeKey
+import com.nanzbeatles.nanas.constants.DynamicIslandPermissionConfirmedKey
+import com.nanzbeatles.nanas.constants.DynamicIslandTheme
+import com.nanzbeatles.nanas.constants.DynamicIslandThemeKey
+import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicAccentKey
+import com.nanzbeatles.nanas.constants.DynamicIslandUseDynamicBgKey
+import com.nanzbeatles.nanas.constants.LockscreenLyricsEnabledKey
+import com.nanzbeatles.nanas.extensions.togglePlayPause
+import com.nanzbeatles.nanas.extensions.toggleRepeatMode
+import com.nanzbeatles.nanas.lyrics.LiveLine
+import com.nanzbeatles.nanas.lyrics.LiveLyricsRepository
+import com.nanzbeatles.nanas.lyrics.activeIndexAt
+import com.nanzbeatles.nanas.lyrics.karaokeFill
+import com.nanzbeatles.nanas.ui.utils.frostedGlassSurface
+import com.nanzbeatles.nanas.ui.utils.liquidGlassPill
+import com.nanzbeatles.nanas.utils.dataStore
+import com.nanzbeatles.nanas.utils.makeTimeString
+import com.nanzbeatles.nanas.utils.rememberEnumPreference
+import com.nanzbeatles.nanas.utils.rememberPreference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -523,6 +524,7 @@ internal fun DynamicIslandCapsuleSurface(
     lyricPositionMs: Long = 0L,
 ) {
     val isLiquidGlass = islandTheme == DynamicIslandTheme.LIQUID_GLASS
+    val isSoftIsland = islandTheme == DynamicIslandTheme.SOFT
     val cornerRadius by animateDpAsState(
         targetValue = if (mode == DynamicIslandMode.SEDANG) 32.dp else 50.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -539,17 +541,32 @@ internal fun DynamicIslandCapsuleSurface(
 
     Surface(
         shape = shape,
-        color = if (isLiquidGlass) {
+        color = if (isSoftIsland) {
+            Color(0xFF16204F)
+        } else if (isLiquidGlass) {
             effectiveBgColor.copy(alpha = 0.36f)
         } else {
             effectiveBgColor.copy(alpha = 1f)
         },
         contentColor = Color.White,
-        shadowElevation = if (isSystemOverlay) 0.dp else 18.dp,
+        shadowElevation = if (isSystemOverlay || isSoftIsland) 0.dp else 18.dp,
         tonalElevation = 0.dp,
         modifier = Modifier
             .offset { IntOffset(animatedOffsetX.roundToInt(), 0) }
             .padding(horizontal = if (isSystemOverlay) 4.dp else 10.dp)
+            .then(
+                if (isSoftIsland) {
+                    Modifier.drawBehind {
+                        val off = 4.dp.toPx()
+                        drawRoundRect(
+                            color = Color(0xFFFFD27A),
+                            topLeft = Offset(off, off),
+                            size = size,
+                            cornerRadius = CornerRadius(cornerRadius.toPx()),
+                        )
+                    }
+                } else Modifier
+            )
             .pointerInput(mode) {
                 var horizontalDragSum = 0f
                 detectHorizontalDragGestures(
@@ -604,7 +621,13 @@ internal fun DynamicIslandCapsuleSurface(
                 )
             }
             .then(
-                if (isLiquidGlass) {
+                if (isSoftIsland) {
+                    Modifier.border(
+                        width = 2.5.dp,
+                        color = Color(0xFFFFF3C4),
+                        shape = shape
+                    )
+                } else if (isLiquidGlass) {
                     Modifier.border(
                         width = if (borderGlow) 1.8.dp else 1.4.dp,
                         brush = Brush.linearGradient(
@@ -2107,6 +2130,7 @@ fun DynamicIslandSettingsDialog(
                         val previewThemeLabel = when (islandTheme) {
                             DynamicIslandTheme.NORMAL -> "TEMA NORMAL"
                             DynamicIslandTheme.LIQUID_GLASS -> "TEMA LIQUID GLASS"
+                            DynamicIslandTheme.SOFT -> "TEMA PASTEL NOTEBOOK"
                         }
                         Text(
                             text = "PRATINJAU LANGSUNG • $previewModeLabel • $previewThemeLabel",

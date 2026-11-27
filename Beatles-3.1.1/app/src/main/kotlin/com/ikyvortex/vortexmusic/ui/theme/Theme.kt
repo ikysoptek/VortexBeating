@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.ikyvortex.vortexmusic.ui.theme
+package com.nanzbeatles.nanas.ui.theme
 
 import android.graphics.Bitmap
 import androidx.compose.animation.animateColorAsState
@@ -53,7 +53,7 @@ fun Color.isMonochromeSeed(): Boolean {
 }
 
 @Composable
-fun VortexMusicTheme(
+fun NanzBeatlesTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pureBlack: Boolean = false,
     themeColor: Color = DefaultThemeColor,
@@ -313,10 +313,10 @@ fun VortexMusicTheme(
         if (isEditorial && (selectedFont == "DEFAULT" || selectedFont == "OUTFIT")) {
             // Editorial Typography: Space Grotesk for bold magazine display/headlines/titles, Manrope for crisp body
             AppTypography
-                .withEditorialFonts(
-                    displayAndHeadingFont = if (isSoft) Outfit else SpaceGrotesk,
-                    bodyFont = Manrope
-                )
+                .let {
+                    if (isSoft) it.withSoftFonts(handFont = SoftHandFont, roundFont = Outfit)
+                    else it.withEditorialFonts(displayAndHeadingFont = SpaceGrotesk, bodyFont = Manrope)
+                }
                 .scaledBy(fontScale)
                 .boldedBy(fontBoldness)
         } else {
@@ -343,61 +343,83 @@ fun VortexMusicTheme(
     }
 }
 
-/** Palet tema Soft: pastel kertas buku catatan, aksen teal, garis tinta tebal. */
+/** Palet tema "Pastel Notebook": kertas bergaris, teks & garis navy, kartu pastel. */
 private fun softColorScheme(base: androidx.compose.material3.ColorScheme, dark: Boolean) =
     if (!dark) base.copy(
-        primary = Color(0xFF1F6F82),
+        primary = Color(0xFF2F5BD6),
         onPrimary = Color.White,
-        primaryContainer = Color(0xFFFFF0B8),
-        onPrimaryContainer = Color(0xFF1B3A47),
-        secondary = Color(0xFF2F7F95),
+        primaryContainer = SoftPalette.Yellow,
+        onPrimaryContainer = SoftPalette.Ink,
+        secondary = Color(0xFF2A8CA0),
         onSecondary = Color.White,
-        secondaryContainer = Color(0xFFD6E6F5),
-        onSecondaryContainer = Color(0xFF1B3A47),
+        secondaryContainer = SoftPalette.SkyBlue,
+        onSecondaryContainer = SoftPalette.Ink,
         tertiary = Color(0xFFE8684A),
         onTertiary = Color.White,
-        tertiaryContainer = Color(0xFFE4DAF3),
-        onTertiaryContainer = Color(0xFF1B3A47),
-        background = Color(0xFFEDF2F7),
-        onBackground = Color(0xFF1B2A33),
-        surface = Color(0xFFF7F9FC),
-        onSurface = Color(0xFF1B2A33),
-        surfaceVariant = Color(0xFFE3EBF3),
-        onSurfaceVariant = Color(0xFF4A6272),
+        tertiaryContainer = SoftPalette.Lavender,
+        onTertiaryContainer = SoftPalette.Ink,
+        background = SoftPalette.Paper,
+        onBackground = SoftPalette.Ink,
+        surface = Color(0xFFFFFFFF),
+        onSurface = SoftPalette.Ink,
+        surfaceVariant = Color(0xFFE6EDF7),
+        onSurfaceVariant = Color(0xFF3B4A7A),
         surfaceContainerLowest = Color.White,
-        surfaceContainerLow = Color(0xFFF4F7FA),
-        surfaceContainer = Color(0xFFEEF3F8),
-        surfaceContainerHigh = Color(0xFFE6EDF4),
-        surfaceContainerHighest = Color(0xFFDDE6EF),
-        outline = Color(0xFF1B3A47),
-        outlineVariant = Color(0xFFB8C9D6),
+        surfaceContainerLow = Color(0xFFFFFBEA),
+        surfaceContainer = SoftPalette.Cream,
+        surfaceContainerHigh = SoftPalette.SkyBlue,
+        surfaceContainerHighest = SoftPalette.Lavender,
+        outline = SoftPalette.Ink,
+        outlineVariant = Color(0xFFB8C6E0),
     ) else base.copy(
-        primary = Color(0xFF7CC7D8),
-        onPrimary = Color(0xFF0B2A33),
+        primary = Color(0xFF8FB0FF),
+        onPrimary = Color(0xFF0E1A4A),
         primaryContainer = Color(0xFF4A4220),
-        onPrimaryContainer = Color(0xFFFFE9A8),
+        onPrimaryContainer = Color(0xFFFFEFB0),
         secondary = Color(0xFF8CC3D3),
         onSecondary = Color(0xFF0B2A33),
-        secondaryContainer = Color(0xFF1F3A4D),
-        onSecondaryContainer = Color(0xFFD6E6F5),
+        secondaryContainer = Color(0xFF1F3A55),
+        onSecondaryContainer = Color(0xFFDCE8FF),
         tertiary = Color(0xFFFF9A80),
         onTertiary = Color(0xFF3A1409),
-        tertiaryContainer = Color(0xFF3A2F52),
-        onTertiaryContainer = Color(0xFFE4DAF3),
-        background = Color(0xFF0F1A21),
-        onBackground = Color(0xFFE3ECF2),
-        surface = Color(0xFF15232C),
-        onSurface = Color(0xFFE3ECF2),
-        surfaceVariant = Color(0xFF22343F),
-        onSurfaceVariant = Color(0xFFA9BFCC),
-        surfaceContainerLowest = Color(0xFF0B141A),
-        surfaceContainerLow = Color(0xFF12202A),
-        surfaceContainer = Color(0xFF172732),
-        surfaceContainerHigh = Color(0xFF1D303C),
-        surfaceContainerHighest = Color(0xFF243945),
-        outline = Color(0xFF6F93A5),
-        outlineVariant = Color(0xFF2C4452),
+        tertiaryContainer = Color(0xFF3A2F5C),
+        onTertiaryContainer = Color(0xFFE6DCFA),
+        background = SoftPalette.PaperDark,
+        onBackground = Color(0xFFE4EAFF),
+        surface = Color(0xFF1B2342),
+        onSurface = Color(0xFFE4EAFF),
+        surfaceVariant = Color(0xFF28325A),
+        onSurfaceVariant = Color(0xFFB3C0EA),
+        surfaceContainerLowest = Color(0xFF0F1530),
+        surfaceContainerLow = Color(0xFF182040),
+        surfaceContainer = Color(0xFF1F2850),
+        surfaceContainerHigh = Color(0xFF28325E),
+        surfaceContainerHighest = Color(0xFF313C6C),
+        outline = SoftPalette.InkDark,
+        outlineVariant = Color(0xFF34406E),
     )
+
+/** Tipografi Pastel Notebook: judul besar tulisan tangan, judul kecil & isi Outfit tebal-membulat. */
+private fun androidx.compose.material3.Typography.withSoftFonts(
+    handFont: FontFamily,
+    roundFont: FontFamily
+) = copy(
+    displayLarge = displayLarge.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    displayMedium = displayMedium.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    displaySmall = displaySmall.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    headlineLarge = headlineLarge.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    headlineMedium = headlineMedium.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    headlineSmall = headlineSmall.copy(fontFamily = roundFont, fontWeight = FontWeight.ExtraBold),
+    titleLarge = titleLarge.copy(fontFamily = roundFont, fontWeight = FontWeight.ExtraBold),
+    titleMedium = titleMedium.copy(fontFamily = roundFont, fontWeight = FontWeight.Bold),
+    titleSmall = titleSmall.copy(fontFamily = roundFont, fontWeight = FontWeight.Bold),
+    bodyLarge = bodyLarge.copy(fontFamily = roundFont, fontWeight = FontWeight.Medium),
+    bodyMedium = bodyMedium.copy(fontFamily = roundFont, fontWeight = FontWeight.Medium),
+    bodySmall = bodySmall.copy(fontFamily = roundFont, fontWeight = FontWeight.Medium),
+    labelLarge = labelLarge.copy(fontFamily = roundFont, fontWeight = FontWeight.Bold),
+    labelMedium = labelMedium.copy(fontFamily = roundFont, fontWeight = FontWeight.SemiBold),
+    labelSmall = labelSmall.copy(fontFamily = roundFont, fontWeight = FontWeight.SemiBold),
+)
 
 @Composable
 fun AuraMusicTheme(
@@ -409,7 +431,7 @@ fun AuraMusicTheme(
     fontBoldness: Float = 0f,
     visualStyle: String = "LIQUID_GLASS",
     content: @Composable () -> Unit,
-) = VortexMusicTheme(
+) = NanzBeatlesTheme(
     darkTheme = darkTheme,
     pureBlack = pureBlack,
     themeColor = themeColor,

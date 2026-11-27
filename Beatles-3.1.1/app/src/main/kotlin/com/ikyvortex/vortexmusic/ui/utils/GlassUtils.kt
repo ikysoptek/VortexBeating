@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.ikyvortex.vortexmusic.ui.utils
+package com.nanzbeatles.nanas.ui.utils
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,13 +27,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ikyvortex.vortexmusic.constants.LiquidGlassBlurRadiusKey
-import com.ikyvortex.vortexmusic.constants.LiquidGlassCornerRadiusKey
-import com.ikyvortex.vortexmusic.constants.LiquidGlassEffectKey
-import com.ikyvortex.vortexmusic.constants.LiquidGlassOpacityKey
-import com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle
-import com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme
-import com.ikyvortex.vortexmusic.utils.rememberPreference
+import com.nanzbeatles.nanas.constants.LiquidGlassBlurRadiusKey
+import com.nanzbeatles.nanas.constants.LiquidGlassCornerRadiusKey
+import com.nanzbeatles.nanas.constants.LiquidGlassEffectKey
+import com.nanzbeatles.nanas.constants.LiquidGlassOpacityKey
+import com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle
+import com.nanzbeatles.nanas.ui.theme.LocalSoftTheme
+import com.nanzbeatles.nanas.ui.theme.SoftNotebookBackground
+import com.nanzbeatles.nanas.ui.theme.SoftPalette
+import com.nanzbeatles.nanas.utils.rememberPreference
 
 /**
  * Clean Backdrop that adapts to both Liquid Glass (#000000 / #FFFFFF)
@@ -45,10 +47,11 @@ fun GlassmorphicAmbientBackdrop(
     modifier: Modifier = Modifier,
 ) {
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
-    val isSoft = LocalSoftTheme.current
-    val softBg = MaterialTheme.colorScheme.background
+    if (LocalSoftTheme.current) {
+        SoftNotebookBackground(isDark = isDark, modifier = modifier)
+        return
+    }
     val bgColor = when {
-        isSoft -> softBg
         isEditorial && isDark -> Color(0xFF08080A)
         isEditorial && !isDark -> Color(0xFFFBF9F5)
         isDark -> Color.Black
@@ -74,24 +77,24 @@ fun Modifier.crystalLiquidGlassSurface(
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
 
     if (LocalSoftTheme.current) {
-        // Tema Soft: kartu pastel + garis tinta tebal + bayangan keras bergeser (gaya buku catatan)
-        val scheme = MaterialTheme.colorScheme
-        val softShape = RoundedCornerShape(18.dp)
-        val ink = if (isDark) scheme.outline else Color(0xFF1B3A47)
-        val softBg = baseTint ?: if (isHighlighted) scheme.primaryContainer else scheme.surface
+        // Pastel Notebook: kartu pastel bergilir + garis navy tebal + bayangan keras bergeser
+        val softShape = RoundedCornerShape(20.dp)
+        val ink = SoftPalette.ink(isDark)
+        val pastel = SoftPalette.rememberPastel(isDark)
+        val softBg = baseTint ?: pastel
         return this
             .drawBehind {
-                val off = 3.dp.toPx()
+                val off = 4.dp.toPx()
                 drawRoundRect(
-                    color = ink.copy(alpha = if (isDark) 0.45f else 0.85f),
+                    color = ink,
                     topLeft = Offset(off, off),
                     size = size,
-                    cornerRadius = CornerRadius(18.dp.toPx()),
+                    cornerRadius = CornerRadius(20.dp.toPx()),
                 )
             }
             .clip(softShape)
             .background(softBg, softShape)
-            .border(width = 2.dp, color = ink, shape = softShape)
+            .border(width = 2.5.dp, color = ink, shape = softShape)
     }
 
     if (isEditorial) {
@@ -223,14 +226,23 @@ fun Modifier.crystalLiquidGlassPill(
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
 
     if (LocalSoftTheme.current) {
-        val scheme = MaterialTheme.colorScheme
-        val softShape = RoundedCornerShape(12.dp)
-        val ink = if (isDark) scheme.outline else Color(0xFF1B3A47)
-        val softBg = if (isSelected) scheme.primary else scheme.secondaryContainer
+        val softShape = RoundedCornerShape(14.dp)
+        val ink = SoftPalette.ink(isDark)
+        val pastel = SoftPalette.rememberPastel(isDark)
+        val softBg = if (isSelected) (if (isDark) Color(0xFF313C6C) else Color.White) else pastel
         return this
+            .drawBehind {
+                val off = 3.dp.toPx()
+                drawRoundRect(
+                    color = ink,
+                    topLeft = Offset(off, off),
+                    size = size,
+                    cornerRadius = CornerRadius(14.dp.toPx()),
+                )
+            }
             .clip(softShape)
             .background(softBg, softShape)
-            .border(width = 1.6.dp, color = ink, shape = softShape)
+            .border(width = 2.dp, color = ink, shape = softShape)
     }
 
     if (isEditorial) {
@@ -523,8 +535,7 @@ fun editorialPillContentColor(
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
     if (!isEditorial) return defaultColor
     if (LocalSoftTheme.current) {
-        val scheme = MaterialTheme.colorScheme
-        return if (isSelected) scheme.onPrimary else scheme.onSecondaryContainer
+        return MaterialTheme.colorScheme.onSurface
     }
     return if (isSelected) {
         if (isDark) Color(0xFF08080A) else Color(0xFFFBF9F5)

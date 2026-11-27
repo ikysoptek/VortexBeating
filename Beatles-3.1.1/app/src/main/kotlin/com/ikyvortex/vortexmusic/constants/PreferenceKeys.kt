@@ -2,7 +2,7 @@
  * Vortex Music Project (C) 2026
  */
 
-package com.ikyvortex.vortexmusic.constants
+package com.nanzbeatles.nanas.constants
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -25,7 +25,7 @@ val AppVisualStyleKey = stringPreferencesKey("appVisualStyle")
 enum class AppVisualStyle(val title: String, val subtitle: String) {
     LIQUID_GLASS("Liquid Glass", "3D Bening & Lensa Air"),
     EDITORIAL("Editorial", "Tipografi Majalah & Garis Tegas"),
-    SOFT("Soft", "Pastel Lembut & Garis Tebal"),
+    SOFT("Pastel Notebook", "Neobrutalism Lembut ala Buku Catatan"),
 }
 
 val PureBlackKey = booleanPreferencesKey("pureBlack")
@@ -642,7 +642,8 @@ enum class DynamicIslandMode {
 
 enum class DynamicIslandTheme {
     NORMAL,
-    LIQUID_GLASS
+    LIQUID_GLASS,
+    SOFT
 }
 
 val DynamicIslandEnabledKey = booleanPreferencesKey("dynamicIslandEnabled")

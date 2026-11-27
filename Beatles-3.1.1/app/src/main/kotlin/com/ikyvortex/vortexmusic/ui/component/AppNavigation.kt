@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.ikyvortex.vortexmusic.ui.component
+package com.nanzbeatles.nanas.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -77,11 +77,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
-import com.ikyvortex.vortexmusic.constants.LiquidGlassApplyNavBarKey
-import com.ikyvortex.vortexmusic.constants.LiquidGlassEffectKey
-import com.ikyvortex.vortexmusic.ui.screens.Screens
-import com.ikyvortex.vortexmusic.ui.utils.crystalLiquidGlassSurface
-import com.ikyvortex.vortexmusic.utils.rememberPreference
+import com.nanzbeatles.nanas.constants.LiquidGlassApplyNavBarKey
+import com.nanzbeatles.nanas.constants.LiquidGlassEffectKey
+import com.nanzbeatles.nanas.ui.screens.Screens
+import com.nanzbeatles.nanas.ui.utils.crystalLiquidGlassSurface
+import com.nanzbeatles.nanas.utils.rememberPreference
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -264,8 +264,9 @@ fun AppNavigationBar(
 ) {
     val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
     val liquidGlassApplyNavBar by rememberPreference(LiquidGlassApplyNavBarKey, defaultValue = true)
-    val isEditorial = com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
+    val isEditorial = com.nanzbeatles.nanas.ui.theme.LocalAppVisualStyle.current == "EDITORIAL"
     val isGlass = !isEditorial && liquidGlassEnabled && liquidGlassApplyNavBar
+    val isSoftNav = com.nanzbeatles.nanas.ui.theme.LocalSoftTheme.current
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val haptic = LocalHapticFeedback.current
 
@@ -511,7 +512,42 @@ fun AppNavigationBar(
                     val usableW = (barW - horizontalPadPx * 2f).coerceAtLeast(1f)
                     val slotW = usableW / itemCount
 
-                    if (isEditorial) {
+                    if (isSoftNav) {
+                        // =========================================================================
+                        // PASTEL NOTEBOOK DOCK: kapsul biru muda, garis navy tebal, bayangan keras
+                        // =========================================================================
+                        val sInk = com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(isDark)
+                        val sBar = if (isDark) Color(0xFF1F3A55) else com.nanzbeatles.nanas.ui.theme.SoftPalette.SkyBlue
+                        val sActive = if (isDark) Color(0xFF4A4220) else com.nanzbeatles.nanas.ui.theme.SoftPalette.Yellow
+                        val shOff = 4.dp.toPx()
+                        val bw = barW - shOff
+                        val bh = barH - shOff
+                        val barCorner = CornerRadius(bh / 2f, bh / 2f)
+                        drawRoundRect(color = sInk, topLeft = Offset(shOff, shOff), size = Size(bw, bh), cornerRadius = barCorner)
+                        drawRoundRect(color = sBar, topLeft = Offset.Zero, size = Size(bw, bh), cornerRadius = barCorner)
+                        drawRoundRect(
+                            color = sInk,
+                            topLeft = Offset.Zero,
+                            size = Size(bw, bh),
+                            cornerRadius = barCorner,
+                            style = Stroke(width = 2.5.dp.toPx())
+                        )
+                        val pillW = (slotW - 6.dp.toPx()).coerceAtLeast(60.dp.toPx())
+                        val pillH = (bh - 12.dp.toPx()).coerceAtLeast(40.dp.toPx())
+                        val slotCenterX = horizontalPadPx + slotW * (animatedIndex + 0.5f)
+                        val pillLeft = (slotCenterX - pillW / 2f).coerceIn(horizontalPadPx, bw - pillW - horizontalPadPx)
+                        val pillTop = (bh - pillH) / 2f
+                        val pillCorner = CornerRadius(pillH / 2f, pillH / 2f)
+                        drawRoundRect(color = sActive, topLeft = Offset(pillLeft, pillTop), size = Size(pillW, pillH), cornerRadius = pillCorner)
+                        drawRoundRect(
+                            color = sInk,
+                            topLeft = Offset(pillLeft, pillTop),
+                            size = Size(pillW, pillH),
+                            cornerRadius = pillCorner,
+                            style = Stroke(width = 2.dp.toPx())
+                        )
+                        drawContent()
+                    } else if (isEditorial) {
                         // =========================================================================
                         // EDITORIAL ARCHITECTURAL DOCK (Swiss Magazine / Vinyl Print Style)
                         // =========================================================================
@@ -940,7 +976,10 @@ fun AppNavigationBar(
                     }
 
                     val contentColor by animateColorAsState(
-                        targetValue = if (isEditorial) {
+                        targetValue = if (isSoftNav) {
+                            if (isHoveredOrSelected) com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(isDark)
+                            else com.nanzbeatles.nanas.ui.theme.SoftPalette.ink(isDark).copy(alpha = 0.72f)
+                        } else if (isEditorial) {
                             if (isHoveredOrSelected) {
                                 if (isDark) Color(0xFF0A0A0D) else Color(0xFFFBF9F5)
                             } else {

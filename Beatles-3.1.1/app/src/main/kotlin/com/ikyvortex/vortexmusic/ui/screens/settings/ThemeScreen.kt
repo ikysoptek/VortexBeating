@@ -2,7 +2,7 @@
  * NanzBeatles Project (C) 2026
  */
 
-package com.ikyvortex.vortexmusic.ui.screens.settings
+package com.nanzbeatles.nanas.ui.screens.settings
 
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
@@ -60,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -83,26 +84,26 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
-import com.ikyvortex.vortexmusic.LocalPlayerConnection
-import com.ikyvortex.vortexmusic.R
-import com.ikyvortex.vortexmusic.constants.AppVisualStyle
-import com.ikyvortex.vortexmusic.constants.AppVisualStyleKey
-import com.ikyvortex.vortexmusic.constants.DarkModeKey
-import com.ikyvortex.vortexmusic.constants.DynamicIslandTheme
-import com.ikyvortex.vortexmusic.constants.DynamicIslandThemeKey
-import com.ikyvortex.vortexmusic.constants.DynamicThemeKey
-import com.ikyvortex.vortexmusic.constants.LiquidGlassApplyNavBarKey
-import com.ikyvortex.vortexmusic.constants.LiquidGlassApplyPlayerKey
-import com.ikyvortex.vortexmusic.constants.LiquidGlassEffectKey
-import com.ikyvortex.vortexmusic.constants.PureBlackKey
-import com.ikyvortex.vortexmusic.constants.PureBlackMiniPlayerKey
-import com.ikyvortex.vortexmusic.constants.SelectedThemeColorKey
-import com.ikyvortex.vortexmusic.ui.theme.AuraMusicTheme
-import com.ikyvortex.vortexmusic.ui.theme.DefaultThemeColor
-import com.ikyvortex.vortexmusic.ui.theme.extractThemeColor
-import com.ikyvortex.vortexmusic.ui.utils.frostedGlassSurface
-import com.ikyvortex.vortexmusic.utils.rememberEnumPreference
-import com.ikyvortex.vortexmusic.utils.rememberPreference
+import com.nanzbeatles.nanas.LocalPlayerConnection
+import com.nanzbeatles.nanas.R
+import com.nanzbeatles.nanas.constants.AppVisualStyle
+import com.nanzbeatles.nanas.constants.AppVisualStyleKey
+import com.nanzbeatles.nanas.constants.DarkModeKey
+import com.nanzbeatles.nanas.constants.DynamicIslandTheme
+import com.nanzbeatles.nanas.constants.DynamicIslandThemeKey
+import com.nanzbeatles.nanas.constants.DynamicThemeKey
+import com.nanzbeatles.nanas.constants.LiquidGlassApplyNavBarKey
+import com.nanzbeatles.nanas.constants.LiquidGlassApplyPlayerKey
+import com.nanzbeatles.nanas.constants.LiquidGlassEffectKey
+import com.nanzbeatles.nanas.constants.PureBlackKey
+import com.nanzbeatles.nanas.constants.PureBlackMiniPlayerKey
+import com.nanzbeatles.nanas.constants.SelectedThemeColorKey
+import com.nanzbeatles.nanas.ui.theme.AuraMusicTheme
+import com.nanzbeatles.nanas.ui.theme.DefaultThemeColor
+import com.nanzbeatles.nanas.ui.theme.extractThemeColor
+import com.nanzbeatles.nanas.ui.utils.frostedGlassSurface
+import com.nanzbeatles.nanas.utils.rememberEnumPreference
+import com.nanzbeatles.nanas.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -148,7 +149,11 @@ fun ThemeScreen(
         onLiquidGlassNavChange(enableGlass)
         onLiquidGlassPlayerChange(enableGlass)
         onDynamicIslandThemeChange(
-            if (enableGlass) DynamicIslandTheme.LIQUID_GLASS else DynamicIslandTheme.NORMAL
+            when {
+                enableGlass -> DynamicIslandTheme.LIQUID_GLASS
+                style == AppVisualStyle.SOFT -> DynamicIslandTheme.SOFT
+                else -> DynamicIslandTheme.NORMAL
+            }
         )
     }
 
@@ -393,7 +398,7 @@ private fun VisualStyleSelectorCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "Pilih antara 1. Liquid Glass (3D Bening & Lensa Air), 2. Editorial (Tipografi Majalah & Garis Tegas), atau 3. Soft (Pastel Lembut ala Buku Catatan).",
+                text = "Pilih antara 1. Liquid Glass (3D Bening & Lensa Air), 2. Editorial (Tipografi Majalah & Garis Tegas), atau 3. Pastel Notebook (Neobrutalism Lembut ala Buku Catatan).",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 16.sp
@@ -434,18 +439,205 @@ private fun VisualStyleSelectorCard(
         }
 
         // 3. SOFT
-        VisualStyleOptionItem(
-            numberBadge = "3",
-            title = "Soft",
-            subtitle = "Pastel Lembut & Garis Tebal",
-            isLiquidGlass = false,
-            isSoft = true,
+        SoftThemeOptionCard(
             isSelected = selectedStyle == AppVisualStyle.SOFT,
             isDarkSurface = isDarkSurface,
             onClick = { onSelectStyle(AppVisualStyle.SOFT) },
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("visual_style_soft")
+        )
+    }
+}
+
+/** Kartu pilihan tema ke-3 yang tampil seperti temanya sendiri: kertas bergaris, selotip, kartu pastel. */
+@Composable
+private fun SoftThemeOptionCard(
+    isSelected: Boolean,
+    isDarkSurface: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val ink = if (isDarkSurface) Color(0xFF9DB4F0) else Color(0xFF16204F)
+    val paper = if (isDarkSurface) Color(0xFF131A33) else Color(0xFFF6F8FC)
+    val lineColor = if (isDarkSurface) Color(0xFF212B4D) else Color(0xFFD3E1F0)
+    val marginColor = if (isDarkSurface) Color(0xFF7A4560) else Color(0xFFF2A3AE)
+    val shape = RoundedCornerShape(22.dp)
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.015f else 1f,
+        label = "softCardScale"
+    )
+    Box(
+        modifier = modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .padding(end = 5.dp, bottom = 5.dp)
+            .drawBehind {
+                val off = 5.dp.toPx()
+                drawRoundRect(
+                    color = ink,
+                    topLeft = androidx.compose.ui.geometry.Offset(off, off),
+                    size = size,
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(22.dp.toPx()),
+                )
+            }
+            .clip(shape)
+            .background(paper)
+            .border(if (isSelected) 3.5.dp else 2.5.dp, ink, shape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+                onClick = onClick
+            )
+    ) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+            val step = 22.dp.toPx()
+            var y = step
+            while (y < size.height) {
+                drawLine(lineColor, androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), 1.dp.toPx())
+                y += step
+            }
+            drawLine(marginColor, androidx.compose.ui.geometry.Offset(18.dp.toPx(), 0f), androidx.compose.ui.geometry.Offset(18.dp.toPx(), size.height), 1.4.dp.toPx())
+        }
+        Column(modifier = Modifier.padding(start = 30.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(ink),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("3", color = paper, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = "Pastel Notebook",
+                    color = ink,
+                    fontFamily = com.nanzbeatles.nanas.ui.theme.SoftHandFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                )
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer { rotationZ = -6f }
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFEFB0))
+                        .border(1.6.dp, Color(0xFF16204F), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    Text("BARU", color = Color(0xFF16204F), fontWeight = FontWeight.ExtraBold, fontSize = 10.sp)
+                }
+                Spacer(Modifier.weight(1f))
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2F5BD6))
+                            .border(2.dp, ink, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("✓", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Neobrutalism Lembut ala Buku Catatan",
+                color = ink.copy(alpha = 0.8f),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(
+                    Color(0xFFFFEFB0),
+                    Color(0xFFCFEFD3),
+                    Color(0xFFE2D5F5),
+                ).forEach { c ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(54.dp)
+                            .padding(end = 3.dp, bottom = 3.dp)
+                            .drawBehind {
+                                val off = 3.dp.toPx()
+                                drawRoundRect(
+                                    color = ink,
+                                    topLeft = androidx.compose.ui.geometry.Offset(off, off),
+                                    size = size,
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx()),
+                                )
+                            }
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(c)
+                            .border(2.dp, ink, RoundedCornerShape(12.dp))
+                            .padding(8.dp),
+                        contentAlignment = Alignment.TopStart
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Box(Modifier.fillMaxWidth(0.75f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(ink))
+                            Box(Modifier.fillMaxWidth(0.45f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.45f)))
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(30.dp)
+                    .padding(end = 3.dp, bottom = 3.dp)
+                    .drawBehind {
+                        val off = 3.dp.toPx()
+                        drawRoundRect(
+                            color = ink,
+                            topLeft = androidx.compose.ui.geometry.Offset(off, off),
+                            size = size,
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(15.dp.toPx()),
+                        )
+                    }
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Color(0xFFCDE5F7))
+                    .border(2.dp, ink, RoundedCornerShape(15.dp)),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Box(
+                        Modifier
+                            .weight(1.4f)
+                            .height(18.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(Color(0xFFFFEFB0))
+                            .border(1.6.dp, ink, RoundedCornerShape(9.dp))
+                    )
+                    repeat(3) {
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(7.dp).clip(CircleShape).background(ink.copy(alpha = 0.6f)))
+                        }
+                    }
+                }
+            }
+        }
+        // Selotip di pojok kanan atas + bintang
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 40.dp)
+                .graphicsLayer { rotationZ = 6f; translationY = -6.dp.toPx() }
+                .size(width = 54.dp, height = 14.dp)
+                .background(Color(0xFFA8D8DA).copy(alpha = 0.85f))
+        )
+        Text(
+            text = "✦",
+            color = Color(0xFFE8684A),
+            fontSize = 16.sp,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 46.dp)
         )
     }
 }
@@ -1402,7 +1594,7 @@ private fun LiquidGlassWidgetShowcaseCard(
                 )
                 .clickable {
                     requestPinWidget(
-                        com.ikyvortex.vortexmusic.widget.LiquidGlassWidgetReceiver::class.java,
+                        com.nanzbeatles.nanas.widget.LiquidGlassWidgetReceiver::class.java,
                         "Liquid Glass Player"
                     )
                 }
@@ -1547,7 +1739,7 @@ private fun LiquidGlassWidgetShowcaseCard(
                 )
                 .clickable {
                     requestPinWidget(
-                        com.ikyvortex.vortexmusic.widget.LiquidGlassWideWidgetReceiver::class.java,
+                        com.nanzbeatles.nanas.widget.LiquidGlassWideWidgetReceiver::class.java,
                         "Liquid Glass Pill"
                     )
                 }

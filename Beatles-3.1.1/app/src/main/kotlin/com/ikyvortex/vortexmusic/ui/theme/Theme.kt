@@ -53,7 +53,7 @@ fun Color.isMonochromeSeed(): Boolean {
 }
 
 @Composable
-fun NanzBeatlesTheme(
+fun VortexMusicTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pureBlack: Boolean = false,
     themeColor: Color = DefaultThemeColor,
@@ -431,7 +431,7 @@ fun AuraMusicTheme(
     fontBoldness: Float = 0f,
     visualStyle: String = "LIQUID_GLASS",
     content: @Composable () -> Unit,
-) = NanzBeatlesTheme(
+) = VortexMusicTheme(
     darkTheme = darkTheme,
     pureBlack = pureBlack,
     themeColor = themeColor,

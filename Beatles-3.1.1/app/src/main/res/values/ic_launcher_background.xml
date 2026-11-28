@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFDF8EC</color>
-    <color name="ic_launcher_static_background">#FFFDF8EC</color>
+    <color name="ic_launcher_background">#FFFDF5EA</color>
+    <color name="ic_launcher_static_background">#FFFDF5EA</color>
 </resources>

@@ -26,6 +26,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import com.ikyvortex.vortexmusic.ui.theme.softProfileCard
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -190,6 +191,7 @@ private suspend fun copyPickedMediaToInternalFile(
 fun ProfileScreen(
     navController: NavController,
 ) {
+    com.ikyvortex.vortexmusic.ui.theme.SoftMap.active = com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val playerConnection = LocalPlayerConnection.current
@@ -351,22 +353,22 @@ fun ProfileScreen(
 
     val cardBgBrush = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF141519),
-            Color(0xFF0C0D10),
+            com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF141519L),
+            com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF0C0D10L),
         )
     )
     val cardBorderBrush = Brush.linearGradient(
         colors = listOf(
-            Color.White.copy(alpha = 0.16f),
-            Color.White.copy(alpha = 0.05f),
-            Color.White.copy(alpha = 0.12f),
+            com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.16f),
+            com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.05f),
+            com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.12f),
         )
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF050507))
+            .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.screenBg(0xFF050507))
             .drawBehind {
                 val w = size.width
                 val h = size.height
@@ -391,7 +393,7 @@ fun ProfileScreen(
                     path = wavePath,
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.035f),
+                            com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.035f),
                             Color.Transparent,
                         )
                     )
@@ -428,7 +430,7 @@ fun ProfileScreen(
                             text = "Profil",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                             letterSpacing = (-0.3).sp
                         )
                     }
@@ -441,8 +443,8 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF14151A), CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.14f), CircleShape)
+                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF14151AL), CircleShape)
+                                .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f), CircleShape)
                                 .clickable { showQuickToolsSheet = true }
                                 .testTag("profile_quick_tools_button"),
                             contentAlignment = Alignment.Center
@@ -450,7 +452,7 @@ fun ProfileScreen(
                             Icon(
                                 painter = painterResource(R.drawable.history),
                                 contentDescription = "Riwayat & Fitur Cepat",
-                                tint = Color.White.copy(alpha = 0.9f),
+                                tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.9f),
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -459,8 +461,8 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF14151A), CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.14f), CircleShape)
+                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF14151AL), CircleShape)
+                                .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f), CircleShape)
                                 .clickable { navController.navigate("settings") }
                                 .testTag("profile_settings_button"),
                             contentAlignment = Alignment.Center
@@ -472,8 +474,8 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF14151A), CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.14f), CircleShape)
+                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF14151AL), CircleShape)
+                                .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f), CircleShape)
                                 .clickable { showShareCanvasDialog = true }
                                 .testTag("profile_share_button"),
                             contentAlignment = Alignment.Center
@@ -481,7 +483,7 @@ fun ProfileScreen(
                             Icon(
                                 painter = painterResource(R.drawable.share),
                                 contentDescription = "Bagikan Gambar Statistik Profil",
-                                tint = Color.White,
+                                tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -496,7 +498,7 @@ fun ProfileScreen(
                         .clip(RoundedCornerShape(22.dp))
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color(0xFF151821), Color(0xFF0B0C10))
+                                colors = listOf(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF151821L), com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF0B0C10L))
                             ),
                             RoundedCornerShape(22.dp)
                         )
@@ -527,7 +529,7 @@ fun ProfileScreen(
                                 .background(
                                     Brush.verticalGradient(
                                         colors = listOf(
-                                            Color.Black.copy(alpha = 0.30f),
+                                            com.ikyvortex.vortexmusic.ui.theme.SoftMap.black.copy(alpha = 0.30f),
                                             Color(0xB808090D),
                                             Color(0xE608090D)
                                         )
@@ -543,8 +545,8 @@ fun ProfileScreen(
                             drawCircle(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.08f),
-                                        Color.White.copy(alpha = 0.02f),
+                                        com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.08f),
+                                        com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.02f),
                                         Color.Transparent
                                     ),
                                     center = vinylCenter,
@@ -556,7 +558,7 @@ fun ProfileScreen(
                             for (ring in 1..6) {
                                 val r = maxVinylRadius * (0.30f + ring * 0.11f)
                                 drawCircle(
-                                    color = Color.White.copy(alpha = if (ring % 2 == 0) 0.08f else 0.04f),
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = if (ring % 2 == 0) 0.08f else 0.04f),
                                     radius = r,
                                     center = vinylCenter,
                                     style = Stroke(width = if (ring == 3) 2.dp.toPx() else 1.dp.toPx())
@@ -575,8 +577,8 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
-                                .background(Color.Black.copy(alpha = 0.58f))
-                                .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(50))
+                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.black.copy(alpha = 0.58f))
+                                .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f), RoundedCornerShape(50))
                                 .clickable {
                                     bannerMediaPickerLauncher.launch(
                                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
@@ -592,14 +594,14 @@ fun ProfileScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.edit),
                                     contentDescription = "Upload Banner Foto atau Video",
-                                    tint = Color.White,
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     modifier = Modifier.size(13.dp)
                                 )
                                 Text(
                                     text = if (localBannerUri.isBlank()) "Banner Foto/Video" else if (localBannerIsVideo) "Ganti Video" else "Ganti Banner",
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                 )
                             }
                         }
@@ -626,16 +628,16 @@ fun ProfileScreen(
                                         width = 2.2.dp,
                                         brush = Brush.linearGradient(
                                             colors = listOf(
-                                                Color.White,
-                                                Color(0xFFB8C0CC),
-                                                Color.White
+                                                com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                                                com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB8C0CCL),
+                                                com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                             )
                                         ),
                                         shape = CircleShape
                                     )
                                     .padding(3.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF14161C)),
+                                    .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF14161CL)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (localAvatarUri.isNotBlank()) {
@@ -658,8 +660,8 @@ fun ProfileScreen(
                                     .padding(end = 2.dp, bottom = 2.dp)
                                     .size(28.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF1A1C22), CircleShape)
-                                    .border(1.2.dp, Color.White.copy(alpha = 0.35f), CircleShape)
+                                    .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF1A1C22L), CircleShape)
+                                    .border(1.2.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.35f), CircleShape)
                                     .clickable { showEditProfileDialog = true }
                                     .testTag("profile_edit_button"),
                                 contentAlignment = Alignment.Center
@@ -667,7 +669,7 @@ fun ProfileScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.edit),
                                     contentDescription = "Edit Profil",
-                                    tint = Color.White,
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     modifier = Modifier.size(14.dp)
                                 )
                             }
@@ -688,7 +690,7 @@ fun ProfileScreen(
                                     text = displayName,
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f, fill = false)
@@ -715,14 +717,14 @@ fun ProfileScreen(
                                     text = displayHandle,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFD0D5E0),
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFD0D5E0L),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "✦",
                                     fontSize = 10.sp,
-                                    color = Color.White.copy(alpha = 0.65f)
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.65f)
                                 )
                             }
 
@@ -732,7 +734,7 @@ fun ProfileScreen(
                                 text = localBio.ifBlank { "Belum ada bio" },
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFFA0A6B4),
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -752,12 +754,12 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(cardBgBrush, RoundedCornerShape(20.dp))
+                        .softProfileCard(cardBgBrush, RoundedCornerShape(20.dp), 20.dp)
                         .drawBehind {
                             drawCircle(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.11f),
+                                        com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.11f),
                                         Color.Transparent
                                     ),
                                     center = Offset(size.width * 0.16f, size.height * 0.5f),
@@ -797,7 +799,7 @@ fun ProfileScreen(
                                         text = "Level ${levelSpec.level}",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFFD0D5E0),
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFD0D5E0L),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -805,7 +807,7 @@ fun ProfileScreen(
                                         text = levelSpec.title,
                                         fontSize = 19.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White,
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -816,7 +818,7 @@ fun ProfileScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.navigate_next),
                                     contentDescription = "Lihat Level",
-                                    tint = Color.White.copy(alpha = 0.72f),
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.72f),
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
@@ -826,7 +828,7 @@ fun ProfileScreen(
                             Text(
                                 text = levelSpec.subtitle,
                                 fontSize = 12.sp,
-                                color = Color(0xFF989EA9),
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -843,7 +845,7 @@ fun ProfileScreen(
                                         .weight(1f)
                                         .height(9.dp)
                                         .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.10f))
+                                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.10f))
                                 ) {
                                     if (animatedXpProgress > 0f) {
                                         Box(
@@ -854,8 +856,8 @@ fun ProfileScreen(
                                                 .background(
                                                     Brush.horizontalGradient(
                                                         colors = listOf(
-                                                            Color(0xFFD8DEE9),
-                                                            Color.White
+                                                            com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFD8DEE9L),
+                                                            com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                                         )
                                                     )
                                                 )
@@ -867,7 +869,7 @@ fun ProfileScreen(
                                     text = buildAnnotatedString {
                                         withStyle(
                                             SpanStyle(
-                                                color = Color.White,
+                                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 fontSize = 12.sp
                                             )
@@ -876,7 +878,7 @@ fun ProfileScreen(
                                         }
                                         withStyle(
                                             SpanStyle(
-                                                color = Color(0xFF989EA9),
+                                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L),
                                                 fontWeight = FontWeight.Medium,
                                                 fontSize = 11.5.sp
                                             )
@@ -905,7 +907,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(18.dp))
-                            .background(cardBgBrush, RoundedCornerShape(18.dp))
+                            .softProfileCard(cardBgBrush, RoundedCornerShape(18.dp), 18.dp)
                             .drawBehind {
                                 drawCircle(
                                     brush = Brush.radialGradient(
@@ -945,7 +947,7 @@ fun ProfileScreen(
                                         text = "Streak",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFFB0B6C2),
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB0B6C2L),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -953,7 +955,7 @@ fun ProfileScreen(
                                         text = "$effectiveStreakDays Hari",
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White,
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -965,14 +967,14 @@ fun ProfileScreen(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 MiniColorfulFlameIcon(
-                                    flameColor = if (effectiveStreakDays > 0) activeFlameVisual.midColor else Color(0xFF94A3B8),
+                                    flameColor = if (effectiveStreakDays > 0) activeFlameVisual.midColor else com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF94A3B8L),
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Text(
                                     text = if (effectiveStreakDays == 0) "Mulai dengar!" else "Terus dengar!",
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFA0A6B4),
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -984,7 +986,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(18.dp))
-                            .background(cardBgBrush, RoundedCornerShape(18.dp))
+                            .softProfileCard(cardBgBrush, RoundedCornerShape(18.dp), 18.dp)
                             .border(1.dp, cardBorderBrush, RoundedCornerShape(18.dp))
                             .clickable { showDailyRecordModal = true }
                             .padding(horizontal = 9.dp, vertical = 11.dp)
@@ -1003,7 +1005,7 @@ fun ProfileScreen(
                                         text = "Rekor Harian",
                                         fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFFB0B6C2),
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB0B6C2L),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -1011,7 +1013,7 @@ fun ProfileScreen(
                                         text = journeyState.dailyRecordCompactText,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White,
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -1027,7 +1029,7 @@ fun ProfileScreen(
                                     text = "Hari terbaik!",
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFA0A6B4),
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1039,7 +1041,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(18.dp))
-                            .background(cardBgBrush, RoundedCornerShape(18.dp))
+                            .softProfileCard(cardBgBrush, RoundedCornerShape(18.dp), 18.dp)
                             .border(1.dp, cardBorderBrush, RoundedCornerShape(18.dp))
                             .clickable { showMonthlyRecordModal = true }
                             .padding(horizontal = 9.dp, vertical = 11.dp)
@@ -1058,7 +1060,7 @@ fun ProfileScreen(
                                         text = "Rekor Bulanan",
                                         fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFFB0B6C2),
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB0B6C2L),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -1066,7 +1068,7 @@ fun ProfileScreen(
                                         text = journeyState.monthlyRecordHoursText,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White,
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -1082,7 +1084,7 @@ fun ProfileScreen(
                                     text = "Bulan terbaik!",
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFA0A6B4),
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1097,7 +1099,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(cardBgBrush, RoundedCornerShape(20.dp))
+                        .softProfileCard(cardBgBrush, RoundedCornerShape(20.dp), 20.dp)
                         .border(1.dp, cardBorderBrush, RoundedCornerShape(20.dp))
                         .clickable { showListeningDetailModal = true }
                         .padding(horizontal = 16.dp, vertical = 16.dp)
@@ -1118,7 +1120,7 @@ fun ProfileScreen(
                                     text = "Ringkasan Mendengarkan",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                 )
                             }
 
@@ -1133,12 +1135,12 @@ fun ProfileScreen(
                                     text = "Lihat Detail",
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFA0A6B4)
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L)
                                 )
                                 Icon(
                                     painter = painterResource(R.drawable.navigate_next),
                                     contentDescription = null,
-                                    tint = Color(0xFFA0A6B4),
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                                     modifier = Modifier.size(17.dp)
                                 )
                             }
@@ -1160,7 +1162,7 @@ fun ProfileScreen(
                                             SpanStyle(
                                                 fontSize = 35.sp,
                                                 fontWeight = FontWeight.ExtraBold,
-                                                color = Color.White
+                                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                             )
                                         ) {
                                             if (showMinutesInstead) {
@@ -1173,7 +1175,7 @@ fun ProfileScreen(
                                             SpanStyle(
                                                 fontSize = 21.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White
+                                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                             )
                                         ) {
                                             append(if (showMinutesInstead) "Menit" else "Jam")
@@ -1189,7 +1191,7 @@ fun ProfileScreen(
                                     Text(
                                         text = "Total Waktu Mendengarkan",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF9EA4B0),
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -1201,7 +1203,7 @@ fun ProfileScreen(
                                     .padding(horizontal = 12.dp)
                                     .width(1.dp)
                                     .height(48.dp)
-                                    .background(Color.White.copy(alpha = 0.14f))
+                                    .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f))
                             )
 
                             Row(
@@ -1212,7 +1214,7 @@ fun ProfileScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.music_note),
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     modifier = Modifier.size(30.dp)
                                 )
                                 Column {
@@ -1220,12 +1222,12 @@ fun ProfileScreen(
                                         text = formatDotNumber(periodSongs),
                                         fontSize = 27.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                     )
                                     Text(
                                         text = "Total Lagu",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF9EA4B0)
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L)
                                     )
                                 }
                             }
@@ -1243,7 +1245,7 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(
-                                            if (selected) Color.White else Color.White.copy(alpha = 0.06f)
+                                            if (selected) com.ikyvortex.vortexmusic.ui.theme.SoftMap.white else com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.06f)
                                         )
                                         .clickable { selectedPeriod = period }
                                         .padding(horizontal = 10.dp, vertical = 4.dp)
@@ -1252,7 +1254,7 @@ fun ProfileScreen(
                                         text = period.label,
                                         fontSize = 11.sp,
                                         fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-                                        color = if (selected) Color.Black else Color(0xFFB4BAC6)
+                                        color = if (selected) com.ikyvortex.vortexmusic.ui.theme.SoftMap.black else com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB4BAC6L)
                                     )
                                 }
                             }
@@ -1276,7 +1278,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(cardBgBrush, RoundedCornerShape(20.dp))
+                        .softProfileCard(cardBgBrush, RoundedCornerShape(20.dp), 20.dp)
                         .border(1.dp, cardBorderBrush, RoundedCornerShape(20.dp))
                         .clickable { showTopSongsModal = true }
                         .padding(horizontal = 16.dp, vertical = 15.dp)
@@ -1297,7 +1299,7 @@ fun ProfileScreen(
                                     text = "Lagu Paling Sering Didengar",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                 )
                             }
 
@@ -1312,12 +1314,12 @@ fun ProfileScreen(
                                     text = "Lihat Semua",
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFA0A6B4)
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L)
                                 )
                                 Icon(
                                     painter = painterResource(R.drawable.navigate_next),
                                     contentDescription = null,
-                                    tint = Color(0xFFA0A6B4),
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                                     modifier = Modifier.size(17.dp)
                                 )
                             }
@@ -1333,8 +1335,8 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .size(66.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF0A0B0E))
-                                    .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(14.dp)),
+                                    .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF0A0B0EL))
+                                    .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f), RoundedCornerShape(14.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (topSong?.thumbnailUrl != null) {
@@ -1356,7 +1358,7 @@ fun ProfileScreen(
                                     text = topSong?.title ?: "Belum Ada Lagu",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1365,7 +1367,7 @@ fun ProfileScreen(
                                     text = topSong?.artist ?: "Putar musik untuk mulai mencatat",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF9EA4B0),
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1379,7 +1381,7 @@ fun ProfileScreen(
                                         text = "${topSong?.playCount ?: 0}x diputar",
                                         fontSize = 12.5.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFFB8BECB)
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB8BECBL)
                                     )
                                 }
                             }
@@ -1391,14 +1393,14 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF14161B), CircleShape)
+                                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF14161BL), CircleShape)
                                         .border(
                                             width = 1.4.dp,
                                             brush = Brush.linearGradient(
                                                 colors = listOf(
-                                                    Color.White.copy(alpha = 0.55f),
-                                                    Color.White.copy(alpha = 0.18f),
-                                                    Color.White.copy(alpha = 0.45f)
+                                                    com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.55f),
+                                                    com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.18f),
+                                                    com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.45f)
                                                 )
                                             ),
                                             shape = CircleShape
@@ -1416,7 +1418,7 @@ fun ProfileScreen(
                                     Icon(
                                         painter = painterResource(R.drawable.play),
                                         contentDescription = "Putar ${topSong.title}",
-                                        tint = Color.White,
+                                        tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
@@ -1431,7 +1433,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(cardBgBrush, RoundedCornerShape(20.dp))
+                        .softProfileCard(cardBgBrush, RoundedCornerShape(20.dp), 20.dp)
                         .border(1.dp, cardBorderBrush, RoundedCornerShape(20.dp))
                         .clickable { showLevelModal = true }
                         .padding(horizontal = 16.dp, vertical = 15.dp)
@@ -1448,21 +1450,21 @@ fun ProfileScreen(
                                 .padding(horizontal = 14.dp)
                                 .width(1.dp)
                                 .height(44.dp)
-                                .background(Color.White.copy(alpha = 0.14f))
+                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f))
                         )
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Kamu berada di",
                                 fontSize = 12.sp,
-                                color = Color(0xFFA0A6B4)
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Level ${levelSpec.level} – ${levelSpec.title}!",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color.White,
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1470,7 +1472,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Terus dengarkan musik kesukaanmu!",
                                 fontSize = 12.sp,
-                                color = Color(0xFF9096A4),
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9096A4L),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1488,7 +1490,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(cardBgBrush, RoundedCornerShape(20.dp))
+                        .softProfileCard(cardBgBrush, RoundedCornerShape(20.dp), 20.dp)
                         .border(1.dp, cardBorderBrush, RoundedCornerShape(20.dp))
                         .padding(horizontal = 16.dp, vertical = 14.dp)
                         .testTag("profile_backup_stats_card")
@@ -1504,12 +1506,12 @@ fun ProfileScreen(
                                     text = "Cadangkan & Pulihkan Statistik",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                 )
                                 Text(
                                     text = "Simpan semua statistik (Streak, Level XP, Rekor, & Lagu) ke file",
                                     fontSize = 11.5.sp,
-                                    color = Color(0xFF989EA9)
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L)
                                 )
                             }
                         }
@@ -1529,18 +1531,18 @@ fun ProfileScreen(
                                     .weight(1f)
                                     .testTag("profile_export_stats_button"),
                                 shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
+                                border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.28f))
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.backup),
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "Cadangkan File",
-                                    color = Color.White,
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -1557,14 +1559,14 @@ fun ProfileScreen(
                                     .testTag("profile_import_stats_button"),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White,
-                                    contentColor = Color.Black
+                                    containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                                    contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black
                                 )
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.restore),
                                     contentDescription = null,
-                                    tint = Color.Black,
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -1848,7 +1850,7 @@ private fun EmptyAvatarSilhouetteIcon(modifier: Modifier = Modifier) {
         val cx = w / 2f
 
         drawCircle(
-            color = Color.White.copy(alpha = 0.65f),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.65f),
             radius = w * 0.21f,
             center = Offset(cx, h * 0.32f),
             style = Stroke(width = 2.2.dp.toPx())
@@ -1864,7 +1866,7 @@ private fun EmptyAvatarSilhouetteIcon(modifier: Modifier = Modifier) {
         }
         drawPath(
             path = shouldersPath,
-            color = Color.White.copy(alpha = 0.65f),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.65f),
             style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
         )
     }
@@ -1884,7 +1886,7 @@ private fun ProfileWaveformLogoIcon(modifier: Modifier = Modifier) {
             val barH = h * frac
             val top = (h - barH) / 2f
             drawLine(
-                color = Color.White,
+                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                 start = Offset(x, top),
                 end = Offset(x, top + barH),
                 strokeWidth = barWidth,
@@ -1894,8 +1896,8 @@ private fun ProfileWaveformLogoIcon(modifier: Modifier = Modifier) {
         val sx = w * 0.88f
         val sy = h * 0.12f
         val sr = w * 0.09f
-        drawLine(Color.White.copy(alpha = 0.85f), Offset(sx - sr, sy), Offset(sx + sr, sy), strokeWidth = 1.2.dp.toPx())
-        drawLine(Color.White.copy(alpha = 0.85f), Offset(sx, sy - sr), Offset(sx, sy + sr), strokeWidth = 1.2.dp.toPx())
+        drawLine(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.85f), Offset(sx - sr, sy), Offset(sx + sr, sy), strokeWidth = 1.2.dp.toPx())
+        drawLine(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.85f), Offset(sx, sy - sr), Offset(sx, sy + sr), strokeWidth = 1.2.dp.toPx())
     }
 }
 
@@ -1917,7 +1919,7 @@ private fun ProfileGearIcon(modifier: Modifier = Modifier) {
             val x2 = cx + cos(angle).toFloat() * (outerR * 1.18f)
             val y2 = cy + sin(angle).toFloat() * (outerR * 1.18f)
             drawLine(
-                color = Color.White,
+                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                 start = Offset(x1, y1),
                 end = Offset(x2, y2),
                 strokeWidth = strokeW * 1.25f,
@@ -1925,13 +1927,13 @@ private fun ProfileGearIcon(modifier: Modifier = Modifier) {
             )
         }
         drawCircle(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             radius = outerR * 0.82f,
             center = Offset(cx, cy),
             style = Stroke(width = strokeW)
         )
         drawCircle(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             radius = innerR,
             center = Offset(cx, cy),
             style = Stroke(width = strokeW * 0.9f)
@@ -1960,7 +1962,7 @@ private fun VerifiedSealBadgeIcon(modifier: Modifier = Modifier) {
         sealPath.close()
         drawPath(
             path = sealPath,
-            color = Color(0xFFE5E9F0)
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFE5E9F0L)
         )
         val checkPath = Path().apply {
             moveTo(w * 0.33f, h * 0.52f)
@@ -1969,7 +1971,7 @@ private fun VerifiedSealBadgeIcon(modifier: Modifier = Modifier) {
         }
         drawPath(
             path = checkPath,
-            color = Color(0xFF0A0B0E),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF0A0B0EL),
             style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
     }
@@ -2011,7 +2013,7 @@ private fun MiniColorfulFlameIcon(
         drawPath(
             path = path,
             brush = Brush.verticalGradient(
-                colors = listOf(Color.White, flameColor)
+                colors = listOf(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, flameColor)
             )
         )
     }
@@ -2027,20 +2029,20 @@ private fun MonochromeClockIcon(modifier: Modifier = Modifier) {
         val r = w * 0.42f
         val strokeW = (w * 0.09f).coerceAtLeast(1.4.dp.toPx())
         drawCircle(
-            color = Color(0xFFE2E8F0),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFE2E8F0L),
             radius = r,
             center = Offset(cx, cy),
             style = Stroke(width = strokeW)
         )
         drawLine(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             start = Offset(cx, cy),
             end = Offset(cx, cy - r * 0.55f),
             strokeWidth = strokeW,
             cap = StrokeCap.Round
         )
         drawLine(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             start = Offset(cx, cy),
             end = Offset(cx + r * 0.45f, cy),
             strokeWidth = strokeW,
@@ -2061,28 +2063,28 @@ private fun MonochromeCalendarIcon(modifier: Modifier = Modifier) {
         val boxH = h * 0.66f
 
         drawRoundRect(
-            color = Color(0xFFE2E8F0),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFE2E8F0L),
             topLeft = Offset(left, top),
             size = Size(boxW, boxH),
             cornerRadius = CornerRadius(w * 0.12f, w * 0.12f),
             style = Stroke(width = strokeW)
         )
         drawLine(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             start = Offset(w * 0.32f, h * 0.11f),
             end = Offset(w * 0.32f, h * 0.26f),
             strokeWidth = strokeW,
             cap = StrokeCap.Round
         )
         drawLine(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             start = Offset(w * 0.68f, h * 0.11f),
             end = Offset(w * 0.68f, h * 0.26f),
             strokeWidth = strokeW,
             cap = StrokeCap.Round
         )
         drawLine(
-            color = Color(0xFFE2E8F0),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFE2E8F0L),
             start = Offset(left, h * 0.38f),
             end = Offset(left + boxW, h * 0.38f),
             strokeWidth = strokeW * 0.85f
@@ -2091,7 +2093,7 @@ private fun MonochromeCalendarIcon(modifier: Modifier = Modifier) {
         for (row in 0..1) {
             for (col in 0..2) {
                 drawCircle(
-                    color = Color.White,
+                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                     radius = dotR,
                     center = Offset(w * (0.31f + col * 0.19f), h * (0.52f + row * 0.17f))
                 )
@@ -2107,7 +2109,7 @@ private fun MonochromeStarIcon(modifier: Modifier = Modifier) {
             center = Offset(size.width / 2f, size.height / 2f),
             outerRadius = size.width * 0.46f,
             innerRadius = size.width * 0.20f,
-            color = Color(0xFFE2E8F0)
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFE2E8F0L)
         )
     }
 }
@@ -2127,7 +2129,7 @@ private fun MonochromeCrownIcon(modifier: Modifier = Modifier) {
             lineTo(w * 0.88f, h * 0.78f)
             close()
         }
-        drawPath(path = path, color = Color(0xFFE2E8F0))
+        drawPath(path = path, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFE2E8F0L))
     }
 }
 
@@ -2138,19 +2140,19 @@ private fun MonochromeBarChartIcon(modifier: Modifier = Modifier) {
         val h = size.height
         val barW = w * 0.20f
         drawRoundRect(
-            color = Color(0xFFCBD5E1),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
             topLeft = Offset(w * 0.10f, h * 0.42f),
             size = Size(barW, h * 0.48f),
             cornerRadius = CornerRadius(barW / 2f, barW / 2f)
         )
         drawRoundRect(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             topLeft = Offset(w * 0.40f, h * 0.15f),
             size = Size(barW, h * 0.75f),
             cornerRadius = CornerRadius(barW / 2f, barW / 2f)
         )
         drawRoundRect(
-            color = Color(0xFFCBD5E1),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
             topLeft = Offset(w * 0.70f, h * 0.55f),
             size = Size(barW, h * 0.35f),
             cornerRadius = CornerRadius(barW / 2f, barW / 2f)
@@ -2200,7 +2202,7 @@ private fun MonochromeWaveformGraph(
             val topY = h - barH
             val alpha = if (isActive) (0.35f + baseFrac * 0.65f).coerceIn(0.35f, 1f) else 0.24f
             drawLine(
-                color = Color.White.copy(alpha = alpha),
+                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = alpha),
                 start = Offset(x, topY),
                 end = Offset(x, h),
                 strokeWidth = strokeW,
@@ -2225,18 +2227,18 @@ private fun GeometricLinkinPrismArt(modifier: Modifier = Modifier) {
         }
         drawPath(
             path = outerTriangle,
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             style = Stroke(width = strokeW, join = StrokeJoin.Round)
         )
         drawLine(
-            color = Color.White.copy(alpha = 0.85f),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.85f),
             start = Offset(w * 0.55f, h * 0.08f),
             end = Offset(w * 0.28f, h * 0.92f),
             strokeWidth = strokeW,
             cap = StrokeCap.Round
         )
         drawLine(
-            color = Color.White.copy(alpha = 0.75f),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.75f),
             start = Offset(w * 0.34f, h * 0.45f),
             end = Offset(w * 0.72f, h * 0.56f),
             strokeWidth = strokeW,
@@ -2252,7 +2254,7 @@ private fun MonochromeHeadphoneMiniIcon(modifier: Modifier = Modifier) {
         val h = size.height
         val strokeW = 1.5.dp.toPx()
         drawArc(
-            color = Color(0xFFB8BECB),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB8BECBL),
             startAngle = 180f,
             sweepAngle = 180f,
             useCenter = false,
@@ -2261,13 +2263,13 @@ private fun MonochromeHeadphoneMiniIcon(modifier: Modifier = Modifier) {
             style = Stroke(width = strokeW, cap = StrokeCap.Round)
         )
         drawRoundRect(
-            color = Color(0xFFB8BECB),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB8BECBL),
             topLeft = Offset(w * 0.10f, h * 0.48f),
             size = Size(w * 0.20f, h * 0.36f),
             cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
         )
         drawRoundRect(
-            color = Color(0xFFB8BECB),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB8BECBL),
             topLeft = Offset(w * 0.70f, h * 0.48f),
             size = Size(w * 0.20f, h * 0.36f),
             cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
@@ -2283,7 +2285,7 @@ private fun MonochromeTrophyIcon(modifier: Modifier = Modifier) {
         val cx = w / 2f
 
         drawArc(
-            color = Color(0xFFCBD5E1),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
             startAngle = 90f,
             sweepAngle = 180f,
             useCenter = false,
@@ -2292,7 +2294,7 @@ private fun MonochromeTrophyIcon(modifier: Modifier = Modifier) {
             style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
         )
         drawArc(
-            color = Color(0xFFCBD5E1),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
             startAngle = -90f,
             sweepAngle = 180f,
             useCenter = false,
@@ -2311,19 +2313,19 @@ private fun MonochromeTrophyIcon(modifier: Modifier = Modifier) {
         drawPath(
             path = cupPath,
             brush = Brush.horizontalGradient(
-                colors = listOf(Color(0xFF94A3B8), Color.White, Color(0xFFCBD5E1))
+                colors = listOf(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF94A3B8L), com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L))
             )
         )
 
         drawRoundRect(
-            color = Color(0xFFCBD5E1),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
             topLeft = Offset(cx - w * 0.06f, h * 0.58f),
             size = Size(w * 0.12f, h * 0.18f),
             cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
         )
         drawRoundRect(
             brush = Brush.horizontalGradient(
-                colors = listOf(Color(0xFF94A3B8), Color.White, Color(0xFF94A3B8))
+                colors = listOf(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF94A3B8L), com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF94A3B8L))
             ),
             topLeft = Offset(w * 0.28f, h * 0.75f),
             size = Size(w * 0.44f, h * 0.11f),
@@ -2334,7 +2336,7 @@ private fun MonochromeTrophyIcon(modifier: Modifier = Modifier) {
             center = Offset(cx, h * 0.34f),
             outerRadius = w * 0.10f,
             innerRadius = w * 0.045f,
-            color = Color(0xFF64748B)
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF64748BL)
         )
     }
 }
@@ -2347,19 +2349,19 @@ private fun RisingBarsArrowIcon(modifier: Modifier = Modifier) {
         val barW = w * 0.17f
 
         drawRoundRect(
-            color = Color(0xFF94A3B8),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF94A3B8L),
             topLeft = Offset(w * 0.14f, h * 0.62f),
             size = Size(barW, h * 0.28f),
             cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
         )
         drawRoundRect(
-            color = Color(0xFFCBD5E1),
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
             topLeft = Offset(w * 0.42f, h * 0.44f),
             size = Size(barW, h * 0.46f),
             cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
         )
         drawRoundRect(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             topLeft = Offset(w * 0.70f, h * 0.26f),
             size = Size(barW, h * 0.64f),
             cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
@@ -2367,21 +2369,21 @@ private fun RisingBarsArrowIcon(modifier: Modifier = Modifier) {
 
         val strokeW = 2.2.dp.toPx()
         drawLine(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             start = Offset(w * 0.16f, h * 0.48f),
             end = Offset(w * 0.74f, h * 0.10f),
             strokeWidth = strokeW,
             cap = StrokeCap.Round
         )
         drawLine(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             start = Offset(w * 0.54f, h * 0.10f),
             end = Offset(w * 0.74f, h * 0.10f),
             strokeWidth = strokeW,
             cap = StrokeCap.Round
         )
         drawLine(
-            color = Color.White,
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             start = Offset(w * 0.74f, h * 0.10f),
             end = Offset(w * 0.74f, h * 0.28f),
             strokeWidth = strokeW,
@@ -2449,8 +2451,8 @@ private fun EditLocalProfileDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp, vertical = 24.dp),
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF101217),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF101217L),
+            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.18f))
         ) {
             Column(
                 modifier = Modifier
@@ -2463,13 +2465,13 @@ private fun EditLocalProfileDialog(
                     text = "Edit Profil & Banner",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Atur foto profil, banner foto/video, nama, dan @username",
                     fontSize = 12.sp,
-                    color = Color(0xFF9EA4B0),
+                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L),
                     textAlign = TextAlign.Center
                 )
 
@@ -2480,8 +2482,8 @@ private fun EditLocalProfileDialog(
                         .fillMaxWidth()
                         .height(128.dp)
                         .clip(RoundedCornerShape(18.dp))
-                        .background(Color(0xFF181B24))
-                        .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(18.dp)),
+                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF181B24L))
+                        .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.18f), RoundedCornerShape(18.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (bannerUri.isNotBlank()) {
@@ -2501,7 +2503,7 @@ private fun EditLocalProfileDialog(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.45f))
+                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.black.copy(alpha = 0.45f))
                         )
                     }
 
@@ -2509,8 +2511,8 @@ private fun EditLocalProfileDialog(
                         modifier = Modifier
                             .size(76.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF14161C))
-                            .border(2.dp, Color.White, CircleShape)
+                            .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF14161CL))
+                            .border(2.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, CircleShape)
                             .clickable {
                                 avatarPickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -2544,9 +2546,9 @@ private fun EditLocalProfileDialog(
                             )
                         },
                         modifier = Modifier.weight(1f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
+                        border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.28f))
                     ) {
-                        Text("Upload Foto Profil", color = Color.White, fontSize = 11.5.sp)
+                        Text("Upload Foto Profil", color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, fontSize = 11.5.sp)
                     }
                     OutlinedButton(
                         onClick = {
@@ -2555,9 +2557,9 @@ private fun EditLocalProfileDialog(
                             )
                         },
                         modifier = Modifier.weight(1f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f))
+                        border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.28f))
                     ) {
-                        Text("Banner Foto/Video", color = Color.White, fontSize = 11.5.sp)
+                        Text("Banner Foto/Video", color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, fontSize = 11.5.sp)
                     }
                 }
 
@@ -2567,7 +2569,7 @@ private fun EditLocalProfileDialog(
                     ) {
                         if (avatarUri.isNotBlank()) {
                             TextButton(onClick = { avatarUri = "" }) {
-                                Text("Kosongkan Foto Profil", color = Color(0xFFB0B6C2), fontSize = 11.5.sp)
+                                Text("Kosongkan Foto Profil", color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB0B6C2L), fontSize = 11.5.sp)
                             }
                         }
                         if (bannerUri.isNotBlank()) {
@@ -2577,7 +2579,7 @@ private fun EditLocalProfileDialog(
                                     bannerIsVideo = false
                                 }
                             ) {
-                                Text("Hapus Banner", color = Color(0xFFB0B6C2), fontSize = 11.5.sp)
+                                Text("Hapus Banner", color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB0B6C2L), fontSize = 11.5.sp)
                             }
                         }
                     }
@@ -2592,12 +2594,12 @@ private fun EditLocalProfileDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color(0xFF9EA4B0)
+                        focusedTextColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedTextColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        focusedBorderColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedBorderColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f),
+                        focusedLabelColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedLabelColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L)
                     )
                 )
 
@@ -2610,12 +2612,12 @@ private fun EditLocalProfileDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color(0xFF9EA4B0)
+                        focusedTextColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedTextColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        focusedBorderColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedBorderColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f),
+                        focusedLabelColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedLabelColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L)
                     )
                 )
 
@@ -2628,12 +2630,12 @@ private fun EditLocalProfileDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color(0xFF9EA4B0)
+                        focusedTextColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedTextColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        focusedBorderColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedBorderColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f),
+                        focusedLabelColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                        unfocusedLabelColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L)
                     )
                 )
 
@@ -2643,18 +2645,18 @@ private fun EditLocalProfileDialog(
                     onClick = onOpenYouTubeLogin,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f))
+                    border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.22f))
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.account),
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (isLoggedIn) "Akun YouTube Music Terhubung (Kelola)" else "Login YouTube Music (Opsional)",
-                        color = Color.White,
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -2670,17 +2672,17 @@ private fun EditLocalProfileDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                        border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.2f))
                     ) {
-                        Text("Batal", color = Color.White)
+                        Text("Batal", color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white)
                     }
                     Button(
                         onClick = { onSave(name, handle, bio, avatarUri, bannerUri, bannerIsVideo) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                            contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black
                         )
                     ) {
                         Text("Simpan", fontWeight = FontWeight.ExtraBold)
@@ -2723,8 +2725,8 @@ private fun ListenerLevelsModalDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 16.dp),
             shape = RoundedCornerShape(26.dp),
-            color = Color(0xFF0E1015),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.20f))
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF0E1015L),
+            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.20f))
         ) {
             Column(
                 modifier = Modifier
@@ -2748,7 +2750,7 @@ private fun ListenerLevelsModalDialog(
                             text = "Level ${journeyState.levelSpec.level} – ${journeyState.levelSpec.title}",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -2756,7 +2758,7 @@ private fun ListenerLevelsModalDialog(
                             text = "${formatDotNumber(journeyState.xp)} / ${formatDotNumber(journeyState.xpTargetForCurrentBanner)} XP",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFFCBD5E1),
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
                             maxLines = 1
                         )
                     }
@@ -2768,8 +2770,8 @@ private fun ListenerLevelsModalDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF161820))
-                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF161820L))
+                        .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
                         .padding(14.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -2786,7 +2788,7 @@ private fun ListenerLevelsModalDialog(
                                 Icon(
                                     painter = painterResource(R.drawable.star),
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Column {
@@ -2794,7 +2796,7 @@ private fun ListenerLevelsModalDialog(
                                         text = "Animasi GIF Transparan",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                                     )
                                     Text(
                                         text = if (allDownloaded && isGifEnabled) {
@@ -2805,7 +2807,7 @@ private fun ListenerLevelsModalDialog(
                                             "$downloadedCount/19 File terunduh"
                                         },
                                         fontSize = 11.sp,
-                                        color = if (allDownloaded && isGifEnabled) Color(0xFF86EFAC) else Color(0xFF989EA9)
+                                        color = if (allDownloaded && isGifEnabled) com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF86EFACL) else com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L)
                                     )
                                 }
                             }
@@ -2817,10 +2819,10 @@ private fun ListenerLevelsModalDialog(
                                         LevelGifManager.setGifIconsEnabled(context, checked)
                                     },
                                     colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.Black,
-                                        checkedTrackColor = Color.White,
-                                        uncheckedThumbColor = Color(0xFF989EA9),
-                                        uncheckedTrackColor = Color(0xFF232732)
+                                        checkedThumbColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black,
+                                        checkedTrackColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                                        uncheckedThumbColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L),
+                                        uncheckedTrackColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF232732L)
                                     )
                                 )
                             }
@@ -2829,7 +2831,7 @@ private fun ListenerLevelsModalDialog(
                         Text(
                             text = "Unduh paket GIF untuk mengganti icon statis dengan animasi transparan berulang (loop) dan menampilkan animasi kenaikan level.",
                             fontSize = 11.5.sp,
-                            color = Color(0xFFA0A6B4),
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                             lineHeight = 16.sp
                         )
 
@@ -2842,8 +2844,8 @@ private fun ListenerLevelsModalDialog(
                                             .fillMaxWidth()
                                             .height(6.dp)
                                             .clip(CircleShape),
-                                        color = Color.White,
-                                        trackColor = Color.White.copy(alpha = 0.12f)
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                                        trackColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.12f)
                                     )
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -2852,14 +2854,14 @@ private fun ListenerLevelsModalDialog(
                                         Text(
                                             text = "Mengunduh ${status.currentFile}...",
                                             fontSize = 11.sp,
-                                            color = Color.White,
+                                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
                                             text = "${status.completed}/${status.total} (${(status.progress * 100).toInt()}%)",
                                             fontSize = 11.sp,
-                                            color = Color(0xFFCBD5E1),
+                                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
@@ -2868,14 +2870,14 @@ private fun ListenerLevelsModalDialog(
                             is GifDownloadStatus.Error -> {
                                 Text(
                                     text = "Error: ${status.message}",
-                                    color = Color(0xFFF87171),
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFF87171L),
                                     fontSize = 11.5.sp
                                 )
                                 Button(
                                     onClick = { LevelGifManager.startDownload(context) },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                    colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                                 ) {
                                     Text("Coba Unduh Lagi", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -2886,7 +2888,7 @@ private fun ListenerLevelsModalDialog(
                                         onClick = { LevelGifManager.startDownload(context) },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                        colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.download),
@@ -2910,9 +2912,9 @@ private fun ListenerLevelsModalDialog(
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
                                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
-                                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
+                                            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f))
                                         ) {
-                                            Text("Pratinjau Animasi", fontSize = 11.sp, color = Color.White, maxLines = 1)
+                                            Text("Pratinjau Animasi", fontSize = 11.sp, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, maxLines = 1)
                                         }
 
                                         OutlinedButton(
@@ -2922,9 +2924,9 @@ private fun ListenerLevelsModalDialog(
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
                                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
-                                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f))
+                                            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFEF4444L).copy(alpha = 0.5f))
                                         ) {
-                                            Text("Hapus GIF", fontSize = 11.sp, color = Color(0xFFFCA5A5), maxLines = 1)
+                                            Text("Hapus GIF", fontSize = 11.sp, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFFCA5A5L), maxLines = 1)
                                         }
                                     }
                                 }
@@ -2939,7 +2941,7 @@ private fun ListenerLevelsModalDialog(
                     text = "Daftar 10 Level & Gelar Pendengar",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -2954,12 +2956,12 @@ private fun ListenerLevelsModalDialog(
                             .padding(vertical = 3.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(
-                                if (isCurrent) Color.White.copy(alpha = 0.14f)
-                                else Color(0xFF161820)
+                                if (isCurrent) com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f)
+                                else com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF161820L)
                             )
                             .border(
                                 width = 1.dp,
-                                color = if (isCurrent) Color.White.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.08f),
+                                color = if (isCurrent) com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.55f) else com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.08f),
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable {
@@ -2984,14 +2986,14 @@ private fun ListenerLevelsModalDialog(
                                 text = "Lv.${spec.level} ${spec.title}",
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White,
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = spec.subtitle,
                                 fontSize = 11.sp,
-                                color = Color(0xFF989EA9),
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -3001,7 +3003,7 @@ private fun ListenerLevelsModalDialog(
                             text = if (isCurrent) "Aktif • $xpLabel" else if (isUnlocked) "✓ $xpLabel" else xpLabel,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isCurrent) Color.White else Color(0xFFB0B6C2),
+                            color = if (isCurrent) com.ikyvortex.vortexmusic.ui.theme.SoftMap.white else com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB0B6C2L),
                             maxLines = 1,
                             softWrap = false
                         )
@@ -3019,12 +3021,12 @@ private fun ListenerLevelsModalDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
+                        border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f))
                     ) {
                         Text(
                             text = "Cadangkan Statistik",
                             fontSize = 11.sp,
-                            color = Color.White,
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -3034,12 +3036,12 @@ private fun ListenerLevelsModalDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
+                        border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f))
                     ) {
                         Text(
                             text = "Pulihkan Statistik",
                             fontSize = 11.sp,
-                            color = Color.White,
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -3052,7 +3054,7 @@ private fun ListenerLevelsModalDialog(
                 ) {
                     Text(
                         text = if (showStatEditor) "Sembunyikan Kustomisasi Statistik" else "Kustomisasi / Reset Statistik (Mulai dari 0)",
-                        color = Color(0xFFCBD5E1),
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L),
                         fontSize = 12.sp
                     )
                 }
@@ -3062,7 +3064,7 @@ private fun ListenerLevelsModalDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF161820))
+                            .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF161820L))
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -3070,7 +3072,7 @@ private fun ListenerLevelsModalDialog(
                             text = "Uji Coba Kondisi Api Streak:",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                         )
                         val presets = listOf(
                             0 to "0 Hari (Mati)",
@@ -3094,9 +3096,9 @@ private fun ListenerLevelsModalDialog(
                                         },
                                         modifier = Modifier.weight(1f),
                                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
-                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
+                                        border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f))
                                     ) {
-                                        Text(label, fontSize = 10.sp, color = Color.White, maxLines = 1)
+                                        Text(label, fontSize = 10.sp, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, maxLines = 1)
                                     }
                                 }
                             }
@@ -3142,7 +3144,7 @@ private fun ListenerLevelsModalDialog(
                                     )
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                                colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                             ) {
                                 Text("Terapkan", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
@@ -3152,7 +3154,7 @@ private fun ListenerLevelsModalDialog(
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Reset ke 0", fontSize = 12.sp, color = Color.White)
+                                Text("Reset ke 0", fontSize = 12.sp, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white)
                             }
                         }
                     }
@@ -3164,7 +3166,7 @@ private fun ListenerLevelsModalDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                    colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                 ) {
                     Text("Tutup", fontWeight = FontWeight.ExtraBold)
                 }
@@ -3181,8 +3183,8 @@ private fun DailyRecordDetailDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF101217),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF101217L),
+            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.18f))
         ) {
             Column(
                 modifier = Modifier
@@ -3198,7 +3200,7 @@ private fun DailyRecordDetailDialog(
                         text = "Rekor Harian",
                         fontSize = 19.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                     )
                 }
 
@@ -3208,28 +3210,28 @@ private fun DailyRecordDetailDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF171A22))
-                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF171A22L))
+                        .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
                     Column {
                         Text(
                             text = "⭐ Rekor Harian Terlama",
                             fontSize = 12.sp,
-                            color = Color(0xFFA0A6B4)
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = journeyState.dailyRecordFullText,
                             fontSize = 26.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Mencatat durasi mendengarkan terlama dalam satu hari. Rekor otomatis diperbarui saat kamu mendengarkan lebih lama.",
                             fontSize = 11.5.sp,
-                            color = Color(0xFF989EA9)
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L)
                         )
                     }
                 }
@@ -3240,14 +3242,14 @@ private fun DailyRecordDetailDialog(
                     text = "Riwayat Durasi Harian",
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (journeyState.dailyHistory.isEmpty()) {
                     Text(
                         text = "Belum ada riwayat harian — putar musik untuk mulai mencatat!",
-                        color = Color(0xFF989EA9),
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L),
                         fontSize = 12.5.sp,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
@@ -3262,19 +3264,19 @@ private fun DailyRecordDetailDialog(
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF161820))
+                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF161820L))
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(item.displayDate, color = Color(0xFFD0D5E0), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text(item.displayDate, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFD0D5E0L), fontSize = 13.sp, fontWeight = FontWeight.Medium)
                             Text(
                                 text = when {
                                     hrs > 0L && mins > 0L -> "$hrs Jam $mins Menit"
                                     hrs > 0L -> "$hrs Jam"
                                     else -> "$mins Menit"
                                 },
-                                color = Color.White,
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -3288,7 +3290,7 @@ private fun DailyRecordDetailDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                    colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                 ) {
                     Text("Tutup", fontWeight = FontWeight.ExtraBold)
                 }
@@ -3305,8 +3307,8 @@ private fun MonthlyRecordDetailDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF101217),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF101217L),
+            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.18f))
         ) {
             Column(
                 modifier = Modifier
@@ -3322,7 +3324,7 @@ private fun MonthlyRecordDetailDialog(
                         text = "Rekor Bulanan",
                         fontSize = 19.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                     )
                 }
 
@@ -3332,22 +3334,22 @@ private fun MonthlyRecordDetailDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF171A22))
-                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF171A22L))
+                        .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
                     Column {
                         Text(
                             text = "👑 Rekor Bulanan Tertinggi",
                             fontSize = 12.sp,
-                            color = Color(0xFFA0A6B4)
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = journeyState.monthlyRecordHoursText,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                         )
                     }
                 }
@@ -3358,14 +3360,14 @@ private fun MonthlyRecordDetailDialog(
                     text = "Statistik Berdasarkan Bulan",
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (journeyState.monthlyHistory.isEmpty()) {
                     Text(
                         text = "Belum ada riwayat bulanan — putar musik untuk mulai mencatat!",
-                        color = Color(0xFF989EA9),
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L),
                         fontSize = 12.5.sp,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
@@ -3378,20 +3380,20 @@ private fun MonthlyRecordDetailDialog(
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (idx == 0) Color.White.copy(alpha = 0.12f) else Color(0xFF161820))
+                                .background(if (idx == 0) com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.12f) else com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF161820L))
                                 .padding(horizontal = 14.dp, vertical = 11.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = entry.displayTitle,
-                                color = Color.White,
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                 fontSize = 13.5.sp,
                                 fontWeight = if (idx == 0) FontWeight.ExtraBold else FontWeight.Medium
                             )
                             Text(
                                 text = label,
-                                color = Color.White,
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -3405,7 +3407,7 @@ private fun MonthlyRecordDetailDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                    colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                 ) {
                     Text("Tutup", fontWeight = FontWeight.ExtraBold)
                 }
@@ -3432,8 +3434,8 @@ private fun ListeningSummaryDetailDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp),
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF101217),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF101217L),
+            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.18f))
         ) {
             Column(
                 modifier = Modifier
@@ -3449,7 +3451,7 @@ private fun ListeningSummaryDetailDialog(
                         text = "Pola & Ringkasan Mendengarkan",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                     )
                 }
 
@@ -3459,7 +3461,7 @@ private fun ListeningSummaryDetailDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF161820))
+                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF161820L))
                         .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -3467,7 +3469,7 @@ private fun ListeningSummaryDetailDialog(
                         text = "Pola Mendengarkan Mingguan (Sen – Min)",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                     )
 
                     dayNames.forEachIndexed { idx, dayLabel ->
@@ -3483,7 +3485,7 @@ private fun ListeningSummaryDetailDialog(
                                 text = dayLabel,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFD0D5E0),
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFD0D5E0L),
                                 modifier = Modifier.width(30.dp)
                             )
                             Box(
@@ -3491,7 +3493,7 @@ private fun ListeningSummaryDetailDialog(
                                     .weight(1f)
                                     .height(12.dp)
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.08f))
                             ) {
                                 if (fraction > 0f) {
                                     Box(
@@ -3501,7 +3503,7 @@ private fun ListeningSummaryDetailDialog(
                                             .clip(RoundedCornerShape(4.dp))
                                             .background(
                                                 Brush.horizontalGradient(
-                                                    colors = listOf(Color(0xFFCBD5E1), Color.White)
+                                                    colors = listOf(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFCBD5E1L), com.ikyvortex.vortexmusic.ui.theme.SoftMap.white)
                                                 )
                                             )
                                     )
@@ -3511,7 +3513,7 @@ private fun ListeningSummaryDetailDialog(
                                 text = String.format(Locale.US, "%.1fj", hrs),
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color.White,
+                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                 modifier = Modifier.width(38.dp),
                                 textAlign = TextAlign.End
                             )
@@ -3529,15 +3531,15 @@ private fun ListeningSummaryDetailDialog(
                         onClick = onOpenFullStats,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f))
+                        border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f))
                     ) {
-                        Text("Statistik Lengkap", color = Color.White, fontSize = 12.5.sp)
+                        Text("Statistik Lengkap", color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, fontSize = 12.5.sp)
                     }
                     Button(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                        colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                     ) {
                         Text("Tutup", fontWeight = FontWeight.ExtraBold)
                     }
@@ -3562,8 +3564,8 @@ private fun Top10SongsModalDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             shape = RoundedCornerShape(26.dp),
-            color = Color(0xFF0E1015),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.20f))
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF0E1015L),
+            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.20f))
         ) {
             Column(
                 modifier = Modifier
@@ -3580,12 +3582,12 @@ private fun Top10SongsModalDialog(
                             text = "Top 10 Lagu Paling Sering Didengar",
                             fontSize = 17.5.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                         )
                         Text(
                             text = "Berdasarkan jumlah pemutaran (play count)",
                             fontSize = 12.sp,
-                            color = Color(0xFF9EA4B0)
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L)
                         )
                     }
                 }
@@ -3601,7 +3603,7 @@ private fun Top10SongsModalDialog(
                     ) {
                         Text(
                             text = "Belum ada lagu yang diputar.\nMulai dengarkan musik untuk melihat Top 10 lagumu!",
-                            color = Color(0xFF9EA4B0),
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF9EA4B0L),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
                         )
@@ -3625,11 +3627,11 @@ private fun Top10SongsModalDialog(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(
-                                        if (index < 3) Color.White.copy(alpha = 0.10f) else Color(0xFF15171F)
+                                        if (index < 3) com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.10f) else com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF15171FL)
                                     )
                                     .border(
                                         width = 1.dp,
-                                        color = if (index == 0) Color.White.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.06f),
+                                        color = if (index == 0) com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.35f) else com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.06f),
                                         shape = RoundedCornerShape(14.dp)
                                     )
                                     .clickable { onPlaySong(item) }
@@ -3640,7 +3642,7 @@ private fun Top10SongsModalDialog(
                                     text = rankBadge,
                                     fontSize = if (index < 3) 18.sp else 13.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     modifier = Modifier.width(32.dp)
                                 )
 
@@ -3649,14 +3651,14 @@ private fun Top10SongsModalDialog(
                                         text = item.title,
                                         fontSize = 14.5.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White,
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = item.artist,
                                         fontSize = 12.sp,
-                                        color = Color(0xFFA0A6B4),
+                                        color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -3666,7 +3668,7 @@ private fun Top10SongsModalDialog(
                                     text = "${item.playCount}x diputar",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White,
+                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                     modifier = Modifier.padding(end = 10.dp)
                                 )
 
@@ -3674,14 +3676,14 @@ private fun Top10SongsModalDialog(
                                     modifier = Modifier
                                         .size(32.dp)
                                         .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.14f))
+                                        .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.14f))
                                         .clickable { onPlaySong(item) },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.play),
                                         contentDescription = "Putar",
-                                        tint = Color.White,
+                                        tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -3696,7 +3698,7 @@ private fun Top10SongsModalDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                    colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                 ) {
                     Text("Tutup", fontWeight = FontWeight.ExtraBold)
                 }
@@ -3718,8 +3720,8 @@ private fun QuickProfileToolsDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF101217),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+            color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF101217L),
+            border = BorderStroke(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.18f))
         ) {
             Column(
                 modifier = Modifier
@@ -3731,7 +3733,7 @@ private fun QuickProfileToolsDialog(
                     text = "Pintasan & Fitur Musik",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -3777,7 +3779,7 @@ private fun QuickProfileToolsDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                    colors = ButtonDefaults.buttonColors(containerColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white, contentColor = com.ikyvortex.vortexmusic.ui.theme.SoftMap.black)
                 ) {
                     Text("Tutup", fontWeight = FontWeight.ExtraBold)
                 }
@@ -3797,7 +3799,7 @@ private fun QuickToolItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xFF161820))
+            .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF161820L))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -3806,17 +3808,17 @@ private fun QuickToolItemRow(
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
-            tint = Color.White,
+            tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
             modifier = Modifier.size(20.dp)
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(subtitle, fontSize = 11.5.sp, color = Color(0xFF989EA9))
+            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white)
+            Text(subtitle, fontSize = 11.5.sp, color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L))
         }
         Icon(
             painter = painterResource(R.drawable.navigate_next),
             contentDescription = null,
-            tint = Color(0xFF989EA9),
+            tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF989EA9L),
             modifier = Modifier.size(18.dp)
         )
     }

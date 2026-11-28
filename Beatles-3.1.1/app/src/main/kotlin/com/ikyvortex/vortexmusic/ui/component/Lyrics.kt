@@ -849,7 +849,7 @@ fun OriginalLyrics(
             val position = sliderPosition ?: playerConnection.player.currentPosition
             currentPlaybackPosition = position
             val lyricsOffset = currentSong?.song?.lyricsOffset ?: 0
-            currentLineIndex = findCurrentLineIndex(displayLines, position + lyricsOffset)
+            currentLineIndex = findCurrentLineIndex(displayLines, position + lyricsOffset + com.ikyvortex.vortexmusic.lyrics.LYRIC_LEAD_MS)
         }
     }
 
@@ -1088,7 +1088,7 @@ fun OriginalLyrics(
                 })
         ) {
             val lyricsOffset = currentSong?.song?.lyricsOffset?.toLong() ?: 0L
-            val effectivePlaybackPosition = currentPlaybackPosition + lyricsOffset
+            val effectivePlaybackPosition = currentPlaybackPosition + lyricsOffset + com.ikyvortex.vortexmusic.lyrics.LYRIC_LEAD_MS
 
             val displayedCurrentLineIndex = if (!isAutoScrollEnabled) {
                 currentLineIndex

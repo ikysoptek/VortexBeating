@@ -282,7 +282,7 @@ fun OnlineSearchResult(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
+            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
     ) {
         // Google-style SearchBar with Material 3 design

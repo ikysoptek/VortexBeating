@@ -68,7 +68,7 @@ constructor(
 
         val cleanedTitle = LyricsUtils.cleanTitleForSearch(mediaMetadata.title)
         val artistString = mediaMetadata.artists.joinToString { it.name }
-        val durationSeconds = if (mediaMetadata.duration > 0) mediaMetadata.duration / 1000 else mediaMetadata.duration
+        val durationSeconds = normalizeDurationSeconds(mediaMetadata.duration)
         val enabledProviders = orderedProviders.filter { it.isEnabled(context) }
 
         Timber.tag(TAG).d("Searching lyrics for: '$cleanedTitle' by '$artistString' (${durationSeconds}s)")
@@ -100,7 +100,9 @@ constructor(
                 if (providerResult != null && providerResult.isSuccess) {
                     val lyrics = providerResult.getOrNull()
                     if (isValidLyricsContent(lyrics)) {
-                        if (isLyricsCompatibleWithTrack(lyrics!!, artistString, durationSeconds)) {
+                        if (isLyricsCompatibleWithTrack(lyrics!!, artistString, durationSeconds) &&
+                            !isWrongLanguageForTrack(lyrics, mediaMetadata.title, artistString, mediaMetadata.album?.title)
+                        ) {
                             Timber.tag(TAG).i("Got duration-matched lyrics from ${provider.name}")
                             return@withTimeoutOrNull LyricsWithProvider(lyrics, provider.name)
                         } else {
@@ -214,7 +216,7 @@ constructor(
 
         val cleanedTitle = LyricsUtils.cleanTitleForSearch(mediaMetadata.title)
         val artistString = mediaMetadata.artists.joinToString { it.name }
-        val durationSeconds = if (mediaMetadata.duration > 0) mediaMetadata.duration / 1000 else mediaMetadata.duration
+        val durationSeconds = normalizeDurationSeconds(mediaMetadata.duration)
 
         val primaryProvider = providerInstanceOf(preferred)
         val fallbackOrder = listOf(
@@ -231,6 +233,7 @@ constructor(
         val providersToTry = fallbackOrder.filter { it.name == primaryProvider.name || it.isEnabled(context) }
 
         val result = withTimeoutOrNull(MAX_LYRICS_FETCH_MS) {
+            var directFallback: LyricsWithProvider? = null
             for (provider in providersToTry) {
                 Timber.tag(TAG).d("Direct provider switch trying: ${provider.name}")
                 val providerResult = try {
@@ -254,12 +257,22 @@ constructor(
                 if (providerResult != null && providerResult.isSuccess) {
                     val lyrics = providerResult.getOrNull()
                     if (isValidLyricsContent(lyrics)) {
-                        Timber.tag(TAG).i("Direct switch got lyrics from ${provider.name}")
-                        return@withTimeoutOrNull LyricsWithProvider(lyrics!!, provider.name)
+                        // Pastikan lirik cocok dengan lagu (durasi/artis/bahasa) supaya tidak
+                        // salah versi (intro beda) atau salah bahasa. Jika tidak ada yang cocok,
+                        // pakai kandidat pertama.
+                        if (isLyricsCompatibleWithTrack(lyrics!!, artistString, durationSeconds) &&
+                            !isWrongLanguageForTrack(lyrics, mediaMetadata.title, artistString, mediaMetadata.album?.title)
+                        ) {
+                            Timber.tag(TAG).i("Direct switch got compatible lyrics from ${provider.name}")
+                            return@withTimeoutOrNull LyricsWithProvider(lyrics, provider.name)
+                        }
+                        if (directFallback == null) {
+                            directFallback = LyricsWithProvider(lyrics, provider.name)
+                        }
                     }
                 }
             }
-            LyricsWithProvider(LYRICS_NOT_FOUND, PROVIDER_NONE)
+            directFallback ?: LyricsWithProvider(LYRICS_NOT_FOUND, PROVIDER_NONE)
         } ?: LyricsWithProvider(LYRICS_NOT_FOUND, PROVIDER_NONE)
 
         if (result.lyrics != LYRICS_NOT_FOUND) {
@@ -385,6 +398,52 @@ constructor(
             else -> null
         }
 
+        /** Durasi lagu di database & metadata dalam DETIK; jika ternyata milidetik, ubah ke detik. */
+        fun normalizeDurationSeconds(raw: Int): Int =
+            if (raw > 10_000) raw / 1000 else raw
+
+        private val ENGLISH_WORDS = setOf(
+            "the", "and", "you", "your", "that", "with", "for", "are", "this", "but", "not", "have",
+            "was", "just", "know", "love", "baby", "like", "all", "she", "his", "her", "they", "when",
+            "what", "can", "will", "would", "don't", "i'm", "it's", "me", "my", "we", "us", "of", "in",
+            "on", "to", "is", "it", "be", "so", "do", "no", "got", "want", "never", "ever", "oh",
+        )
+        private val INDONESIAN_WORDS = setOf(
+            "yang", "dan", "aku", "kamu", "kau", "dia", "tak", "tidak", "cinta", "rindu", "hati",
+            "dalam", "waktu", "untuk", "dengan", "pada", "ini", "itu", "ada", "sama", "mau", "bisa",
+            "akan", "masih", "lagi", "jangan", "saat", "hari", "malam", "kita", "kami", "mereka",
+            "sudah", "belum", "pernah", "apa", "bukan", "seperti", "tapi", "hanya", "sebuah", "dunia",
+            "hidup", "rasa", "kasih", "sayang", "pergi", "pulang", "menunggu", "terbuang", "jalan",
+            "di", "ke", "dari", "oleh", "atau", "karena", "biar", "supaya", "agar", "kini", "nanti",
+        )
+
+        private fun wordsOf(text: String): List<String> =
+            text.lowercase().split(Regex("[^a-z']+")).filter { it.isNotBlank() }
+
+        /**
+         * True jika lirik didominasi bahasa Inggris padahal judul/artis/album terlihat berbahasa
+         * Indonesia (penyebab lagu Indonesia tampil dengan lirik bahasa Inggris).
+         */
+        fun isWrongLanguageForTrack(
+            lyrics: String,
+            title: String?,
+            artist: String?,
+            album: String?,
+        ): Boolean {
+            val meta = wordsOf("${title.orEmpty()} ${artist.orEmpty()} ${album.orEmpty()}")
+            val titleLooksIndonesian = meta.any { it in INDONESIAN_WORDS && it !in ENGLISH_WORDS && it.length > 2 }
+            if (!titleLooksIndonesian) return false
+            val body = lyrics.lineSequence()
+                .map { it.replace(Regex("<[^>]*>"), " ").replace(Regex("\\[[^\\]]*\\]"), " ") }
+                .take(60)
+                .joinToString(" ")
+            val words = wordsOf(body)
+            if (words.size < 20) return false
+            val en = words.count { it in ENGLISH_WORDS }
+            val id = words.count { it in INDONESIAN_WORDS }
+            return en >= 8 && en > id * 3
+        }
+
         /**
          * Validates that LRC lyrics match the track's artist metadata (if [ar:] tag is present)
          * and that the final lyric timestamp does not exceed or fall short of the song duration
@@ -424,7 +483,7 @@ constructor(
                 if (maxLyricSec > 0) {
                     // Tolak lirik versi lain (live/remix/durasi beda): berakhir > 12 dtk setelah lagu
                     // selesai, atau berakhir terlalu cepat (< 55% durasi lagu).
-                    if (maxLyricSec > expectedDurationSec + 12) return false
+                    if (maxLyricSec > expectedDurationSec + 6) return false
                     if (maxLyricSec < (expectedDurationSec * 0.55).toInt()) return false
                 }
                 // Tag [length:mm:ss] dari penyedia lirik: harus cocok dengan durasi lagu (+-10 dtk)

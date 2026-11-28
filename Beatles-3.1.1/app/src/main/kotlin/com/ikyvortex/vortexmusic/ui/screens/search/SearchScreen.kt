@@ -146,8 +146,13 @@ fun SearchScreen(
     }
 
     val accentColor = MaterialTheme.colorScheme.primary
-    val searchPillBg = if (isDark) Color(0xFF0E121B).copy(alpha = 0.48f) else Color.White.copy(alpha = 0.72f)
-    val searchPillFrost = Brush.linearGradient(
+    val isSoftSearch = com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current
+    val softInk = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(isDark)
+    val searchTextColor = if (isSoftSearch) softInk else searchTextColor
+    val searchPillBg = if (isSoftSearch) {
+        if (isDark) Color(0xFF1F3A55) else com.ikyvortex.vortexmusic.ui.theme.SoftPalette.SkyBlue
+    } else if (isDark) Color(0xFF0E121B).copy(alpha = 0.48f) else Color.White.copy(alpha = 0.72f)
+    val searchPillFrost = if (isSoftSearch) Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)) else Brush.linearGradient(
         listOf(
             if (isDark) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.92f),
             accentColor.copy(alpha = if (isDark) 0.14f else 0.10f),
@@ -155,7 +160,7 @@ fun SearchScreen(
             if (isDark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.78f)
         )
     )
-    val searchPillBorder = Brush.linearGradient(
+    val searchPillBorder = if (isSoftSearch) Brush.linearGradient(listOf(softInk, softInk)) else Brush.linearGradient(
         listOf(
             if (isDark) Color.White.copy(alpha = 0.48f) else Color.White.copy(alpha = 0.96f),
             accentColor.copy(alpha = if (isDark) 0.34f else 0.24f),
@@ -184,7 +189,7 @@ fun SearchScreen(
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.ExtraBold
                         ),
-                        color = if (isDark) Color.White else Color.Black
+                        color = searchTextColor
                     )
 
                     // Segmented Online / Library 3D Liquid Glass Pill
@@ -193,7 +198,7 @@ fun SearchScreen(
                             .clip(CircleShape)
                             .background(searchPillBg, CircleShape)
                             .background(searchPillFrost, CircleShape)
-                            .border(BorderStroke(1.1.dp, searchPillBorder), CircleShape)
+                            .border(BorderStroke(if (isSoftSearch) 2.5.dp else 1.1.dp, searchPillBorder), CircleShape)
                             .padding(3.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -293,11 +298,11 @@ fun SearchScreen(
                                 .weight(1f)
                                 .focusRequester(focusRequester),
                             textStyle = TextStyle(
-                                color = if (isDark) Color.White else Color.Black,
+                                color = searchTextColor,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium
                             ),
-                            cursorBrush = SolidColor(if (isDark) Color.White else Color.Black),
+                            cursorBrush = SolidColor(searchTextColor),
                             singleLine = true,
                             decorationBox = { innerTextField ->
                                 if (query.text.isEmpty()) {
@@ -333,7 +338,7 @@ fun SearchScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.close),
                                     contentDescription = null,
-                                    tint = if (isDark) Color.White else Color.Black,
+                                    tint = searchTextColor,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -345,7 +350,7 @@ fun SearchScreen(
 
                 HorizontalDivider(
                     thickness = 1.dp,
-                    color = if (isDark) Color.White.copy(alpha = 0.07f) else Color.Black.copy(alpha = 0.07f)
+                    color = if (isSoftSearch) softInk.copy(alpha = 0.35f) else if (isDark) Color.White.copy(alpha = 0.07f) else Color.Black.copy(alpha = 0.07f)
                 )
             }
         },

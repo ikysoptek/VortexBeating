@@ -860,7 +860,7 @@ fun HomeScreen(
                             .padding(top = 4.dp, bottom = 12.dp)
                             .animateItem()
                     ) {
-                        if (isEditorial) {
+                        if (isEditorial && !com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

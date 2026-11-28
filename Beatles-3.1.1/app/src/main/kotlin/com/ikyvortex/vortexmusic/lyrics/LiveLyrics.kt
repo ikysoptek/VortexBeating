@@ -254,8 +254,21 @@ private fun similarityRatio(a: String, b: String): Float {
     return 1f - dp[b.length].toFloat() / maxOf(a.length, b.length).toFloat()
 }
 
+/**
+ * Kompensasi latensi tampilan/audio (ms): lirik ditampilkan sedikit lebih awal supaya terasa
+ * tepat dengan suara (latensi render + buffer audio/Bluetooth).
+ */
+const val LYRIC_LEAD_MS = 120L
+
 /** Indeks baris yang sedang dinyanyikan (-1 sebelum baris pertama). */
-fun List<LiveLine>.activeIndexAt(posMs: Long): Int = indexOfLast { it.startMs <= posMs }
+fun List<LiveLine>.activeIndexAt(posMs: Long): Int {
+    val pos = posMs + LYRIC_LEAD_MS
+    // Pencarian dari belakang; daftar sudah terurut menurut waktu mulai.
+    for (i in indices.reversed()) {
+        if (this[i].startMs <= pos) return i
+    }
+    return -1
+}
 
 /**
  * Progres pengisian karaoke (0..1) yang stabil dan tidak terlalu cepat:
@@ -264,7 +277,8 @@ fun List<LiveLine>.activeIndexAt(posMs: Long): Int = indexOfLast { it.startMs <=
  * - Untuk sinkron per baris: mengikuti rentang waktu alami menuju baris berikutnya
  *   (dibatasi maksimal 6500 ms pada jeda instrumental panjang).
  */
-fun LiveLine.karaokeFill(posMs: Long, nextStartMs: Long?): Float {
+fun LiveLine.karaokeFill(rawPosMs: Long, nextStartMs: Long?): Float {
+    val posMs = rawPosMs + LYRIC_LEAD_MS
     if (posMs <= startMs) return 0f
 
     val naturalGap = ((nextStartMs ?: (startMs + 4500L)) - startMs).coerceAtLeast(400L)
@@ -272,9 +286,9 @@ fun LiveLine.karaokeFill(posMs: Long, nextStartMs: Long?): Float {
     if (words.isNotEmpty()) {
         val lastIdx = words.lastIndex
         val extendedLineEnd = if (nextStartMs != null && nextStartMs > words[lastIdx].endMs) {
-            minOf(nextStartMs - 80L, words[lastIdx].endMs + 1500L)
+            minOf(nextStartMs - 80L, words[lastIdx].endMs + 600L)
         } else {
-            words[lastIdx].endMs + 400L
+            words[lastIdx].endMs + 300L
         }
 
         var total = 0
@@ -285,7 +299,7 @@ fun LiveLine.karaokeFill(posMs: Long, nextStartMs: Long?): Float {
             val wStart = w.startMs
             val wEnd = when {
                 i == lastIdx -> maxOf(w.endMs, extendedLineEnd)
-                else -> maxOf(w.endMs, minOf(words[i + 1].startMs, w.endMs + 350L))
+                else -> maxOf(w.endMs, minOf(words[i + 1].startMs, w.endMs + 250L))
             }.coerceAtLeast(wStart + 1L)
 
             total += len
@@ -298,16 +312,17 @@ fun LiveLine.karaokeFill(posMs: Long, nextStartMs: Long?): Float {
         return if (total == 0) 0f else (done / total).coerceIn(0f, 1f)
     }
 
+    // Lirik per baris (tanpa waktu per kata): estimasi lama dinyanyikan dari panjang teks,
+    // BUKAN dari jarak ke baris berikutnya. Dengan begitu isian tidak merayap lambat saat jeda
+    // instrumental panjang dan tidak terlalu cepat saat baris berdekatan.
+    val chars = text.count { !it.isWhitespace() }.coerceAtLeast(1)
+    val estimated = (chars * 80L).coerceIn(1100L, 7000L)
+    val limit = if (nextStartMs != null) (naturalGap - 120L).coerceAtLeast(400L) else estimated
     val span = if (endMs > startMs) {
-        val paddedEnd = if (nextStartMs != null && nextStartMs > endMs) {
-            minOf(nextStartMs - 100L, endMs + 1200L)
-        } else {
-            endMs
-        }
-        minOf(paddedEnd - startMs, naturalGap, 6500L)
+        minOf(endMs - startMs + 250L, limit, 7000L)
     } else {
-        minOf(naturalGap, 6500L)
-    }.coerceAtLeast(1L)
+        minOf(estimated, limit)
+    }.coerceAtLeast(400L)
 
     return ((posMs - startMs).toFloat() / span.toFloat()).coerceIn(0f, 1f)
 }

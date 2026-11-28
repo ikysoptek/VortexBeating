@@ -122,7 +122,7 @@ fun OnlineSearchScreen(
         contentPadding = WindowInsets.systemBars.only(WindowInsetsSides.Bottom).asPaddingValues(),
         modifier = Modifier
             .fillMaxSize()
-            .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
+            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
             .testTag("online_search_history_list")
     ) {
         if (viewState.history.isNotEmpty()) {
@@ -363,7 +363,7 @@ fun OnlineSearchScreen(
                             }
                         }
                     )
-                    .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface)
+                    .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface)
                     .animateItem()
             )
         }
@@ -385,7 +385,7 @@ fun SuggestionItem(
         modifier = modifier
             .fillMaxWidth()
             .height(SuggestionItemHeight)
-            .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface)
+            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
     ) {

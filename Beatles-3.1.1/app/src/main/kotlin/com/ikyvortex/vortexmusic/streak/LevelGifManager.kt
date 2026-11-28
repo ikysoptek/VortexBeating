@@ -84,13 +84,32 @@ object LevelGifManager {
         }
     }
 
+    private const val PREFS_NAME = "level_gif_prefs"
+    private const val KEY_REMOVED_BY_USER = "removed_by_user"
+
+    private fun setRemovedByUser(context: Context, removed: Boolean) {
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_REMOVED_BY_USER, removed).apply()
+    }
+
+    /**
+     * Aktif secara default. Paket GIF level diunduh otomatis di latar belakang saat aplikasi dibuka
+     * (kecuali pengguna sengaja menghapusnya lewat tombol "Hapus GIF").
+     */
     fun init(context: Context) {
+        val appContext = context.applicationContext
         scope.launch {
-            val pref = context.applicationContext.dataStore.data
-                .map { it[EnableLevelGifIconsKey] ?: false }
+            val pref = appContext.dataStore.data
+                .map { it[EnableLevelGifIconsKey] ?: true }
                 .first()
-            val allPresent = areAllGifsDownloaded(context.applicationContext)
+            val allPresent = areAllGifsDownloaded(appContext)
             _isGifEnabled.value = pref && allPresent
+            val removedByUser = appContext
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(KEY_REMOVED_BY_USER, false)
+            if (!allPresent && !removedByUser) {
+                startDownload(appContext, fromUser = false)
+            }
         }
     }
 
@@ -186,14 +205,16 @@ object LevelGifManager {
                 allDeleted = false
             }
         }
+        setRemovedByUser(context, true)
         setGifIconsEnabled(context, false)
         _downloadStatus.value = GifDownloadStatus.Idle
         return allDeleted
     }
 
-    fun startDownload(context: Context) {
+    fun startDownload(context: Context, fromUser: Boolean = true) {
         val appContext = context.applicationContext
         if (_downloadStatus.value is GifDownloadStatus.Downloading) return
+        if (fromUser) setRemovedByUser(appContext, false)
 
         scope.launch {
             val dir = getGifDir(appContext)

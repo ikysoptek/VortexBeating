@@ -113,7 +113,7 @@ fun LocalSearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
+            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
             .let { base ->
                 if (isLandscape) {
                     base.windowInsetsPadding(

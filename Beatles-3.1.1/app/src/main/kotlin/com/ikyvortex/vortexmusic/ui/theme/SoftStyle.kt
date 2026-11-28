@@ -327,3 +327,56 @@ fun Modifier.softNeo(
         .background(fill, shape)
         .border(width = border, color = ink, shape = shape)
 }
+
+// ---------------------------------------------------------------------------------------------
+// Pemeta warna untuk layar yang masih memakai warna gelap hard-coded (mis. Profil)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Saat tema Pastel Notebook aktif ([active] = true): warna terang (teks/ikon) -> tinta navy,
+ * warna gelap (latar) -> krem, supaya layar bergaya gelap otomatis berubah jadi kertas pastel.
+ * Saat tidak aktif semua warna dikembalikan apa adanya.
+ */
+object SoftMap {
+    @Volatile
+    var active: Boolean = false
+
+    val white: Color get() = if (active) SoftPalette.Ink else Color.White
+    val black: Color get() = if (active) SoftPalette.Cream else Color.Black
+
+    /** Latar layar penuh: transparan agar kertas bergaris terlihat. */
+    fun screenBg(value: Long): Color = if (active) Color.Transparent else Color(value)
+
+    fun c(value: Long): Color {
+        val base = Color(value)
+        if (!active) return base
+        val lum = (0.2126f * base.red + 0.7152f * base.green + 0.0722f * base.blue)
+        return when {
+            lum >= 0.62f -> SoftPalette.Ink
+            lum >= 0.28f -> SoftPalette.Ink.copy(alpha = 0.78f)
+            lum <= 0.14f -> SoftPalette.Cream
+            else -> base
+        }
+    }
+}
+
+/** Latar kartu Profil: pastel bergilir + garis tinta + bayangan keras saat Pastel Notebook aktif. */
+@Composable
+fun Modifier.softProfileCard(
+    brush: Brush,
+    shape: androidx.compose.ui.graphics.Shape,
+    corner: Dp = 20.dp,
+): Modifier {
+    if (!SoftMap.active) return this.background(brush, shape)
+    val idx = SoftPalette.rememberPastelIndex()
+    return this.softNeo(
+        fill = SoftPalette.Pastels[idx],
+        ink = SoftPalette.Ink,
+        corner = corner,
+        border = 3.dp,
+        shadow = 5.dp,
+        tape = idx % 2 == 0,
+        tapeColor = if (idx % 4 == 0) SoftPalette.Tape else SoftPalette.TapeYellow,
+        tapeAngle = if (idx % 3 == 0) -3f else 4f,
+    )
+}

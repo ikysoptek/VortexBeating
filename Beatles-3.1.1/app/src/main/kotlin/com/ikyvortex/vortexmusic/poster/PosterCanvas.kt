@@ -1232,15 +1232,18 @@ fun PosterContent(
     }
 }
 
-/** Watermark kecil dan tipis di bagian bawah Mode 2: logo kepala singa + teks ringan transparan. */
+/**
+ * Watermark besar & jelas di bagian bawah Mode 2 (seperti referensi): plat logo Vortex Music
+ * + teks "Vortex Music" memakai Gloria Hallelujah tebal berwarna putih dengan bayangan.
+ */
 @Composable
 private fun BoxScope.WatermarkMode2(cw: Float, ch: Float) {
     val density = LocalDensity.current
-    val badgeDp = with(density) { (cw * 0.040f).toDp() }
-    val padBottom = with(density) { (ch * 0.022f).toDp() }
-    val textSp = with(density) { (cw * 0.029f).toSp() }
-    val trackingSp = with(density) { (cw * 0.0055f).toSp() }
-    val badgeShape = RoundedCornerShape(with(density) { (cw * 0.010f).toDp() })
+    val badgeH = with(density) { (cw * 0.066f).toDp() }
+    val padBottom = with(density) { (ch * 0.020f).toDp() }
+    val textSp = with(density) { (cw * 0.068f).toSp() }
+    val badgeShape = RoundedCornerShape(with(density) { (cw * 0.014f).toDp() })
+    val borderW = with(density) { (cw * 0.0035f).toDp() }
 
     Row(
         modifier = Modifier
@@ -1249,27 +1252,27 @@ private fun BoxScope.WatermarkMode2(cw: Float, ch: Float) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.vortex_mark),
+            painter = painterResource(R.drawable.vortex_wordmark),
             contentDescription = null,
-            contentScale = ContentScale.Crop,
-            alpha = 0.72f,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
-                .size(badgeDp)
-                .clip(badgeShape),
+                .height(badgeH)
+                .aspectRatio(1.72f)
+                .clip(badgeShape)
+                .border(borderW, Color.White.copy(alpha = 0.95f), badgeShape),
         )
-        Spacer(Modifier.width(badgeDp * 0.30f))
+        Spacer(Modifier.width(with(density) { (cw * 0.022f).toDp() }))
         Text(
-            text = "VORTEX MUSIC",
-            color = Color.White.copy(alpha = 0.62f),
+            text = "Vortex Music",
+            color = Color.White,
             fontSize = textSp,
-            fontFamily = Outfit,
-            fontWeight = FontWeight.Light,
-            letterSpacing = trackingSp,
+            fontFamily = com.ikyvortex.vortexmusic.ui.theme.SoftDisplayFont,
+            fontWeight = FontWeight.Bold,
             style = TextStyle(
                 shadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.35f),
-                    offset = Offset(0f, 2f),
-                    blurRadius = 6f,
+                    color = Color.Black.copy(alpha = 0.55f),
+                    offset = Offset(0f, 3f),
+                    blurRadius = 10f,
                 )
             ),
         )

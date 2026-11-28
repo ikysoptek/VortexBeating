@@ -1046,14 +1046,6 @@ private fun SystemSettingsContent(
                     onClick = { navController.navigate("settings/about") }
                 )
             )
-            add(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.whatsapp),
-                    title = { Text("WhatsApp Developer") },
-                    description = { Text("085835356933 • Hubungi Developer Vortex Music") },
-                    onClick = { uriHandler.openUri("https://wa.me/6285835356933") }
-                )
-            )
         }
     )
 }

@@ -4,6 +4,7 @@
 
 package com.ikyvortex.vortexmusic.ui.screens.search
 
+import com.ikyvortex.vortexmusic.ui.theme.softPaperLines
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -113,7 +114,7 @@ fun LocalSearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
+            .background(if (pureBlack && !com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Black else MaterialTheme.colorScheme.background).softPaperLines()
             .let { base ->
                 if (isLandscape) {
                     base.windowInsetsPadding(

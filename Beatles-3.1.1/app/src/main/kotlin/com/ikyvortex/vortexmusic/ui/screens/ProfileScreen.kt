@@ -495,10 +495,11 @@ fun ProfileScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(top = 14.dp)
                         .clip(RoundedCornerShape(22.dp))
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF151821L), com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF0B0C10L))
+                                colors = listOf(Color(0xFF151821), Color(0xFF0B0C10))
                             ),
                             RoundedCornerShape(22.dp)
                         )
@@ -529,7 +530,7 @@ fun ProfileScreen(
                                 .background(
                                     Brush.verticalGradient(
                                         colors = listOf(
-                                            com.ikyvortex.vortexmusic.ui.theme.SoftMap.black.copy(alpha = 0.30f),
+                                            Color.Black.copy(alpha = 0.30f),
                                             Color(0xB808090D),
                                             Color(0xE608090D)
                                         )
@@ -545,8 +546,8 @@ fun ProfileScreen(
                             drawCircle(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.08f),
-                                        com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.02f),
+                                        Color.White.copy(alpha = 0.08f),
+                                        Color.White.copy(alpha = 0.02f),
                                         Color.Transparent
                                     ),
                                     center = vinylCenter,
@@ -558,7 +559,7 @@ fun ProfileScreen(
                             for (ring in 1..6) {
                                 val r = maxVinylRadius * (0.30f + ring * 0.11f)
                                 drawCircle(
-                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = if (ring % 2 == 0) 0.08f else 0.04f),
+                                    color = Color.White.copy(alpha = if (ring % 2 == 0) 0.08f else 0.04f),
                                     radius = r,
                                     center = vinylCenter,
                                     style = Stroke(width = if (ring == 3) 2.dp.toPx() else 1.dp.toPx())
@@ -577,8 +578,8 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
-                                .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.black.copy(alpha = 0.58f))
-                                .border(1.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.25f), RoundedCornerShape(50))
+                                .background(Color.Black.copy(alpha = 0.58f))
+                                .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(50))
                                 .clickable {
                                     bannerMediaPickerLauncher.launch(
                                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
@@ -594,14 +595,14 @@ fun ProfileScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.edit),
                                     contentDescription = "Upload Banner Foto atau Video",
-                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                                    tint = Color.White,
                                     modifier = Modifier.size(13.dp)
                                 )
                                 Text(
                                     text = if (localBannerUri.isBlank()) "Banner Foto/Video" else if (localBannerIsVideo) "Ganti Video" else "Ganti Banner",
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
+                                    color = Color.White
                                 )
                             }
                         }
@@ -610,34 +611,34 @@ fun ProfileScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 18.dp),
+                            .padding(start = 16.dp, end = 16.dp, top = 62.dp, bottom = 38.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(94.dp)
+                                .size(106.dp)
                                 .clickable { showEditProfileDialog = true }
                                 .testTag("profile_avatar_box"),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(92.dp)
+                                    .size(104.dp)
                                     .clip(CircleShape)
                                     .border(
                                         width = 2.2.dp,
                                         brush = Brush.linearGradient(
                                             colors = listOf(
-                                                com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
-                                                com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFB8C0CCL),
-                                                com.ikyvortex.vortexmusic.ui.theme.SoftMap.white
+                                                Color.White,
+                                                Color(0xFFB8C0CC),
+                                                Color.White
                                             )
                                         ),
                                         shape = CircleShape
                                     )
                                     .padding(3.dp)
                                     .clip(CircleShape)
-                                    .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF14161CL)),
+                                    .background(Color(0xFF14161C)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (localAvatarUri.isNotBlank()) {
@@ -660,8 +661,8 @@ fun ProfileScreen(
                                     .padding(end = 2.dp, bottom = 2.dp)
                                     .size(28.dp)
                                     .clip(CircleShape)
-                                    .background(com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFF1A1C22L), CircleShape)
-                                    .border(1.2.dp, com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.35f), CircleShape)
+                                    .background(Color(0xFF1A1C22), CircleShape)
+                                    .border(1.2.dp, Color.White.copy(alpha = 0.35f), CircleShape)
                                     .clickable { showEditProfileDialog = true }
                                     .testTag("profile_edit_button"),
                                 contentAlignment = Alignment.Center
@@ -669,7 +670,7 @@ fun ProfileScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.edit),
                                     contentDescription = "Edit Profil",
-                                    tint = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                                    tint = Color.White,
                                     modifier = Modifier.size(14.dp)
                                 )
                             }
@@ -688,9 +689,9 @@ fun ProfileScreen(
                             ) {
                                 Text(
                                     text = displayName,
-                                    fontSize = 22.sp,
+                                    fontSize = 25.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white,
+                                    color = Color.White,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f, fill = false)
@@ -717,14 +718,14 @@ fun ProfileScreen(
                                     text = displayHandle,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFD0D5E0L),
+                                    color = Color(0xFFD0D5E0),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "✦",
                                     fontSize = 10.sp,
-                                    color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.white.copy(alpha = 0.65f)
+                                    color = Color.White.copy(alpha = 0.65f)
                                 )
                             }
 
@@ -734,7 +735,7 @@ fun ProfileScreen(
                                 text = localBio.ifBlank { "Belum ada bio" },
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = com.ikyvortex.vortexmusic.ui.theme.SoftMap.c(0xFFA0A6B4L),
+                                color = Color(0xFFA0A6B4),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )

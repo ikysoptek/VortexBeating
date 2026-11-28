@@ -1647,6 +1647,7 @@ fun DynamicIslandWaveform(
 fun DynamicIslandSettingsDialog(
     onDismiss: () -> Unit,
 ) {
+    val dlgFg = if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink else Color.White
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -1823,6 +1824,7 @@ fun DynamicIslandSettingsDialog(
             onDismissRequest = { showPermissionPromptDialog = false },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
+        com.ikyvortex.vortexmusic.ui.theme.SoftLightScope {
             val permDialogShape = RoundedCornerShape(28.dp)
             Box(
                 modifier = Modifier
@@ -1832,13 +1834,14 @@ fun DynamicIslandSettingsDialog(
                     .frostedGlassSurface(
                         shape = permDialogShape,
                         isHighlighted = true,
-                        baseTint = Color(0xFF0A1120).copy(alpha = 0.44f)
+                        baseTint = if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) null else Color(0xFF0A1120).copy(alpha = 0.44f)
                     )
             ) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
                         .clip(permDialogShape)
+.then(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Modifier.alpha(0f) else Modifier)
                         .then(
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 Modifier.blur(28.dp)
@@ -1849,10 +1852,10 @@ fun DynamicIslandSettingsDialog(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color.White.copy(alpha = 0.22f),
+                                    dlgFg.copy(alpha = 0.22f),
                                     previewAccent.copy(alpha = 0.16f),
                                     Color(0xFF38BDF8).copy(alpha = 0.12f),
-                                    Color.White.copy(alpha = 0.08f)
+                                    dlgFg.copy(alpha = 0.08f)
                                 )
                             )
                         )
@@ -1890,14 +1893,14 @@ fun DynamicIslandSettingsDialog(
                                 text = "Izin Dynamic Island",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White,
+                                color = dlgFg,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "Muncul di dalam & di luar aplikasi",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.72f)
+                                color = dlgFg.copy(alpha = 0.72f)
                             )
                         }
                     }
@@ -1907,7 +1910,7 @@ fun DynamicIslandSettingsDialog(
                     Text(
                         text = "Agar Dynamic Island dapat tampil dengan optimal baik di dalam maupun di luar aplikasi, periksa izin berikut:",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = dlgFg.copy(alpha = 0.9f)
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -1917,7 +1920,7 @@ fun DynamicIslandSettingsDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(permCardShape)
-                            .background(Color.White.copy(alpha = 0.06f))
+                            .background(dlgFg.copy(alpha = 0.06f))
                             .frostedGlassSurface(
                                 shape = permCardShape,
                                 isHighlighted = canDrawOverlays,
@@ -1938,7 +1941,7 @@ fun DynamicIslandSettingsDialog(
                                     text = "Tampilkan di Atas Aplikasi Lain",
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color.White,
+                                    color = dlgFg,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -1946,7 +1949,7 @@ fun DynamicIslandSettingsDialog(
                             Text(
                                 text = "Diperlukan agar kapsul Dynamic Island tetap melayang di layar saat kamu membuka Home atau aplikasi lain.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.72f)
+                                color = dlgFg.copy(alpha = 0.72f)
                             )
                         }
                     }
@@ -2006,7 +2009,7 @@ fun DynamicIslandSettingsDialog(
                             Text(
                                 text = "Aktifkan di Dalam Aplikasi Saja",
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = dlgFg.copy(alpha = 0.9f),
                                 maxLines = 1,
                                 softWrap = false,
                                 overflow = TextOverflow.Ellipsis
@@ -2016,12 +2019,14 @@ fun DynamicIslandSettingsDialog(
                 }
             }
         }
+        }
     }
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        com.ikyvortex.vortexmusic.ui.theme.SoftLightScope {
         val mainDialogShape = RoundedCornerShape(30.dp)
         Box(
             modifier = Modifier
@@ -2032,13 +2037,14 @@ fun DynamicIslandSettingsDialog(
                 .frostedGlassSurface(
                     shape = mainDialogShape,
                     isHighlighted = true,
-                    baseTint = Color(0xFF0A1222).copy(alpha = 0.38f)
+                    baseTint = if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) null else Color(0xFF0A1222).copy(alpha = 0.38f)
                 )
         ) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .clip(mainDialogShape)
+.then(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Modifier.alpha(0f) else Modifier)
                     .then(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             Modifier.blur(blurRadius.dp.coerceIn(16.dp, 36.dp))
@@ -2049,10 +2055,10 @@ fun DynamicIslandSettingsDialog(
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.24f),
+                                dlgFg.copy(alpha = 0.24f),
                                 previewAccent.copy(alpha = 0.18f),
                                 Color(0xFF38BDF8).copy(alpha = 0.14f),
-                                Color.White.copy(alpha = 0.10f)
+                                dlgFg.copy(alpha = 0.10f)
                             )
                         )
                     )
@@ -2074,7 +2080,7 @@ fun DynamicIslandSettingsDialog(
                             text = "Pengaturan Dynamic Island",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = dlgFg,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -2082,7 +2088,7 @@ fun DynamicIslandSettingsDialog(
                         Text(
                             text = "Kapsul musik interaktif • Liquid Glass Vivid",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = dlgFg.copy(alpha = 0.85f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -2103,7 +2109,7 @@ fun DynamicIslandSettingsDialog(
                         Icon(
                             painter = painterResource(R.drawable.close),
                             contentDescription = "Tutup",
-                            tint = Color.White,
+                            tint = dlgFg,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -2120,7 +2126,7 @@ fun DynamicIslandSettingsDialog(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color.White.copy(alpha = 0.18f),
+                                    dlgFg.copy(alpha = 0.18f),
                                     previewAccent.copy(alpha = 0.22f),
                                     Color(0xFF38BDF8).copy(alpha = 0.14f)
                                 )
@@ -2129,7 +2135,7 @@ fun DynamicIslandSettingsDialog(
                         .frostedGlassSurface(
                             shape = previewStageShape,
                             isHighlighted = true,
-                            baseTint = Color.White.copy(alpha = 0.12f)
+                            baseTint = dlgFg.copy(alpha = 0.12f)
                         )
                 ) {
                     Column(
@@ -2152,7 +2158,7 @@ fun DynamicIslandSettingsDialog(
                             text = "PRATINJAU LANGSUNG • $previewModeLabel • $previewThemeLabel",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = dlgFg.copy(alpha = 0.85f),
                             letterSpacing = 0.8.sp,
                             maxLines = 1,
                             softWrap = false,
@@ -2175,9 +2181,9 @@ fun DynamicIslandSettingsDialog(
                                         .background(
                                             Brush.linearGradient(
                                                 colors = listOf(
-                                                    Color.White.copy(alpha = 0.32f),
+                                                    dlgFg.copy(alpha = 0.32f),
                                                     previewAccent.copy(alpha = 0.26f),
-                                                    Color.White.copy(alpha = 0.12f)
+                                                    dlgFg.copy(alpha = 0.12f)
                                                 )
                                             ),
                                             shape = previewShape
@@ -2186,9 +2192,9 @@ fun DynamicIslandSettingsDialog(
                                             width = 1.6.dp,
                                             brush = Brush.linearGradient(
                                                 colors = listOf(
-                                                    Color.White.copy(alpha = 0.92f),
+                                                    dlgFg.copy(alpha = 0.92f),
                                                     previewAccent.copy(alpha = 0.82f),
-                                                    Color.White.copy(alpha = 0.35f)
+                                                    dlgFg.copy(alpha = 0.35f)
                                                 )
                                             ),
                                             shape = previewShape
@@ -2241,18 +2247,18 @@ fun DynamicIslandSettingsDialog(
                                             Icon(
                                                 painter = painterResource(R.drawable.music_note),
                                                 contentDescription = null,
-                                                tint = Color.White,
+                                                tint = dlgFg,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                         }
                                         Text(
                                             text = "Passionfruit • Drake",
-                                            color = Color.White,
+                                            color = dlgFg,
                                             style = TextStyle(
                                                 fontFamily = FontFamily.SansSerif,
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White
+                                                color = dlgFg
                                             ),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
@@ -2283,7 +2289,7 @@ fun DynamicIslandSettingsDialog(
                                             Icon(
                                                 painter = painterResource(R.drawable.music_note),
                                                 contentDescription = null,
-                                                tint = Color.White,
+                                                tint = dlgFg,
                                                 modifier = Modifier.size(24.dp)
                                             )
                                         }
@@ -2291,22 +2297,22 @@ fun DynamicIslandSettingsDialog(
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = "Passionfruit",
-                                                color = Color.White,
+                                                color = dlgFg,
                                                 style = TextStyle(
                                                     fontFamily = FontFamily.SansSerif,
                                                     fontSize = 16.sp,
                                                     fontWeight = FontWeight.ExtraBold,
-                                                    color = Color.White
+                                                    color = dlgFg
                                                 )
                                             )
                                             Text(
                                                 text = "Drake",
-                                                color = Color.White.copy(alpha = 0.88f),
+                                                color = dlgFg.copy(alpha = 0.88f),
                                                 style = TextStyle(
                                                     fontFamily = FontFamily.SansSerif,
                                                     fontSize = 13.sp,
                                                     fontWeight = FontWeight.Medium,
-                                                    color = Color.White.copy(alpha = 0.88f)
+                                                    color = dlgFg.copy(alpha = 0.88f)
                                                 )
                                             )
                                         }
@@ -2326,7 +2332,7 @@ fun DynamicIslandSettingsDialog(
                                         Icon(
                                             painter = painterResource(R.drawable.skip_previous),
                                             contentDescription = null,
-                                            tint = Color.White,
+                                            tint = dlgFg,
                                             modifier = Modifier.size(24.dp)
                                         )
                                         Box(
@@ -2346,7 +2352,7 @@ fun DynamicIslandSettingsDialog(
                                         Icon(
                                             painter = painterResource(R.drawable.skip_next),
                                             contentDescription = null,
-                                            tint = Color.White,
+                                            tint = dlgFg,
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
@@ -2365,7 +2371,7 @@ fun DynamicIslandSettingsDialog(
                             .fillMaxWidth()
                             .padding(bottom = 12.dp)
                             .clip(restoreShape)
-                            .background(Color.White.copy(alpha = 0.06f))
+                            .background(dlgFg.copy(alpha = 0.06f))
                             .frostedGlassSurface(
                                 shape = restoreShape,
                                 isHighlighted = true,
@@ -2385,12 +2391,12 @@ fun DynamicIslandSettingsDialog(
                                     text = "Dynamic Island Disembunyikan",
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = dlgFg
                                 )
                                 Text(
                                     text = "Ketuk untuk menampilkan kembali kapsul di atas layar",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.72f)
+                                    color = dlgFg.copy(alpha = 0.72f)
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -2409,7 +2415,7 @@ fun DynamicIslandSettingsDialog(
                                     text = "Munculkan",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp,
-                                    color = Color.White,
+                                    color = dlgFg,
                                     maxLines = 1,
                                     softWrap = false
                                 )
@@ -2424,14 +2430,14 @@ fun DynamicIslandSettingsDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(toggleCardShape)
-                        .background(Color.White.copy(alpha = 0.10f))
+                        .background(dlgFg.copy(alpha = 0.10f))
                         .frostedGlassSurface(
                             shape = toggleCardShape,
                             isHighlighted = true,
                             baseTint = if (enabled || autoEnableOnStart || lockscreenLyricsEnabled) {
                                 previewAccent.copy(alpha = 0.16f)
                             } else {
-                                Color.White.copy(alpha = 0.08f)
+                                dlgFg.copy(alpha = 0.08f)
                             }
                         )
                 ) {
@@ -2460,7 +2466,7 @@ fun DynamicIslandSettingsDialog(
                                     text = "Aktifkan Manual",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = dlgFg
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
@@ -2470,7 +2476,7 @@ fun DynamicIslandSettingsDialog(
                                         "Nonaktif • Nyalakan manual atau gunakan Otomatis"
                                     },
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.72f)
+                                    color = dlgFg.copy(alpha = 0.72f)
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -2494,7 +2500,7 @@ fun DynamicIslandSettingsDialog(
 
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            color = Color.White.copy(alpha = 0.14f)
+                            color = dlgFg.copy(alpha = 0.14f)
                         )
 
                         Row(
@@ -2523,7 +2529,7 @@ fun DynamicIslandSettingsDialog(
                                     text = "Otomatis Saat Memutar Musik",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = dlgFg
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
@@ -2533,7 +2539,7 @@ fun DynamicIslandSettingsDialog(
                                         "Nonaktif • Hanya muncul jika diaktifkan manual"
                                     },
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.72f)
+                                    color = dlgFg.copy(alpha = 0.72f)
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -2566,7 +2572,7 @@ fun DynamicIslandSettingsDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(overlayPermShape)
-                        .background(Color.White.copy(alpha = 0.06f))
+                        .background(dlgFg.copy(alpha = 0.06f))
                         .frostedGlassSurface(
                             shape = overlayPermShape,
                             isHighlighted = true,
@@ -2603,7 +2609,7 @@ fun DynamicIslandSettingsDialog(
                             text = if (canDrawOverlays) "Izin Overlay Luar Aplikasi" else "Izin Tampil di Atas Aplikasi",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = dlgFg,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -2644,7 +2650,7 @@ fun DynamicIslandSettingsDialog(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(modeCardShape)
-                                .background(Color.White.copy(alpha = if (isSel) 0.12f else 0.05f))
+                                .background(dlgFg.copy(alpha = if (isSel) 0.12f else 0.05f))
                                 .frostedGlassSurface(
                                     shape = modeCardShape,
                                     isHighlighted = isSel,
@@ -2662,13 +2668,13 @@ fun DynamicIslandSettingsDialog(
                                     text = label,
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = dlgFg
                                 )
                                 Text(
                                     text = sub,
                                     style = MaterialTheme.typography.bodySmall,
                                     fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.72f),
+                                    color = dlgFg.copy(alpha = 0.72f),
                                     maxLines = 1
                                 )
                             }
@@ -2701,7 +2707,7 @@ fun DynamicIslandSettingsDialog(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(themeCardShape)
-                                .background(Color.White.copy(alpha = if (isSel) 0.12f else 0.05f))
+                                .background(dlgFg.copy(alpha = if (isSel) 0.12f else 0.05f))
                                 .frostedGlassSurface(
                                     shape = themeCardShape,
                                     isHighlighted = isSel,
@@ -2716,13 +2722,13 @@ fun DynamicIslandSettingsDialog(
                                     text = tLabel,
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = dlgFg
                                 )
                                 Text(
                                     text = tSub,
                                     style = MaterialTheme.typography.bodySmall,
                                     fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.72f),
+                                    color = dlgFg.copy(alpha = 0.72f),
                                     maxLines = 1
                                 )
                             }
@@ -2760,7 +2766,7 @@ fun DynamicIslandSettingsDialog(
                                         text = "Blur $label",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                        color = Color.White,
+                                        color = dlgFg,
                                         maxLines = 1
                                     )
                                 }
@@ -2777,7 +2783,7 @@ fun DynamicIslandSettingsDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(colorPanelShape)
-                        .background(Color.White.copy(alpha = 0.10f))
+                        .background(dlgFg.copy(alpha = 0.10f))
                         .frostedGlassSurface(
                             shape = colorPanelShape,
                             isHighlighted = true,
@@ -2805,7 +2811,7 @@ fun DynamicIslandSettingsDialog(
                             Text(
                                 text = "Aksen otomatis ikuti sampul lagu",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = dlgFg.copy(alpha = 0.9f),
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
@@ -2825,7 +2831,7 @@ fun DynamicIslandSettingsDialog(
                             Text(
                                 text = "Latar kaca ikuti warna sampul lagu",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = dlgFg.copy(alpha = 0.9f),
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
@@ -2859,7 +2865,7 @@ fun DynamicIslandSettingsDialog(
                                             .background(Color(preset.colorInt))
                                             .border(
                                                 width = if (isSelected) 3.dp else 1.dp,
-                                                color = if (isSelected) Color.White else Color.White.copy(alpha = 0.25f),
+                                                color = if (isSelected) dlgFg else dlgFg.copy(alpha = 0.25f),
                                                 shape = CircleShape
                                             ),
                                         contentAlignment = Alignment.Center
@@ -2877,7 +2883,7 @@ fun DynamicIslandSettingsDialog(
                                     Text(
                                         text = preset.name.substringBefore(" "),
                                         fontSize = 10.sp,
-                                        color = Color.White.copy(alpha = 0.72f),
+                                        color = dlgFg.copy(alpha = 0.72f),
                                         maxLines = 1
                                     )
                                 }
@@ -2885,7 +2891,7 @@ fun DynamicIslandSettingsDialog(
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+                        HorizontalDivider(color = dlgFg.copy(alpha = 0.12f))
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Row(
@@ -2900,7 +2906,7 @@ fun DynamicIslandSettingsDialog(
                                     text = "Garis Tepi Berkilau (Border Glow)",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color.White
+                                    color = dlgFg
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -2932,6 +2938,7 @@ fun DynamicIslandSettingsDialog(
                     )
                 }
             }
+        }
         }
     }
 }

@@ -1239,11 +1239,11 @@ fun PosterContent(
 @Composable
 private fun BoxScope.WatermarkMode2(cw: Float, ch: Float) {
     val density = LocalDensity.current
-    val badgeH = with(density) { (cw * 0.066f).toDp() }
+    val badge = with(density) { (cw * 0.074f).toDp() }
     val padBottom = with(density) { (ch * 0.020f).toDp() }
-    val textSp = with(density) { (cw * 0.068f).toSp() }
-    val badgeShape = RoundedCornerShape(with(density) { (cw * 0.014f).toDp() })
-    val borderW = with(density) { (cw * 0.0035f).toDp() }
+    val textSp = with(density) { (cw * 0.054f).toSp() }
+    val badgeShape = RoundedCornerShape(with(density) { (cw * 0.016f).toDp() })
+    val borderW = with(density) { (cw * 0.003f).toDp() }
 
     Row(
         modifier = Modifier
@@ -1251,17 +1251,17 @@ private fun BoxScope.WatermarkMode2(cw: Float, ch: Float) {
             .padding(bottom = padBottom),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Logo yang sama dengan ikon aplikasi (kotak, tidak ditarik/lonjong)
         Image(
-            painter = painterResource(R.drawable.vortex_wordmark),
+            painter = painterResource(R.drawable.vortex_icon),
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier
-                .height(badgeH)
-                .aspectRatio(1.72f)
+                .size(badge)
                 .clip(badgeShape)
                 .border(borderW, Color.White.copy(alpha = 0.95f), badgeShape),
         )
-        Spacer(Modifier.width(with(density) { (cw * 0.022f).toDp() }))
+        Spacer(Modifier.width(with(density) { (cw * 0.020f).toDp() }))
         Text(
             text = "Vortex Music",
             color = Color.White,

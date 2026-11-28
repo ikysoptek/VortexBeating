@@ -613,3 +613,24 @@ private fun lerp(a: FontWeight, b: FontWeight, fraction: Float): FontWeight {
         else -> FontWeight((a.weight + (b.weight - a.weight) * clampedFraction).toInt())
     }
 }
+
+/**
+ * Membungkus konten dengan skema warna Pastel Notebook TERANG agar dialog/panel tetap jelas
+ * (kartu pastel terang + teks navy) walaupun aplikasi sedang di mode gelap. Tema lain tidak berubah.
+ */
+@Composable
+fun SoftLightScope(content: @Composable () -> Unit) {
+    if (!LocalSoftTheme.current) {
+        content()
+        return
+    }
+    MaterialTheme(
+        colorScheme = softColorScheme(MaterialTheme.colorScheme, false),
+        typography = MaterialTheme.typography,
+        shapes = MaterialTheme.shapes,
+    ) {
+        CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides SoftPalette.Ink) {
+            content()
+        }
+    }
+}

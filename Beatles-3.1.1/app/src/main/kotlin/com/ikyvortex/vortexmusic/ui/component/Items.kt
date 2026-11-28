@@ -19,6 +19,7 @@ import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -1329,6 +1330,9 @@ fun ItemThumbnail(
     thumbnailRatio: Float = 1f
 ) {
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, true)
+    val isSoftThumb = com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current
+    val softThumbDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val softThumbInk = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(softThumbDark)
     
     Box(
         contentAlignment = Alignment.Center,
@@ -1336,13 +1340,23 @@ fun ItemThumbnail(
             .fillMaxSize()
             .aspectRatio(thumbnailRatio)
             .clip(shape)
+            .then(
+                if (isSoftThumb) {
+                    Modifier
+                        .background(
+                            if (softThumbDark) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.PastelsDark[2]
+                            else com.ikyvortex.vortexmusic.ui.theme.SoftPalette.SkyBlue
+                        )
+                        .border(2.dp, softThumbInk, shape)
+                } else Modifier
+            )
     ) {
         if (albumIndex == null) {
             if (thumbnailUrl.isNullOrBlank()) {
                 Icon(
                     imageVector = Icons.Rounded.MusicNote,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isSoftThumb) softThumbInk else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp),
                 )
             } else {

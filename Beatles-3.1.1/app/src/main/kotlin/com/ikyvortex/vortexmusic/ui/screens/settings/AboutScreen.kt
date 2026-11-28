@@ -185,7 +185,7 @@ fun AboutScreen(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "${BuildConfig.VERSION_NAME} • ${BuildConfig.ARCHITECTURE}",
+                    text = "V4.2.1 • ${BuildConfig.ARCHITECTURE}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -248,6 +248,58 @@ fun AboutScreen(
                 .align(Alignment.Start)
                 .padding(top = 4.dp)
         )
+
+        // TikTok (di atas WhatsApp)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+            ),
+            shape = RoundedCornerShape(18.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable {
+                        uriHandler.openUri("https://www.tiktok.com/@ikysoptek_")
+                    }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            painter = painterResource(R.drawable.tiktok),
+                            contentDescription = "TikTok",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(14.dp))
+
+                Text(
+                    text = "TikTok",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    text = "ikysoptek_",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),

@@ -4,6 +4,7 @@
 
 package com.ikyvortex.vortexmusic.ui.screens.search
 
+import com.ikyvortex.vortexmusic.ui.theme.softPaperLines
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -122,7 +123,7 @@ fun OnlineSearchScreen(
         contentPadding = WindowInsets.systemBars.only(WindowInsetsSides.Bottom).asPaddingValues(),
         modifier = Modifier
             .fillMaxSize()
-            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
+            .background(if (pureBlack && !com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Black else MaterialTheme.colorScheme.background).softPaperLines()
             .testTag("online_search_history_list")
     ) {
         if (viewState.history.isNotEmpty()) {
@@ -363,7 +364,7 @@ fun OnlineSearchScreen(
                             }
                         }
                     )
-                    .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface)
+                    .background(if (pureBlack && !com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Black else MaterialTheme.colorScheme.surface).softPaperLines()
                     .animateItem()
             )
         }
@@ -385,7 +386,7 @@ fun SuggestionItem(
         modifier = modifier
             .fillMaxWidth()
             .height(SuggestionItemHeight)
-            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface)
+            .background(if (pureBlack && !com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Black else MaterialTheme.colorScheme.surface).softPaperLines()
             .clickable(onClick = onClick)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
     ) {

@@ -42,17 +42,17 @@ jobs:
     # 4. Build pakai perintah Release dari README
     - name: Build with Gradle (Release)
       working-directory: Beatles-3.1.1
-      run: ./gradlew assembleFossMobileUniversalRelease
+      run: ./gradlew assembleFossMobileArm64Release
 
     # 5. Ganti nama file APK jadi VortexMusic-Release.apk
     - name: Rename APK
       run: |
-        APK_FILE=$(ls Beatles-3.1.1/app/build/outputs/apk/fossMobileUniversal/release/*.apk | head -n 1)
-        mv "$APK_FILE" Beatles-3.1.1/app/build/outputs/apk/fossMobileUniversal/release/VortexMusic-Release.apk
+        APK_FILE=$(ls Beatles-3.1.1/app/build/outputs/apk/fossMobileArm64/release/*.apk | head -n 1)
+        mv "$APK_FILE" Beatles-3.1.1/app/build/outputs/apk/fossMobileArm64/release/VortexMusic-Release.apk
 
     # 6. Ambil APK-nya
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: VortexMusic-Release.apk
-        path: Beatles-3.1.1/app/build/outputs/apk/fossMobileUniversal/release/VortexMusic-Release.apk
+        path: Beatles-3.1.1/app/build/outputs/apk/fossMobileArm64/release/VortexMusic-Release.apk

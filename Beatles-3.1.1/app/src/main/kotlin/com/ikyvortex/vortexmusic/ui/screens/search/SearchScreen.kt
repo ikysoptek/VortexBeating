@@ -1,3 +1,7 @@
+/**
+ * NanzBeatles Project (C) 2026
+ */
+
 package com.ikyvortex.vortexmusic.ui.screens.search
 
 import android.os.Build
@@ -144,7 +148,7 @@ fun SearchScreen(
     val accentColor = MaterialTheme.colorScheme.primary
     val isSoftSearch = com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current
     val softInk = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.ink(isDark)
-    val searchTextColor = if (isSoftSearch) softInk else MaterialTheme.colorScheme.onSurface
+    val searchTextColor = if (isSoftSearch) softInk else searchTextColor
     val searchPillBg = if (isSoftSearch) {
         if (isDark) Color(0xFF1F3A55) else com.ikyvortex.vortexmusic.ui.theme.SoftPalette.SkyBlue
     } else if (isDark) Color(0xFF0E121B).copy(alpha = 0.48f) else Color.White.copy(alpha = 0.72f)

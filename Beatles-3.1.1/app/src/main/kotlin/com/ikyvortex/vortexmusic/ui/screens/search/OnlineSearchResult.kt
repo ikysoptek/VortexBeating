@@ -4,6 +4,7 @@
 
 package com.ikyvortex.vortexmusic.ui.screens.search
 
+import com.ikyvortex.vortexmusic.ui.theme.softPaperLines
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -282,7 +283,7 @@ fun OnlineSearchResult(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Transparent else if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
+            .background(if (pureBlack && !com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) Color.Black else MaterialTheme.colorScheme.background).softPaperLines()
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
     ) {
         // Google-style SearchBar with Material 3 design

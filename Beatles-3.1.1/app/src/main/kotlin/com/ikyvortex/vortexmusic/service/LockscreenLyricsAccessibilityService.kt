@@ -685,13 +685,18 @@ private fun LockscreenMainContent(
             )
             LockscreenClock()
             Text(
-                text = "VORTEX MUSIC",
-                modifier = Modifier.padding(top = 2.dp),
+                text = "Vortex Music",
+                modifier = Modifier.padding(top = 4.dp),
                 style = TextStyle(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 5.sp,
-                    color = Color.White.copy(alpha = 0.30f)
+                    fontSize = 22.sp,
+                    fontFamily = com.ikyvortex.vortexmusic.ui.theme.SoftDisplayFont,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.88f),
+                    shadow = androidx.compose.ui.graphics.Shadow(
+                        color = Color.Black.copy(alpha = 0.45f),
+                        offset = androidx.compose.ui.geometry.Offset(0f, 3f),
+                        blurRadius = 8f,
+                    )
                 )
             )
 

@@ -305,11 +305,11 @@ object LyricsUtils {
             RICH_SYNC_WORD_REGEX.containsMatchIn(line)
         }
         
-        return if (isRichSync) {
+        return (if (isRichSync) {
             parseRichSyncLyrics(lines)
         } else {
             parseStandardLyrics(lines)
-        }
+        }).map { fixMergedWords(it) }
     }
     
     /**
@@ -349,10 +349,14 @@ object LyricsUtils {
                 val wordTimings = parseRichSyncWords(content, index, lines)
                 
                 // Extract plain text (remove all <MM:SS.mm> tags)
-                val plainText = content.replace(Regex("<\\d{1,2}:\\d{2}\\.\\d{2,3}>\\s*"), "").trim()
+                val plainText = content.replace(Regex("<\\d{1,2}:\\d{2}\\.\\d{2,3}>"), "").replace(Regex("\\s+"), " ").trim()
                 
                 if (plainText.isNotBlank()) {
-                    result.add(LyricsEntry(lineTimeMs, plainText, wordTimings, agent = agent, isBackground = isBackground))
+                    result.add(
+                        fixMergedWords(
+                            LyricsEntry(lineTimeMs, plainText, wordTimings, agent = agent, isBackground = isBackground)
+                        )
+                    )
                 }
             }
         }
@@ -360,6 +364,34 @@ object LyricsUtils {
         return result.sorted()
     }
     
+    /**
+     * Memperbaiki baris yang katanya menyatu ("Theproofisinthepaper"): jika token per kata tidak
+     * punya spasi di antaranya padahal tiap token jelas sebuah kata utuh (rata-rata huruf >= 2,8),
+     * tambahkan spasi. Lirik terpotong per suku kata ("Ter lu ka") dan aksara non-Latin
+     * (Jepang/Mandarin/Korea/Thai) tidak disentuh.
+     */
+    private fun fixMergedWords(entry: LyricsEntry): LyricsEntry {
+        val ws = entry.words ?: return entry
+        if (ws.size < 3) return entry
+        val letters = ws.flatMap { it.text.asIterable() }.filter { it.isLetter() }
+        if (letters.isEmpty()) return entry
+        val latinLike = letters.count { it.code < 0x250 || it.code in 0x400..0x4FF }
+        if (latinLike.toFloat() / letters.size < 0.8f) return entry
+        val withoutGap = ws.dropLast(1).count { it.text.isNotEmpty() && !it.text.last().isWhitespace() }
+        if (withoutGap < (ws.size - 1) / 2.0) return entry
+        val avgLetters = ws.map { w -> w.text.count { it.isLetter() } }.average()
+        if (avgLetters < 2.8) return entry
+        val fixed = ws.mapIndexed { i, w ->
+            if (i < ws.lastIndex && w.text.isNotEmpty() && !w.text.last().isWhitespace()) {
+                w.copy(text = w.text + " ")
+            } else w
+        }
+        val rebuilt = fixed.joinToString("") { it.text }.trim()
+        fun norm(t: String) = t.lowercase().filter { it.isLetterOrDigit() }
+        val newText = if (norm(rebuilt) == norm(entry.text)) rebuilt else entry.text
+        return entry.copy(text = newText, words = fixed)
+    }
+
     /**
      * Parse word timestamps from rich sync content
      * Format: <MM:SS.mm> word <MM:SS.mm> word ...
@@ -383,7 +415,16 @@ object LyricsUtils {
             // Keep trailing whitespace: RichSync stores the separator before the next
             // timestamp at the end of the current token ("Living <time>lawless").
             // Trimming both ends concatenates every word in the karaoke renderer.
-            val wordText = match.groupValues[4].trimStart()
+            val rawText = match.groupValues[4]
+            val wordText = rawText.trimStart()
+            // Sebagian penyedia menaruh spasi di AWAL token berikutnya ("<t>kata<t> lain").
+            // Jika dibuang begitu saja, kata-kata jadi menyatu ("katalain").
+            if (rawText.isNotEmpty() && rawText[0].isWhitespace() && wordTimings.isNotEmpty()) {
+                val prev = wordTimings.last()
+                if (prev.text.isNotEmpty() && !prev.text.last().isWhitespace()) {
+                    wordTimings[wordTimings.lastIndex] = prev.copy(text = prev.text + " ")
+                }
+            }
             
             // Calculate end time: use next word's start time, or estimate from next line
             val endTimeSeconds = if (index < wordMatches.size - 1) {

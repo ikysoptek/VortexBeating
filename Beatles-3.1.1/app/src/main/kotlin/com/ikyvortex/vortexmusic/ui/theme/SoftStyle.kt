@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -379,4 +380,22 @@ fun Modifier.softProfileCard(
         tapeColor = if (idx % 4 == 0) SoftPalette.Tape else SoftPalette.TapeYellow,
         tapeAngle = if (idx % 3 == 0) -3f else 4f,
     )
+}
+
+/** Garis kertas bergaris + margin merah di atas latar opak (dipakai layar yang butuh latar solid). */
+@Composable
+fun Modifier.softPaperLines(): Modifier {
+    if (!LocalSoftTheme.current) return this
+    val dark = androidx.compose.material3.MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val line = if (dark) SoftPalette.PaperLineDark else SoftPalette.PaperLine
+    val margin = if (dark) SoftPalette.MarginDark else SoftPalette.Margin
+    return this.drawBehind {
+        val step = 30.dp.toPx()
+        var y = step
+        while (y < size.height) {
+            drawLine(line, Offset(0f, y), Offset(size.width, y), 1.2.dp.toPx())
+            y += step
+        }
+        drawLine(margin, Offset(24.dp.toPx(), 0f), Offset(24.dp.toPx(), size.height), 1.8.dp.toPx())
+    }
 }

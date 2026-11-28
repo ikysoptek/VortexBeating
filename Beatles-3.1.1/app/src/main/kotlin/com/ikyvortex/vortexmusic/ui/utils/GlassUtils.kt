@@ -35,6 +35,7 @@ import com.ikyvortex.vortexmusic.ui.theme.LocalAppVisualStyle
 import com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme
 import com.ikyvortex.vortexmusic.ui.theme.SoftNotebookBackground
 import com.ikyvortex.vortexmusic.ui.theme.SoftPalette
+import com.ikyvortex.vortexmusic.ui.theme.softNeo
 import com.ikyvortex.vortexmusic.utils.rememberPreference
 
 /**
@@ -77,24 +78,21 @@ fun Modifier.crystalLiquidGlassSurface(
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
 
     if (LocalSoftTheme.current) {
-        // Pastel Notebook: kartu pastel bergilir + garis navy tebal + bayangan keras bergeser
-        val softShape = RoundedCornerShape(20.dp)
+        // Pastel Notebook: kartu pastel bergilir + garis navy tebal + bayangan keras + selotip washi
         val ink = SoftPalette.ink(isDark)
-        val pastel = SoftPalette.rememberPastel(isDark)
-        val softBg = baseTint ?: pastel
-        return this
-            .drawBehind {
-                val off = 4.dp.toPx()
-                drawRoundRect(
-                    color = ink,
-                    topLeft = Offset(off, off),
-                    size = size,
-                    cornerRadius = CornerRadius(20.dp.toPx()),
-                )
-            }
-            .clip(softShape)
-            .background(softBg, softShape)
-            .border(width = 2.5.dp, color = ink, shape = softShape)
+        val idx = SoftPalette.rememberPastelIndex()
+        val pastel = if (isDark) SoftPalette.PastelsDark[idx] else SoftPalette.Pastels[idx]
+        val softBg = baseTint ?: if (isHighlighted) (if (isDark) Color(0xFF313C6C) else Color.White) else pastel
+        return this.softNeo(
+            fill = softBg,
+            ink = ink,
+            corner = 22.dp,
+            border = 3.dp,
+            shadow = 5.dp,
+            tape = idx % 2 == 0,
+            tapeColor = if (idx % 4 == 0) SoftPalette.Tape else SoftPalette.TapeYellow,
+            tapeAngle = if (idx % 3 == 0) -4f else 3f,
+        )
     }
 
     if (isEditorial) {
@@ -226,23 +224,10 @@ fun Modifier.crystalLiquidGlassPill(
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
 
     if (LocalSoftTheme.current) {
-        val softShape = RoundedCornerShape(14.dp)
         val ink = SoftPalette.ink(isDark)
         val pastel = SoftPalette.rememberPastel(isDark)
         val softBg = if (isSelected) (if (isDark) Color(0xFF313C6C) else Color.White) else pastel
-        return this
-            .drawBehind {
-                val off = 3.dp.toPx()
-                drawRoundRect(
-                    color = ink,
-                    topLeft = Offset(off, off),
-                    size = size,
-                    cornerRadius = CornerRadius(14.dp.toPx()),
-                )
-            }
-            .clip(softShape)
-            .background(softBg, softShape)
-            .border(width = 2.dp, color = ink, shape = softShape)
+        return this.softNeo(fill = softBg, ink = ink, corner = 16.dp, border = 2.5.dp, shadow = 3.5.dp)
     }
 
     if (isEditorial) {
@@ -323,6 +308,22 @@ fun Modifier.frostedGlassSurface(
     baseTint: Color? = null,
 ): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    if (LocalSoftTheme.current) {
+        val ink = SoftPalette.ink(isDark)
+        val idx = SoftPalette.rememberPastelIndex()
+        val pastel = if (isDark) SoftPalette.PastelsDark[idx] else SoftPalette.Pastels[idx]
+        val softBg = baseTint ?: if (isHighlighted) (if (isDark) Color(0xFF313C6C) else Color.White) else pastel
+        return this.softNeo(
+            fill = softBg,
+            ink = ink,
+            corner = 22.dp,
+            border = 3.dp,
+            shadow = 5.dp,
+            tape = idx % 2 == 1,
+            tapeColor = if (idx % 3 == 1) SoftPalette.TapeYellow else SoftPalette.Tape,
+            tapeAngle = if (idx % 2 == 0) -3f else 4f,
+        )
+    }
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
     val effectiveShape = if (isEditorial) RoundedCornerShape(10.dp) else shape
 
@@ -370,6 +371,12 @@ fun Modifier.liquidGlassPill(
     accentColor: Color? = null,
 ): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    if (LocalSoftTheme.current) {
+        val ink = SoftPalette.ink(isDark)
+        val pastel = SoftPalette.rememberPastel(isDark)
+        val softBg = if (isSelected) (if (isDark) Color(0xFF313C6C) else Color.White) else pastel
+        return this.softNeo(fill = softBg, ink = ink, corner = 16.dp, border = 2.5.dp, shadow = 3.5.dp)
+    }
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
     val effectiveShape = if (isEditorial) RoundedCornerShape(8.dp) else shape
 
@@ -411,6 +418,12 @@ fun ModifierFrostedGlassBridge(
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isEditorial = LocalAppVisualStyle.current == "EDITORIAL"
     val effectiveShape = if (isEditorial) RoundedCornerShape(8.dp) else shape
+    if (LocalSoftTheme.current && isHighlighted) {
+        return Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (isDark) Color(0xFF313C6C) else SoftPalette.Yellow, RoundedCornerShape(16.dp))
+            .border(2.dp, SoftPalette.ink(isDark), RoundedCornerShape(16.dp))
+    }
     return if (isHighlighted) {
         thisOrModifier(
             shape = effectiveShape,

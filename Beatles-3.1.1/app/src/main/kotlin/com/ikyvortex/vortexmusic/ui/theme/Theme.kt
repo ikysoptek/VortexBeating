@@ -310,13 +310,16 @@ fun VortexMusicTheme(
     }
 
     val typography = remember(selectedFont, fontScale, fontBoldness, isEditorial, isSoft) {
-        if (isEditorial && (selectedFont == "DEFAULT" || selectedFont == "OUTFIT")) {
+        if (isSoft) {
+            // Pastel Notebook: Gloria Hallelujah (judul), Plus Jakarta Sans (isi), JetBrains Mono (angka)
+            AppTypography
+                .withSoftFonts()
+                .scaledBy(fontScale)
+                .boldedBy(fontBoldness)
+        } else if (isEditorial && (selectedFont == "DEFAULT" || selectedFont == "OUTFIT")) {
             // Editorial Typography: Space Grotesk for bold magazine display/headlines/titles, Manrope for crisp body
             AppTypography
-                .let {
-                    if (isSoft) it.withSoftFonts(handFont = SoftHandFont, roundFont = Outfit)
-                    else it.withEditorialFonts(displayAndHeadingFont = SpaceGrotesk, bodyFont = Manrope)
-                }
+                .withEditorialFonts(displayAndHeadingFont = SpaceGrotesk, bodyFont = Manrope)
                 .scaledBy(fontScale)
                 .boldedBy(fontBoldness)
         } else {
@@ -360,7 +363,7 @@ private fun softColorScheme(base: androidx.compose.material3.ColorScheme, dark: 
         onTertiaryContainer = SoftPalette.Ink,
         background = SoftPalette.Paper,
         onBackground = SoftPalette.Ink,
-        surface = Color(0xFFFFFFFF),
+        surface = Color(0xFFFFFCF2),
         onSurface = SoftPalette.Ink,
         surfaceVariant = Color(0xFFE6EDF7),
         onSurfaceVariant = Color(0xFF3B4A7A),
@@ -399,26 +402,29 @@ private fun softColorScheme(base: androidx.compose.material3.ColorScheme, dark: 
         outlineVariant = Color(0xFF34406E),
     )
 
-/** Tipografi Pastel Notebook: judul besar tulisan tangan, judul kecil & isi Outfit tebal-membulat. */
-private fun androidx.compose.material3.Typography.withSoftFonts(
-    handFont: FontFamily,
-    roundFont: FontFamily
-) = copy(
-    displayLarge = displayLarge.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
-    displayMedium = displayMedium.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
-    displaySmall = displaySmall.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
-    headlineLarge = headlineLarge.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
-    headlineMedium = headlineMedium.copy(fontFamily = handFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
-    headlineSmall = headlineSmall.copy(fontFamily = roundFont, fontWeight = FontWeight.ExtraBold),
-    titleLarge = titleLarge.copy(fontFamily = roundFont, fontWeight = FontWeight.ExtraBold),
-    titleMedium = titleMedium.copy(fontFamily = roundFont, fontWeight = FontWeight.Bold),
-    titleSmall = titleSmall.copy(fontFamily = roundFont, fontWeight = FontWeight.Bold),
-    bodyLarge = bodyLarge.copy(fontFamily = roundFont, fontWeight = FontWeight.Medium),
-    bodyMedium = bodyMedium.copy(fontFamily = roundFont, fontWeight = FontWeight.Medium),
-    bodySmall = bodySmall.copy(fontFamily = roundFont, fontWeight = FontWeight.Medium),
-    labelLarge = labelLarge.copy(fontFamily = roundFont, fontWeight = FontWeight.Bold),
-    labelMedium = labelMedium.copy(fontFamily = roundFont, fontWeight = FontWeight.SemiBold),
-    labelSmall = labelSmall.copy(fontFamily = roundFont, fontWeight = FontWeight.SemiBold),
+/**
+ * Tipografi Pastel Notebook:
+ * - Judul besar / header halaman: Gloria Hallelujah Bold
+ * - Judul lagu & nama kartu: Plus Jakarta Sans Bold
+ * - Nama artis, subjudul & menu: Plus Jakarta Sans Medium / SemiBold
+ * - Angka durasi, XP & label badge: JetBrains Mono Bold
+ */
+private fun androidx.compose.material3.Typography.withSoftFonts() = copy(
+    displayLarge = displayLarge.copy(fontFamily = SoftDisplayFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    displayMedium = displayMedium.copy(fontFamily = SoftDisplayFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    displaySmall = displaySmall.copy(fontFamily = SoftDisplayFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    headlineLarge = headlineLarge.copy(fontFamily = SoftDisplayFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    headlineMedium = headlineMedium.copy(fontFamily = SoftDisplayFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    headlineSmall = headlineSmall.copy(fontFamily = SoftDisplayFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    titleLarge = titleLarge.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    titleMedium = titleMedium.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    titleSmall = titleSmall.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+    bodyLarge = bodyLarge.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
+    bodyMedium = bodyMedium.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
+    bodySmall = bodySmall.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
+    labelLarge = labelLarge.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+    labelMedium = labelMedium.copy(fontFamily = SoftSansFont, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+    labelSmall = labelSmall.copy(fontFamily = SoftMonoFont, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
 )
 
 @Composable

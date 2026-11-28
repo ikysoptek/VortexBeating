@@ -88,6 +88,13 @@ import com.ikyvortex.vortexmusic.LocalPlayerConnection
 import com.ikyvortex.vortexmusic.R
 import com.ikyvortex.vortexmusic.constants.AppVisualStyle
 import com.ikyvortex.vortexmusic.constants.AppVisualStyleKey
+import com.ikyvortex.vortexmusic.ui.theme.SoftDisplayFont
+import com.ikyvortex.vortexmusic.ui.theme.SoftLyricFont
+import com.ikyvortex.vortexmusic.ui.theme.SoftMonoFont
+import com.ikyvortex.vortexmusic.ui.theme.SoftPalette
+import com.ikyvortex.vortexmusic.ui.theme.SoftSansFont
+import com.ikyvortex.vortexmusic.ui.theme.softNeo
+import com.ikyvortex.vortexmusic.ui.theme.softSparkle
 import com.ikyvortex.vortexmusic.constants.DarkModeKey
 import com.ikyvortex.vortexmusic.constants.DynamicIslandTheme
 import com.ikyvortex.vortexmusic.constants.DynamicIslandThemeKey
@@ -450,7 +457,29 @@ private fun VisualStyleSelectorCard(
     }
 }
 
-/** Kartu pilihan tema ke-3 yang tampil seperti temanya sendiri: kertas bergaris, selotip, kartu pastel. */
+/** Kartu mini bergaya Soft Neobrutalism untuk isi pratinjau tema. */
+@Composable
+private fun SoftMiniBox(
+    fill: Color,
+    ink: Color,
+    modifier: Modifier = Modifier,
+    corner: androidx.compose.ui.unit.Dp = 12.dp,
+    shadow: androidx.compose.ui.unit.Dp = 3.dp,
+    border: androidx.compose.ui.unit.Dp = 2.dp,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .padding(end = shadow, bottom = shadow)
+            .softNeo(fill = fill, ink = ink, corner = corner, border = border, shadow = shadow),
+        content = content
+    )
+}
+
+/**
+ * Kartu pilihan tema ke-3: pratinjau mini layar Pastel Notebook (kertas bergaris, selotip washi,
+ * pil Dynamic Island biru muda, kartu pastel bergaris tinta, doodle kilau).
+ */
 @Composable
 private fun SoftThemeOptionCard(
     isSelected: Boolean,
@@ -458,11 +487,12 @@ private fun SoftThemeOptionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val ink = if (isDarkSurface) Color(0xFF9DB4F0) else Color(0xFF16204F)
-    val paper = if (isDarkSurface) Color(0xFF131A33) else Color(0xFFF6F8FC)
-    val lineColor = if (isDarkSurface) Color(0xFF212B4D) else Color(0xFFD3E1F0)
-    val marginColor = if (isDarkSurface) Color(0xFF7A4560) else Color(0xFFF2A3AE)
-    val shape = RoundedCornerShape(22.dp)
+    val ink = if (isDarkSurface) Color(0xFF9DB4F0) else SoftPalette.Ink
+    val paper = if (isDarkSurface) SoftPalette.PaperDark else SoftPalette.Paper
+    val lineColor = if (isDarkSurface) SoftPalette.PaperLineDark else SoftPalette.PaperLine
+    val marginColor = if (isDarkSurface) SoftPalette.MarginDark else SoftPalette.Margin
+    val textInk = if (isDarkSurface) Color(0xFFE4EAFF) else SoftPalette.Ink
+    val pastels = if (isDarkSurface) SoftPalette.PastelsDark else SoftPalette.Pastels
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.015f else 1f,
         label = "softCardScale"
@@ -470,19 +500,17 @@ private fun SoftThemeOptionCard(
     Box(
         modifier = modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .padding(end = 5.dp, bottom = 5.dp)
-            .drawBehind {
-                val off = 5.dp.toPx()
-                drawRoundRect(
-                    color = ink,
-                    topLeft = androidx.compose.ui.geometry.Offset(off, off),
-                    size = size,
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(22.dp.toPx()),
-                )
-            }
-            .clip(shape)
-            .background(paper)
-            .border(if (isSelected) 3.5.dp else 2.5.dp, ink, shape)
+            .padding(end = 6.dp, bottom = 6.dp, top = 8.dp)
+            .softNeo(
+                fill = paper,
+                ink = ink,
+                corner = 24.dp,
+                border = if (isSelected) 4.dp else 3.dp,
+                shadow = 6.dp,
+                tape = true,
+                tapeColor = SoftPalette.Tape,
+                tapeAngle = -3f,
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(),
@@ -496,149 +524,196 @@ private fun SoftThemeOptionCard(
                 drawLine(lineColor, androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), 1.dp.toPx())
                 y += step
             }
-            drawLine(marginColor, androidx.compose.ui.geometry.Offset(18.dp.toPx(), 0f), androidx.compose.ui.geometry.Offset(18.dp.toPx(), size.height), 1.4.dp.toPx())
+            drawLine(marginColor, androidx.compose.ui.geometry.Offset(22.dp.toPx(), 0f), androidx.compose.ui.geometry.Offset(22.dp.toPx(), size.height), 1.6.dp.toPx())
+            listOf(0.22f, 0.5f, 0.78f).forEach { f ->
+                val c = androidx.compose.ui.geometry.Offset(9.dp.toPx(), size.height * f)
+                drawCircle(if (isDarkSurface) Color(0xFF0C1124) else Color(0xFFE9E2CD), radius = 4.dp.toPx(), center = c)
+            }
+            softSparkle(androidx.compose.ui.geometry.Offset(size.width - 22.dp.toPx(), size.height - 24.dp.toPx()), 9.dp.toPx(), Color(0xFFF7CB5E))
+            softSparkle(androidx.compose.ui.geometry.Offset(size.width - 44.dp.toPx(), size.height - 14.dp.toPx()), 5.dp.toPx(), Color(0xFFF6AFC0))
+            softSparkle(androidx.compose.ui.geometry.Offset(size.width - 16.dp.toPx(), 56.dp.toPx()), 7.dp.toPx(), Color(0xFF9FCBF2))
         }
-        Column(modifier = Modifier.padding(start = 30.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)) {
+        Column(modifier = Modifier.padding(start = 34.dp, end = 18.dp, top = 18.dp, bottom = 18.dp)) {
+            // Judul + stiker BARU + centang terpilih
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
+                        .size(28.dp)
                         .clip(CircleShape)
                         .background(ink),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("3", color = paper, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                    Text("3", color = paper, fontFamily = SoftMonoFont, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = "Pastel Notebook",
-                    color = ink,
-                    fontFamily = com.ikyvortex.vortexmusic.ui.theme.SoftHandFont,
+                    color = textInk,
+                    fontFamily = SoftDisplayFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
+                    fontSize = 24.sp,
                 )
                 Spacer(Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .graphicsLayer { rotationZ = -6f }
+                        .graphicsLayer { rotationZ = -7f }
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFFFEFB0))
-                        .border(1.6.dp, Color(0xFF16204F), RoundedCornerShape(8.dp))
+                        .background(SoftPalette.Yellow)
+                        .border(1.8.dp, SoftPalette.Ink, RoundedCornerShape(8.dp))
                         .padding(horizontal = 7.dp, vertical = 2.dp)
                 ) {
-                    Text("BARU", color = Color(0xFF16204F), fontWeight = FontWeight.ExtraBold, fontSize = 10.sp)
+                    Text("BARU", color = SoftPalette.Ink, fontFamily = SoftMonoFont, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                 }
                 Spacer(Modifier.weight(1f))
                 if (isSelected) {
                     Box(
                         modifier = Modifier
-                            .size(26.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF2F5BD6))
+                            .background(SoftPalette.Blue)
                             .border(2.dp, ink, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("✓", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                        Text("✓", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
                     }
                 }
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = "Neobrutalism Lembut ala Buku Catatan",
-                color = ink.copy(alpha = 0.8f),
+                color = textInk.copy(alpha = 0.8f),
+                fontFamily = SoftSansFont,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
             )
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf(
-                    Color(0xFFFFEFB0),
-                    Color(0xFFCFEFD3),
-                    Color(0xFFE2D5F5),
-                ).forEach { c ->
+            Spacer(Modifier.height(14.dp))
+
+            // Pratinjau Dynamic Island lirik (pil biru muda, teks navy)
+            SoftMiniBox(
+                fill = SoftPalette.SkyBlue,
+                ink = SoftPalette.Ink,
+                modifier = Modifier.fillMaxWidth(),
+                corner = 22.dp,
+                shadow = 4.dp,
+                border = 2.5.dp,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(54.dp)
-                            .padding(end = 3.dp, bottom = 3.dp)
-                            .drawBehind {
-                                val off = 3.dp.toPx()
-                                drawRoundRect(
-                                    color = ink,
-                                    topLeft = androidx.compose.ui.geometry.Offset(off, off),
-                                    size = size,
-                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx()),
-                                )
-                            }
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(c)
-                            .border(2.dp, ink, RoundedCornerShape(12.dp))
-                            .padding(8.dp),
-                        contentAlignment = Alignment.TopStart
+                        Modifier
+                            .size(26.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(SoftPalette.Pink)
+                            .border(1.8.dp, SoftPalette.Ink, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Box(Modifier.fillMaxWidth(0.75f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(ink))
-                            Box(Modifier.fillMaxWidth(0.45f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.45f)))
+                        Text("♪", color = SoftPalette.Ink, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "'Kan kudengar caci dan puji dirimu padaku",
+                        color = SoftPalette.Ink,
+                        fontFamily = SoftLyricFont,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp,
+                        lineHeight = 14.sp,
+                        maxLines = 2,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        listOf(8, 14, 10, 16, 7).forEach { hh ->
+                            Box(Modifier.width(3.dp).height(hh.dp).clip(RoundedCornerShape(2.dp)).background(SoftPalette.Blue))
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(30.dp)
-                    .padding(end = 3.dp, bottom = 3.dp)
-                    .drawBehind {
-                        val off = 3.dp.toPx()
-                        drawRoundRect(
-                            color = ink,
-                            topLeft = androidx.compose.ui.geometry.Offset(off, off),
-                            size = size,
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(15.dp.toPx()),
-                        )
+            Spacer(Modifier.height(12.dp))
+
+            // Kartu-kartu pastel bergaris tinta
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf("Indie Berulang" to 0, "Pop Mellow" to 1, "Rima Hujan" to 3).forEach { (label, ci) ->
+                    SoftMiniBox(
+                        fill = pastels[ci],
+                        ink = ink,
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        corner = 14.dp,
+                        shadow = 3.dp,
+                        border = 2.dp,
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = label,
+                                color = textInk,
+                                fontFamily = SoftSansFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                lineHeight = 12.sp,
+                                maxLines = 2,
+                            )
+                            Box(Modifier.fillMaxWidth(0.5f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = 0.45f)))
+                        }
                     }
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(Color(0xFFCDE5F7))
-                    .border(2.dp, ink, RoundedCornerShape(15.dp)),
-                contentAlignment = Alignment.CenterStart
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+
+            // Banner streak + badge angka (font mono)
+            SoftMiniBox(
+                fill = pastels[0],
+                ink = ink,
+                modifier = Modifier.fillMaxWidth(),
+                corner = 16.dp,
+                shadow = 3.dp,
+                border = 2.dp,
             ) {
                 Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("999 hari berturut-turut", color = textInk, fontFamily = SoftSansFont, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text("Api Kosmik Abadi", color = textInk.copy(alpha = 0.75f), fontFamily = SoftSansFont, fontWeight = FontWeight.Medium, fontSize = 10.sp)
+                    }
                     Box(
-                        Modifier
-                            .weight(1.4f)
-                            .height(18.dp)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(Color(0xFFFFEFB0))
-                            .border(1.6.dp, ink, RoundedCornerShape(9.dp))
-                    )
-                    repeat(3) {
-                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                            Box(Modifier.size(7.dp).clip(CircleShape).background(ink.copy(alpha = 0.6f)))
-                        }
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(SoftPalette.Coral)
+                            .border(2.dp, SoftPalette.Ink, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text("100.133 XP", color = Color.White, fontFamily = SoftMonoFont, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+
+            // Chip font yang dipakai tema
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(
+                    "Gloria Hallelujah" to SoftDisplayFont,
+                    "Patrick Hand" to SoftLyricFont,
+                    "Jakarta Sans" to SoftSansFont,
+                ).forEachIndexed { i, (label, ff) ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(pastels[(i * 2 + 1) % pastels.size])
+                            .border(1.8.dp, ink, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                    ) {
+                        Text(label, color = textInk, fontFamily = ff, fontWeight = FontWeight.Bold, fontSize = 10.sp, maxLines = 1)
                     }
                 }
             }
         }
-        // Selotip di pojok kanan atas + bintang
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 40.dp)
-                .graphicsLayer { rotationZ = 6f; translationY = -6.dp.toPx() }
-                .size(width = 54.dp, height = 14.dp)
-                .background(Color(0xFFA8D8DA).copy(alpha = 0.85f))
-        )
-        Text(
-            text = "✦",
-            color = Color(0xFFE8684A),
-            fontSize = 16.sp,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 46.dp)
-        )
     }
 }
 

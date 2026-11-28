@@ -539,16 +539,19 @@ internal fun DynamicIslandCapsuleSurface(
         label = "islandDragOffsetX"
     )
 
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.ikyvortex.vortexmusic.ui.theme.LocalIslandSoft provides isSoftIsland
+    ) {
     Surface(
         shape = shape,
         color = if (isSoftIsland) {
-            Color(0xFF16204F)
+            com.ikyvortex.vortexmusic.ui.theme.SoftPalette.SkyBlue
         } else if (isLiquidGlass) {
             effectiveBgColor.copy(alpha = 0.36f)
         } else {
             effectiveBgColor.copy(alpha = 1f)
         },
-        contentColor = Color.White,
+        contentColor = if (isSoftIsland) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink else Color.White,
         shadowElevation = if (isSystemOverlay || isSoftIsland) 0.dp else 18.dp,
         tonalElevation = 0.dp,
         modifier = Modifier
@@ -559,7 +562,7 @@ internal fun DynamicIslandCapsuleSurface(
                     Modifier.drawBehind {
                         val off = 4.dp.toPx()
                         drawRoundRect(
-                            color = Color(0xFFFFD27A),
+                            color = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink,
                             topLeft = Offset(off, off),
                             size = size,
                             cornerRadius = CornerRadius(cornerRadius.toPx()),
@@ -623,8 +626,8 @@ internal fun DynamicIslandCapsuleSurface(
             .then(
                 if (isSoftIsland) {
                     Modifier.border(
-                        width = 2.5.dp,
-                        color = Color(0xFFFFF3C4),
+                        width = 3.dp,
+                        color = com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink,
                         shape = shape
                     )
                 } else if (isLiquidGlass) {
@@ -815,6 +818,7 @@ internal fun DynamicIslandCapsuleSurface(
             }
         }
     }
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -829,6 +833,10 @@ internal fun DynamicIslandBallContent(
     onTap: () -> Unit,
     onLongPress: () -> Unit,
 ) {
+    val islandSoft = com.ikyvortex.vortexmusic.ui.theme.LocalIslandSoft.current
+    val islandFg = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink else Color.White
+    val islandSans = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftSansFont else FontFamily.SansSerif
+    val islandLyricFont = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftLyricFont else FontFamily.SansSerif
     val safeDuration = duration.coerceAtLeast(1L)
     val rawProgress = if (duration > 0L) {
         (position.toFloat() / safeDuration.toFloat()).coerceIn(0f, 1f)
@@ -841,7 +849,7 @@ internal fun DynamicIslandBallContent(
         label = "ballRingProgress"
     )
     val ringColor = remember(accentColor) {
-        if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
+        if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Blue else if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
     }
 
     Box(
@@ -859,7 +867,7 @@ internal fun DynamicIslandBallContent(
             val inset = strokePx / 2f + 1.5.dp.toPx()
             val arcSize = Size(size.width - inset * 2f, size.height - inset * 2f)
             drawArc(
-                color = Color.White.copy(alpha = 0.28f),
+                color = islandFg.copy(alpha = 0.28f),
                 startAngle = 0f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -906,7 +914,7 @@ internal fun DynamicIslandBallContent(
                 ) {
                     DynamicIslandWaveform(
                         isPlaying = isPlaying,
-                        accentColor = Color.White,
+                        accentColor = islandFg,
                         barCount = 3,
                         modifier = Modifier.size(width = 17.dp, height = 15.dp)
                     )
@@ -922,7 +930,7 @@ internal fun DynamicIslandBallContent(
                     if (isPlaying) {
                         DynamicIslandWaveform(
                             isPlaying = true,
-                            accentColor = Color.White,
+                            accentColor = islandFg,
                             barCount = 3,
                             modifier = Modifier.size(width = 18.dp, height = 15.dp)
                         )
@@ -930,7 +938,7 @@ internal fun DynamicIslandBallContent(
                         Icon(
                             painter = painterResource(R.drawable.music_note),
                             contentDescription = title,
-                            tint = Color.White,
+                            tint = islandFg,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -956,6 +964,10 @@ internal fun DynamicIslandSmallContent(
     lyricLines: List<LiveLine> = emptyList(),
     lyricPositionMs: Long = 0L,
 ) {
+    val islandSoft = com.ikyvortex.vortexmusic.ui.theme.LocalIslandSoft.current
+    val islandFg = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink else Color.White
+    val islandSans = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftSansFont else FontFamily.SansSerif
+    val islandLyricFont = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftLyricFont else FontFamily.SansSerif
     val configuration = LocalConfiguration.current
     val pillWidth = (configuration.screenWidthDp.dp * 0.86f).coerceIn(272.dp, 368.dp)
 
@@ -981,8 +993,8 @@ internal fun DynamicIslandSmallContent(
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "smallLineProgress"
     )
-    val barColor = remember(accentColor) {
-        if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
+    val barColor = remember(accentColor, islandSoft) {
+        if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Blue else if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
     }
 
     Box(
@@ -1015,7 +1027,7 @@ internal fun DynamicIslandSmallContent(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .border(1.dp, Color.White.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+                        .border(1.dp, islandFg.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
                         .background(Color.DarkGray)
                 )
             } else {
@@ -1029,7 +1041,7 @@ internal fun DynamicIslandSmallContent(
                     Icon(
                         painter = painterResource(R.drawable.music_note),
                         contentDescription = title,
-                        tint = Color.White,
+                        tint = islandFg,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -1055,14 +1067,14 @@ internal fun DynamicIslandSmallContent(
                                 text = line.text,
                                 fill = line.karaokeFill(lyricPositionMs, next?.startMs),
                                 style = TextStyle(
-                                    fontFamily = FontFamily.SansSerif,
-                                    fontSize = 13.sp,
-                                    lineHeight = 15.sp,
+                                    fontFamily = islandLyricFont,
+                                    fontSize = if (islandSoft) 15.sp else 13.sp,
+                                    lineHeight = if (islandSoft) 17.sp else 15.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     platformStyle = PlatformTextStyle(includeFontPadding = false)
                                 ),
                                 dimAlpha = 0.45f,
-                                brightColor = Color.White,
+                                brightColor = islandFg,
                                 maxLines = 2
                             )
                         }
@@ -1074,12 +1086,12 @@ internal fun DynamicIslandSmallContent(
                     ) {
                         Text(
                             text = title,
-                            color = Color(0xFFFFFFFF),
+                            color = islandFg,
                             style = TextStyle(
-                                fontFamily = FontFamily.SansSerif,
+                                fontFamily = islandSans,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFFFFFF),
+                                color = islandFg,
                                 platformStyle = PlatformTextStyle(includeFontPadding = false)
                             ),
                             maxLines = 1,
@@ -1089,12 +1101,12 @@ internal fun DynamicIslandSmallContent(
                         if (artist.isNotBlank() && artist != "Putar lagu untuk mulai") {
                             Text(
                                 text = artist,
-                                color = Color.White.copy(alpha = 0.85f),
+                                color = islandFg.copy(alpha = 0.85f),
                                 style = TextStyle(
-                                    fontFamily = FontFamily.SansSerif,
+                                    fontFamily = islandSans,
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color.White.copy(alpha = 0.85f),
+                                    color = islandFg.copy(alpha = 0.85f),
                                     platformStyle = PlatformTextStyle(includeFontPadding = false)
                                 ),
                                 maxLines = 1,
@@ -1120,14 +1132,14 @@ internal fun DynamicIslandSmallContent(
                     modifier = Modifier
                         .size(26.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.28f))
+                        .background(islandFg.copy(alpha = 0.28f))
                         .clickable { onDismissIsland() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.close),
                         contentDescription = "Tutup Dynamic Island",
-                        tint = Color(0xFFFFFFFF),
+                        tint = islandFg,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -1142,7 +1154,7 @@ internal fun DynamicIslandSmallContent(
                 .padding(horizontal = 18.dp, vertical = 4.dp)
                 .height(3.5.dp)
                 .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.30f))
+                .background(islandFg.copy(alpha = 0.30f))
         ) {
             Box(
                 modifier = Modifier
@@ -1153,7 +1165,7 @@ internal fun DynamicIslandSmallContent(
                         Brush.horizontalGradient(
                             colors = listOf(
                                 barColor,
-                                Color.White
+                                islandFg
                             )
                         )
                     )
@@ -1191,6 +1203,10 @@ internal fun DynamicIslandMediumContent(
     lyricLines: List<LiveLine> = emptyList(),
     lyricPositionMs: Long = 0L,
 ) {
+    val islandSoft = com.ikyvortex.vortexmusic.ui.theme.LocalIslandSoft.current
+    val islandFg = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink else Color.White
+    val islandSans = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftSansFont else FontFamily.SansSerif
+    val islandLyricFont = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftLyricFont else FontFamily.SansSerif
     val configuration = LocalConfiguration.current
     val cardWidth = (configuration.screenWidthDp.dp * 0.94f).coerceIn(316.dp, 408.dp)
 
@@ -1198,7 +1214,7 @@ internal fun DynamicIslandMediumContent(
     val progress = (position.toFloat() / safeDuration.toFloat()).coerceIn(0f, 1f)
     val remainingMs = (safeDuration - position).coerceAtLeast(0L)
     val visibleAccent = remember(accentColor) {
-        if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
+        if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Blue else if (accentColor.luminance() < 0.30f) Color(0xFF38BDF8) else accentColor
     }
 
     Column(
@@ -1220,7 +1236,7 @@ internal fun DynamicIslandMediumContent(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .border(1.2.dp, Color.White.copy(alpha = 0.50f), RoundedCornerShape(14.dp))
+                        .border(1.2.dp, islandFg.copy(alpha = 0.50f), RoundedCornerShape(14.dp))
                         .background(Color.DarkGray)
                 )
             } else {
@@ -1234,7 +1250,7 @@ internal fun DynamicIslandMediumContent(
                     Icon(
                         painter = painterResource(R.drawable.music_note),
                         contentDescription = title,
-                        tint = Color.White,
+                        tint = islandFg,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -1247,12 +1263,12 @@ internal fun DynamicIslandMediumContent(
             ) {
                 Text(
                     text = title,
-                    color = Color(0xFFFFFFFF),
+                    color = islandFg,
                     style = TextStyle(
-                        fontFamily = FontFamily.SansSerif,
+                        fontFamily = islandSans,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFFFFFFF),
+                        color = islandFg,
                         platformStyle = PlatformTextStyle(includeFontPadding = false)
                     ),
                     maxLines = 1,
@@ -1262,12 +1278,12 @@ internal fun DynamicIslandMediumContent(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = artist.ifBlank { "Unknown Artist" },
-                    color = Color.White.copy(alpha = 0.90f),
+                    color = islandFg.copy(alpha = 0.90f),
                     style = TextStyle(
-                        fontFamily = FontFamily.SansSerif,
+                        fontFamily = islandSans,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White.copy(alpha = 0.90f),
+                        color = islandFg.copy(alpha = 0.90f),
                         platformStyle = PlatformTextStyle(includeFontPadding = false)
                     ),
                     maxLines = 1,
@@ -1298,14 +1314,14 @@ internal fun DynamicIslandMediumContent(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.22f))
+                    .background(islandFg.copy(alpha = 0.22f))
                     .clickable { onOpenCustomize() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(R.drawable.palette),
                     contentDescription = "Kostumisasi Dynamic Island",
-                    tint = Color.White,
+                    tint = islandFg,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -1316,14 +1332,14 @@ internal fun DynamicIslandMediumContent(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.26f))
+                    .background(islandFg.copy(alpha = 0.26f))
                     .clickable { onDismissIsland() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close),
                     contentDescription = "Tutup Dynamic Island",
-                    tint = Color(0xFFFFFFFF),
+                    tint = islandFg,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -1348,12 +1364,12 @@ internal fun DynamicIslandMediumContent(
         ) {
             Text(
                 text = makeTimeString(position),
-                color = Color.White,
+                color = islandFg,
                 style = TextStyle(
-                    fontFamily = FontFamily.SansSerif,
+                    fontFamily = islandSans,
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = islandFg,
                     platformStyle = PlatformTextStyle(includeFontPadding = false)
                 )
             )
@@ -1384,7 +1400,7 @@ internal fun DynamicIslandMediumContent(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.34f))
+                        .background(islandFg.copy(alpha = 0.34f))
                 )
                 Box(
                     modifier = Modifier
@@ -1393,7 +1409,7 @@ internal fun DynamicIslandMediumContent(
                         .clip(RoundedCornerShape(50))
                         .background(
                             Brush.horizontalGradient(
-                                colors = listOf(visibleAccent, Color.White)
+                                colors = listOf(visibleAccent, islandFg)
                             )
                         )
                 )
@@ -1403,12 +1419,12 @@ internal fun DynamicIslandMediumContent(
 
             Text(
                 text = "-${makeTimeString(remainingMs)}",
-                color = Color.White,
+                color = islandFg,
                 style = TextStyle(
-                    fontFamily = FontFamily.SansSerif,
+                    fontFamily = islandSans,
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = islandFg,
                     platformStyle = PlatformTextStyle(includeFontPadding = false)
                 )
             )
@@ -1427,7 +1443,7 @@ internal fun DynamicIslandMediumContent(
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(
-                        if (shuffleModeEnabled) Color.White.copy(alpha = 0.26f) else Color.Transparent
+                        if (shuffleModeEnabled) islandFg.copy(alpha = 0.26f) else Color.Transparent
                     )
                     .clickable { onToggleShuffle() },
                 contentAlignment = Alignment.Center
@@ -1437,7 +1453,7 @@ internal fun DynamicIslandMediumContent(
                         if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle
                     ),
                     contentDescription = "Acak Lagu",
-                    tint = if (shuffleModeEnabled) visibleAccent else Color.White.copy(alpha = 0.92f),
+                    tint = if (shuffleModeEnabled) visibleAccent else islandFg.copy(alpha = 0.92f),
                     modifier = Modifier.size(21.dp)
                 )
             }
@@ -1449,7 +1465,7 @@ internal fun DynamicIslandMediumContent(
                 Icon(
                     painter = painterResource(R.drawable.replay),
                     contentDescription = "Mundur 10 Detik",
-                    tint = Color.White.copy(alpha = 0.92f),
+                    tint = islandFg.copy(alpha = 0.92f),
                     modifier = Modifier.size(21.dp)
                 )
             }
@@ -1462,7 +1478,7 @@ internal fun DynamicIslandMediumContent(
                 Icon(
                     painter = painterResource(R.drawable.skip_previous),
                     contentDescription = "Sebelumnya",
-                    tint = if (canSkipPrevious) Color.White else Color.White.copy(alpha = 0.45f),
+                    tint = if (canSkipPrevious) islandFg else islandFg.copy(alpha = 0.45f),
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -1472,7 +1488,7 @@ internal fun DynamicIslandMediumContent(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(islandFg)
                     .clickable { onTogglePlayPause() },
                 contentAlignment = Alignment.Center
             ) {
@@ -1492,7 +1508,7 @@ internal fun DynamicIslandMediumContent(
                 Icon(
                     painter = painterResource(R.drawable.skip_next),
                     contentDescription = "Selanjutnya",
-                    tint = if (canSkipNext) Color.White else Color.White.copy(alpha = 0.45f),
+                    tint = if (canSkipNext) islandFg else islandFg.copy(alpha = 0.45f),
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -1508,7 +1524,7 @@ internal fun DynamicIslandMediumContent(
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isRepeatActive) Color.White.copy(alpha = 0.26f) else Color.Transparent
+                        if (isRepeatActive) islandFg.copy(alpha = 0.26f) else Color.Transparent
                     )
                     .clickable { onToggleRepeat() },
                 contentAlignment = Alignment.Center
@@ -1516,7 +1532,7 @@ internal fun DynamicIslandMediumContent(
                 Icon(
                     painter = painterResource(repeatIconRes),
                     contentDescription = "Ulangi Lagu",
-                    tint = if (isRepeatActive) visibleAccent else Color.White.copy(alpha = 0.92f),
+                    tint = if (isRepeatActive) visibleAccent else islandFg.copy(alpha = 0.92f),
                     modifier = Modifier.size(21.dp)
                 )
             }
@@ -1526,7 +1542,7 @@ internal fun DynamicIslandMediumContent(
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isLiked) Color.White.copy(alpha = 0.24f) else Color.Transparent
+                        if (isLiked) islandFg.copy(alpha = 0.24f) else Color.Transparent
                     )
                     .clickable { onToggleLike() },
                 contentAlignment = Alignment.Center
@@ -1534,7 +1550,7 @@ internal fun DynamicIslandMediumContent(
                 Icon(
                     painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
                     contentDescription = "Sukai",
-                    tint = if (isLiked) Color(0xFFFF4D67) else Color.White.copy(alpha = 0.92f),
+                    tint = if (isLiked) Color(0xFFFF4D67) else islandFg.copy(alpha = 0.92f),
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -2926,6 +2942,10 @@ private fun IslandLyricsBlock(
     posMs: Long,
     accent: Color,
 ) {
+    val islandSoft = com.ikyvortex.vortexmusic.ui.theme.LocalIslandSoft.current
+    val islandFg = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftPalette.Ink else Color.White
+    val islandSans = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftSansFont else FontFamily.SansSerif
+    val islandLyricFont = if (islandSoft) com.ikyvortex.vortexmusic.ui.theme.SoftLyricFont else FontFamily.SansSerif
     val activeIdx = lines.activeIndexAt(posMs)
     if (activeIdx < 0) return
 
@@ -2936,7 +2956,7 @@ private fun IslandLyricsBlock(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.08f))
+            .background(islandFg.copy(alpha = 0.08f))
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
@@ -2944,14 +2964,14 @@ private fun IslandLyricsBlock(
             text = currentLine.text,
             fill = currentLine.karaokeFill(posMs, nextLine?.startMs),
             style = TextStyle(
-                fontFamily = FontFamily.SansSerif,
-                fontSize = 13.5.sp,
-                lineHeight = 16.sp,
+                fontFamily = islandLyricFont,
+                fontSize = if (islandSoft) 15.5.sp else 13.5.sp,
+                lineHeight = if (islandSoft) 18.sp else 16.sp,
                 fontWeight = FontWeight.ExtraBold,
                 platformStyle = PlatformTextStyle(includeFontPadding = false)
             ),
             dimAlpha = 0.45f,
-            brightColor = Color.White,
+            brightColor = islandFg,
             maxLines = 2
         )
 
@@ -2960,7 +2980,7 @@ private fun IslandLyricsBlock(
                 text = nextLine.text,
                 color = accent.copy(alpha = 0.72f),
                 style = TextStyle(
-                    fontFamily = FontFamily.SansSerif,
+                    fontFamily = islandSans,
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.Medium,
                     platformStyle = PlatformTextStyle(includeFontPadding = false)

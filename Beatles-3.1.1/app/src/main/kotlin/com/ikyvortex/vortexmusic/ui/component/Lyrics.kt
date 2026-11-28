@@ -352,7 +352,11 @@ fun OriginalLyrics(
     val connectedLines by rememberPreference(LyricsConnectedLinesKey, true)
     val lyricsFont by rememberEnumPreference(LyricsFontKey, LyricsFont.SYSTEM_DEFAULT)
     val lyricsFontFamily = when (lyricsFont) {
-        LyricsFont.SYSTEM_DEFAULT -> FontFamily.Default
+        LyricsFont.SYSTEM_DEFAULT -> if (com.ikyvortex.vortexmusic.ui.theme.LocalSoftTheme.current) {
+            com.ikyvortex.vortexmusic.ui.theme.SoftLyricFont
+        } else {
+            FontFamily.Default
+        }
         LyricsFont.OUTFIT -> Outfit
         LyricsFont.MANROPE -> Manrope
         LyricsFont.SPACE_GROTESK -> SpaceGrotesk
